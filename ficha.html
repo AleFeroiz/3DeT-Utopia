@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha — 3DeT One Piece</title>
+  <link rel="stylesheet" href="style/global.css">
+  <link rel="stylesheet" href="style/ficha.css">
+  <link rel="stylesheet" href="style/toast.css">
+</head>
+<body>
+
+<div class="container ficha-container">
+
+  <!-- ══ MAIN ══════════════════════════════════════════════ -->
+  <div class="main">
+
+    <div class="ficha-topbar">
+      <a href="index.html" class="btn-voltar">← Fichas</a>
+      <h1 id="nomeFicha" contenteditable="true" class="nome-editavel">Nova Ficha</h1>
+    </div>
+
+    <div class="pontos">
+      Pontos gastos: <span id="usado">0</span> / <span id="total">10</span>
+      &nbsp;|&nbsp; Restante: <span id="restante">10</span>
+    </div>
+
+    <!-- ABAS -->
+    <div class="tabs">
+      <div class="tab active" onclick="trocarAba(0)">Atributos</div>
+      <div class="tab"        onclick="trocarAba(1)">Perícias</div>
+      <div class="tab"        onclick="trocarAba(2)">Vantagens</div>
+      <div class="tab"        onclick="trocarAba(3)">Desvantagens</div>
+      <div class="tab"        onclick="trocarAba(4)">Técnicas</div>
+      <div class="tab"        onclick="trocarAba(5)">Fontes de Poder</div>
+      <div class="tab"        onclick="trocarAba(6)">Raça</div>
+      <div class="tab"        onclick="trocarAba(7)">Profissão</div>
+    </div>
+
+    <!-- ABA 0: ATRIBUTOS -->
+    <div class="section active">
+      <div class="circle-container">
+        <div class="circle">
+          <span>Poder</span>
+          <input type="number" id="poder" value="0" min="0" max="5" oninput="atualizar()">
+        </div>
+        <div class="circle">
+          <span>Habilidade</span>
+          <input type="number" id="habilidade" value="0" min="0" max="5" oninput="atualizar()">
+        </div>
+        <div class="circle">
+          <span>Resistência</span>
+          <input type="number" id="resistencia" value="0" min="0" max="5" oninput="atualizar()">
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 1: PERÍCIAS -->
+    <div class="section">
+      <div id="listaPericias"></div>
+    </div>
+
+    <!-- ABA 2: VANTAGENS -->
+    <div class="section">
+      <div class="section-actions">
+        <button onclick="abrirLista('vantagem')">📖 Escolher do Livro</button>
+        <button onclick="criarElemento('vantagem')">✏️ Criar Nova</button>
+      </div>
+      <div id="listaVantagens"></div>
+    </div>
+
+    <!-- ABA 3: DESVANTAGENS -->
+    <div class="section">
+      <div class="section-actions">
+        <button onclick="abrirLista('desvantagem')">📖 Escolher do Livro</button>
+        <button onclick="criarElemento('desvantagem')">✏️ Criar Nova</button>
+      </div>
+      <div id="listaDesvantagens"></div>
+    </div>
+
+    <!-- ABA 4: TÉCNICAS -->
+    <div class="section">
+      <div class="section-actions">
+        <button onclick="abrirLista('tecnica')">📖 Escolher do Livro</button>
+        <button onclick="criarElemento('tecnica')">✏️ Criar Nova</button>
+      </div>
+      <div id="listaTecnicas"></div>
+    </div>
+
+    <!-- ABA 5: FONTES DE PODER -->
+    <div class="section">
+      <div class="section-actions">
+        <button onclick="criarFonte()">🍎 Criar Fonte de Poder</button>
+      </div>
+      <div id="listaFontes"></div>
+    </div>
+
+    <!-- ABA 6: RAÇA -->
+    <div class="section">
+      <div id="conteudoRaca">
+        <div class="aba-vazia">
+          <p>Nenhuma raça selecionada.</p>
+          <button onclick="abrirModalRaca()" class="btn-acao">🧬 Escolher Raça</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 7: PROFISSÃO -->
+    <div class="section">
+      <div id="conteudoProfissao">
+        <div class="aba-vazia">
+          <p>Nenhuma profissão selecionada.</p>
+          <button onclick="abrirModalProfissao()" class="btn-acao">⚒️ Escolher Profissão</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- ══ SIDEBAR ═══════════════════════════════════════════ -->
+  <div class="sidebar">
+
+    <!-- NÍVEL -->
+    <div class="nivel-bloco">
+      <span class="nivel-label">Nível</span>
+      <div class="nivel-controle">
+        <button onclick="mudarNivel(-1)" class="btn-nivel">−</button>
+        <span id="nivelAtual" class="nivel-num">1</span>
+        <button onclick="mudarNivel(1)"  class="btn-nivel">+</button>
+      </div>
+      <div id="nivelInfo"      class="nivel-info"></div>
+      <div id="nivelRecompensa" class="nivel-recompensa" style="display:none"></div>
+    </div>
+
+    <hr style="border-color:#334155;margin:4px 0">
+
+    <!-- RAÇA / PROFISSÃO -->
+    <button id="btnRaca"      onclick="abrirModalRaca()"      class="btn-sidebar-escolha">🧬 Escolher Raça</button>
+    <button id="btnProfissao" onclick="abrirModalProfissao()" class="btn-sidebar-escolha">⚒️ Escolher Profissão</button>
+
+    <hr style="border-color:#334155;margin:4px 0">
+
+    <!-- STATUS -->
+    <h2>⚔️ Status</h2>
+
+    <div class="status-bloco">
+      <strong>PA — Pontos de Ação</strong>
+      <div class="bar" id="paBackground">
+        <div class="fill" id="paFill"></div>
+        <span class="text">
+          <input id="paAtual" type="number" min="0"> / <span id="paMax">0</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="status-bloco">
+      <strong>PM — Pontos de Magia</strong>
+      <div class="bar" id="pmBackground">
+        <div class="fill" id="pmFill"></div>
+        <span class="text">
+          <input id="pmAtual" type="number" min="0"> / <span id="pmMax">0</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="status-bloco">
+      <strong>PV — Pontos de Vida</strong>
+      <div class="bar" id="pvBackground">
+        <div class="fill" id="pvFill"></div>
+        <span class="text">
+          <input id="pvAtual" type="number" min="0"> / <span id="pvMax">0</span>
+        </span>
+      </div>
+    </div>
+
+    <hr style="border-color:#334155;margin:8px 0">
+
+    <!-- LOGIN -->
+    <div class="login-area">
+      <span id="userInfo" class="user-info"></span>
+      <button id="btnLogin"  onclick="fazerLogin()"  class="btn-login">🔑 Login Google</button>
+      <button id="btnLogout" onclick="fazerLogout()" class="btn-logout" style="display:none">Sair</button>
+    </div>
+
+  </div><!-- /sidebar -->
+
+</div><!-- /ficha-container -->
+
+
+<!-- ══ MODAIS ═════════════════════════════════════════════ -->
+
+<!-- Lista do livro -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalTitulo">Selecionar</h2>
+    <div id="modalLista"></div>
+    <button onclick="fecharModal('modal')">Fechar</button>
+  </div>
+</div>
+
+<!-- Criar/Editar elemento -->
+<div id="modalCriar" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalCriarTitulo">Criar</h2>
+    <label>Nome</label>
+    <input id="novoNome" placeholder="Nome do elemento">
+    <label>Custo (PT)</label>
+    <input type="number" id="novoCusto" value="0">
+    <label>Descrição</label>
+    <textarea id="novoDescricao" placeholder="Descrição mecânica..."></textarea>
+    <label>Notas</label>
+    <textarea id="novoNotas" placeholder="Anotações pessoais..."></textarea>
+    <div class="modal-actions">
+      <button onclick="confirmarCriacao()">✅ Salvar</button>
+      <button onclick="fecharModalCriar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Criar/Editar fonte de poder -->
+<div id="modalFonte" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalFonteTitulo">🍎 Criar Fonte de Poder</h2>
+    <label>Nome</label>
+    <input id="fonteNome" placeholder="Ex: Gomu Gomu no Mi">
+    <label>Tema / Conceito</label>
+    <input id="fonteTema" placeholder="Ex: Borracha, Fogo, Observação...">
+    <label>Tipo</label>
+    <select id="fonteSubtipo" onchange="atualizarSubtipoFonte()">
+      <option value="geral" selected>Geral</option>
+      <option value="paramecia">Paramecia (Akuma no Mi)</option>
+      <option value="zoan">Zoan (Akuma no Mi)</option>
+      <option value="logia">Logia (Akuma no Mi)</option>
+    </select>
+    <div id="passivosConfig"></div>
+    <label>Pontos Investidos (PT) <span id="fonteCustoMin" style="opacity:0.5;font-size:12px"></span></label>
+    <input type="number" id="fonteCusto" value="0" min="0" oninput="atualizarCustoFonte()">
+    <div class="pcs-display">
+      <span>PCs totais: <strong id="fontePCsTotal">0</strong></span>
+      <span>Gastos: <strong id="fontePCsGastos">0</strong></span>
+      <span>Restantes: <strong id="fontePCsRestantes" style="color:#22c55e">0</strong></span>
+    </div>
+    <hr>
+    <button onclick="abrirModalCaracteristica()">⚡ Adicionar Característica</button>
+    <div id="listaCaracteristicas"></div>
+    <div class="modal-actions">
+      <button onclick="salvarFonte()">✅ Salvar</button>
+      <button onclick="fecharModalFonte()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Expandir fonte (visualização detalhada) -->
+<div id="modalExpandirFonte" class="modal hidden">
+  <div class="modal-content grande">
+    <div id="expandirFonteContent"></div>
+    <div class="modal-actions">
+      <button onclick="fecharExpandirFonte()" style="background:#475569">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Criar/Editar característica -->
+<div id="modalCaracteristica" class="modal hidden">
+  <div class="modal-content grande">
+    <h2 id="modalCaracTitulo">⚡ Nova Característica</h2>
+    <div class="carac-header">
+      <div style="flex:2">
+        <label>Nome</label>
+        <input id="caracNome" placeholder="Ex: Gomu Gomu no Pistol">
+      </div>
+      <div style="flex:1">
+        <label>Escala (1–6) <span id="escalaMaxInfo" style="opacity:0.5;font-size:11px"></span></label>
+        <input type="number" id="caracEscala" value="1" min="1" max="6" oninput="atualizarEscala()">
+      </div>
+    </div>
+    <label>Descrição</label>
+    <textarea id="caracDescricao" placeholder="Descreva o efeito narrativo..." style="min-height:60px"></textarea>
+    <div class="tabs-internas">
+      <div class="tab-carac active" onclick="trocarAbaCarac(0)">Potência</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(1)">Pressão</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(2)">Execução</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(3)">Alcance</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(4)">Duração</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(5)">Área</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(6)">Alvos</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(7)">Condições</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(8)">Descontos</div>
+    </div>
+    <div class="conteudo-carac active" id="aba_potencia"></div>
+    <div class="conteudo-carac"        id="aba_pressao"></div>
+    <div class="conteudo-carac"        id="aba_execucao"></div>
+    <div class="conteudo-carac"        id="aba_alcance"></div>
+    <div class="conteudo-carac"        id="aba_duracao"></div>
+    <div class="conteudo-carac"        id="aba_area"></div>
+    <div class="conteudo-carac"        id="aba_alvos"></div>
+    <div class="conteudo-carac"        id="aba_condicoes"></div>
+    <div class="conteudo-carac"        id="aba_descontos"></div>
+    <hr>
+    <div class="orcamento-preview">
+      <span>Orçamento: <strong id="orcamentoTotal">10</strong></span>
+      <span>Gasto: <strong id="orcamentoGasto">0</strong></span>
+      <span>PM total: <strong id="orcamentoPM">2</strong></span>
+    </div>
+    <div class="modal-actions">
+      <button onclick="adicionarCaracteristica()">✅ Criar</button>
+      <button onclick="fecharModalCaracteristica()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Escolher Raça -->
+<div id="modalEscolhaRaca" class="modal hidden">
+  <div class="modal-content">
+    <h2>🧬 Escolher Raça</h2>
+    <div id="listaRacas"></div>
+    <div class="modal-actions">
+      <button onclick="fecharModalRaca()" style="background:#475569">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Escolher Profissão -->
+<div id="modalEscolhaProfissao" class="modal hidden">
+  <div class="modal-content">
+    <h2>⚒️ Escolher Profissão</h2>
+    <div id="listaProfissoes"></div>
+    <div class="modal-actions">
+      <button onclick="fecharModalProfissao()" style="background:#475569">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

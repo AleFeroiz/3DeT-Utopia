@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3DeT One Piece — Fichas</title>
+  <link rel="stylesheet" href="style/global.css">
+  <link rel="stylesheet" href="style/toast.css">
+</head>
+<body>
+
+<div class="container index-container">
+
+  <header class="index-header">
+    <div>
+      <h1>⚓ 3DeT One Piece</h1>
+      <p class="subtitulo">Gerencie suas fichas de personagem</p>
+    </div>
+    <div class="login-header" id="loginArea">
+      <span id="userInfoIndex" class="user-info-header"></span>
+      <button id="btnLoginIndex"  onclick="fazerLogin()"  class="btn btn-login-header">🔑 Login Google</button>
+      <button id="btnLogoutIndex" onclick="fazerLogout()" class="btn btn-logout-header" style="display:none">Sair</button>
+    </div>
+  </header>
+
+  <button class="btn btn-criar" id="btnNova">+ Nova Ficha</button>
+
+  <div id="listaFichas"></div>
+
+</div>
+
+<script type="module">
+  import { Storage } from "./js/storage.js"
+  import { Ficha   } from "./js/modelos/Ficha.js"
+  import { inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
+           salvarFichasFirestore, carregarFichasFirestore, estaConfigurado } from "./js/firebase.js"
+  import { toastSucesso, toastInfo, toastErro } from "./js/ui/uiToast.js"
+
+  let fichas = Storage.carregarFichas()
+
+  function salvar() {
+    Storage.salvarFichas(fichas)
+    if (getUser() && estaConfigurado()) salvarFichasFirestore(fichas)
+  }
+
+  function renderizar() {
+    const lista = document.getElementById("listaFichas")
+    lista.innerHTML = ""
+
+    if (!fichas.length) {
+      lista.innerHTML = `
+        <div class="lista-vazia">
+          <p>Nenhuma ficha criada ainda.</p>
+          <p>Clique em <strong>+ Nova Ficha</strong> para começar!</p>
+        </div>`
+      return
+    }
+
+    fichas.forEach((f, index) => {
+      const div = document.createElement("div")
+      div.className = "ficha-card"
+      const gastos   = f.pontos?.gastos ?? 0
+      const total    = f.pontos?.total  ?? 10
+      const nivel    = f.nivel ?? 1
+      const racaId   = f.racaId   || ""
+      const profId   = f.profissaoId || ""
+
+      div.innerHTML = `
+        <div class="ficha-info" data-index="${index}">
+          <strong class="ficha-nome">${f.nome || "Sem Nome"}</strong>
+          <div class="ficha-meta">
+            <span>⚔️ Nível ${nivel}</span>
+            ${racaId ? `<span>🧬 ${racaId}</span>` : ""}
+            ${profId ? `<span>⚒️ ${profId}</span>` : ""}
+            <span>🎯 ${gastos}/${total} PT</span>
+          </div>
+        </div>
+        <div class="ficha-acoes">
+          <button class="btn btn-abrir"   data-index="${index}">Abrir</button>
+          <button class="btn btn-deletar" data-index="${index}">Excluir</button>
+        </div>
+      `
+      lista.appendChild(div)
+    })
+
+    lista.querySelectorAll(".btn-abrir").forEach(btn => {
+      btn.onclick = () => abrirFicha(+btn.dataset.index)
+    })
+    lista.querySelectorAll(".btn-deletar").forEach(btn => {
+      btn.onclick = () => deletarFicha(+btn.dataset.index)
+    })
+  }
+
+  function criarFicha() {
+    fichas.push(Ficha.nova().toJSON())
+    salvar(); renderizar()
+  }
+
+  function deletarFicha(index) {
+    const nome = fichas[index]?.nome || "esta ficha"
+    if (confirm(`Excluir "${nome}"? Essa ação não pode ser desfeita.`)) {
+      fichas.splice(index, 1); salvar(); renderizar()
+    }
+  }
+
+  function abrirFicha(index) {
+    Storage.setIndiceFichaAtual(index)
+    window.location.href = "ficha.html"
+  }
+
+  function atualizarUILogin() {
+    const user = getUser()
+    document.getElementById("btnLoginIndex").style.display  = user ? "none" : "inline-flex"
+    document.getElementById("btnLogoutIndex").style.display = user ? "inline-flex" : "none"
+    document.getElementById("userInfoIndex").textContent    = user ? (user.displayName || user.email) : ""
+  }
+
+  window.fazerLogin  = () => loginGoogle().catch(() => toastErro("Erro ao fazer login."))
+  window.fazerLogout = () => logout()
+
+  onLogin(async (user) => {
+    atualizarUILogin()
+    toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
+    if (estaConfigurado()) {
+      const cloud = await carregarFichasFirestore()
+      if (cloud !== null && cloud.length > 0) {
+        fichas = cloud
+        Storage.salvarFichas(fichas)
+        renderizar()
+        toastInfo("Fichas sincronizadas da nuvem.")
+      }
+    }
+  })
+
+  onLogout(() => { atualizarUILogin() })
+
+  document.getElementById("btnNova").onclick = criarFicha
+
+  await inicializarFirebase()
+  atualizarUILogin()
+  renderizar()
+</script>
+
+</body>
+</html>
