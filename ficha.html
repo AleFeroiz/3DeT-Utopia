@@ -21,7 +21,7 @@
     </div>
 
     <div class="pontos">
-      Pontos gastos: <span id="usado">0</span> / <span id="total">10</span>
+      Pontos gastos: <span id="usado">0</span> / <span id="total" class="total-editavel" contenteditable="true" title="Clique para editar o total de pontos">10</span>
       &nbsp;|&nbsp; Restante: <span id="restante">10</span>
     </div>
 
@@ -148,18 +148,30 @@
       <div class="bar" id="paBackground">
         <div class="fill" id="paFill"></div>
         <span class="text">
-          <input id="paAtual" type="number" min="0"> / <span id="paMax">0</span>
+          <input id="paAtual" type="number" min="0"> / <span id="paMax" class="max-editavel" contenteditable="true" title="Clique para editar o máximo">0</span>
         </span>
+      </div>
+      <div class="status-arrows">
+        <button onclick="ajustarStatus('pa',-5)" title="-5">«</button>
+        <button onclick="ajustarStatus('pa',-1)" title="-1">‹</button>
+        <button onclick="ajustarStatus('pa',+1)" title="+1">›</button>
+        <button onclick="ajustarStatus('pa',+5)" title="+5">»</button>
       </div>
     </div>
 
     <div class="status-bloco">
-      <strong>PM — Pontos de Magia</strong>
+      <strong>PM — Pontos de Mana</strong>
       <div class="bar" id="pmBackground">
         <div class="fill" id="pmFill"></div>
         <span class="text">
-          <input id="pmAtual" type="number" min="0"> / <span id="pmMax">0</span>
+          <input id="pmAtual" type="number" min="0"> / <span id="pmMax" class="max-editavel" contenteditable="true" title="Clique para editar o máximo">0</span>
         </span>
+      </div>
+      <div class="status-arrows">
+        <button onclick="ajustarStatus('pm',-5)" title="-5">«</button>
+        <button onclick="ajustarStatus('pm',-1)" title="-1">‹</button>
+        <button onclick="ajustarStatus('pm',+1)" title="+1">›</button>
+        <button onclick="ajustarStatus('pm',+5)" title="+5">»</button>
       </div>
     </div>
 
@@ -168,8 +180,14 @@
       <div class="bar" id="pvBackground">
         <div class="fill" id="pvFill"></div>
         <span class="text">
-          <input id="pvAtual" type="number" min="0"> / <span id="pvMax">0</span>
+          <input id="pvAtual" type="number" min="0"> / <span id="pvMax" class="max-editavel" contenteditable="true" title="Clique para editar o máximo">0</span>
         </span>
+      </div>
+      <div class="status-arrows">
+        <button onclick="ajustarStatus('pv',-5)" title="-5">«</button>
+        <button onclick="ajustarStatus('pv',-1)" title="-1">‹</button>
+        <button onclick="ajustarStatus('pv',+1)" title="+1">›</button>
+        <button onclick="ajustarStatus('pv',+5)" title="+5">»</button>
       </div>
     </div>
 

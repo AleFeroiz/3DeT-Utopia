@@ -145,17 +145,96 @@ function _bindNomeEditavel() {
 //  STATUS INPUTS
 // ─────────────────────────────────────────────────────────
 function _bindStatusInputs() {
-  const bind = (id, chave) => {
+  // Bind atual inputs
+  const bindAtual = (id, chave) => {
     const el = document.getElementById(id)
     if (!el) return
-    el.oninput = () => { ficha.status[chave].atual = +el.value || 0; atualizarBarras(ficha); salvar() }
+    el.oninput = () => {
+      ficha.status[chave].atual = +el.value || 0
+      atualizarBarras(ficha); salvar()
+    }
   }
-  bind("paAtual", "pa"); bind("pmAtual", "pm"); bind("pvAtual", "pv")
+  bindAtual("paAtual", "pa"); bindAtual("pmAtual", "pm"); bindAtual("pvAtual", "pv")
+
+  // Bind max editable spans — sistema de OFFSET: finalMax = auto + offset
+  const bindMax = (id, chave) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    el.addEventListener("blur", () => {
+      const val = parseInt(el.innerText.trim(), 10)
+      if (!isNaN(val) && val >= 0) {
+        ficha.setMaxManual(chave, val)   // calcula e guarda o offset
+        atualizarBarras(ficha); salvar()
+      } else {
+        el.innerText = ficha.status[chave].max  // reverte se inválido
+      }
+    })
+    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el.blur() } })
+    el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
+  bindMax("paMax", "pa"); bindMax("pmMax", "pm"); bindMax("pvMax", "pv")
+
+  // Bind pontos total — sistema de OFFSET: total = ptTotal(nível) + offsetTotal
+  const totalEl = document.getElementById("total")
+  if (totalEl) {
+    totalEl.addEventListener("blur", () => {
+      const val = parseInt(totalEl.innerText.trim(), 10)
+      if (!isNaN(val) && val >= 0) {
+        ficha.setTotalManual(val)   // calcula e guarda offsetTotal
+        renderPontos(ficha); salvar()
+      } else {
+        totalEl.innerText = ficha.pontos.total
+      }
+    })
+    totalEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); totalEl.blur() } })
+    totalEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
 }
 
 // ─────────────────────────────────────────────────────────
 //  EXPANDIR FONTE
 // ─────────────────────────────────────────────────────────
+const _LABELS_ESCOLHAS = {
+  potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
+  alcance: 'Alcance', duracao: 'Duração', area: 'Área',
+  alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
+}
+function _resumoEscolhas(escolhas) {
+  if (!escolhas) return {}
+  const result = {}
+  for (const [chave, lista] of Object.entries(escolhas)) {
+    if (!lista?.length) continue
+    const cnt = {}
+    for (const item of lista) {
+      const k = item.nome ?? (item.valor !== undefined ? ('+' + item.valor) : '?')
+      cnt[k] = (cnt[k] ?? 0) + 1
+    }
+    result[_LABELS_ESCOLHAS[chave] ?? chave] = Object.entries(cnt)
+      .map(([n, q]) => q > 1 ? (n + ' x' + q) : n).join(', ')
+  }
+  return result
+}
+function _cardCaractExpandir(c) {
+  const PC_POR_ESCALA = {1:1,2:2,3:3,4:4,5:5,6:6}
+  const resumo = _resumoEscolhas(c.escolhas)
+  const rows = Object.entries(resumo)
+    .map(([l,v]) => '<div class="carac-resumo-row"><span class="carac-resumo-label">' + l + ':</span> <span>' + v + '</span></div>')
+    .join('')
+  const pc = PC_POR_ESCALA[c.escala] ?? c.escala
+  return '<div class="card-info desbloqueado" style="margin-bottom:10px">' +
+    '<div class="carac-header-row">' +
+      '<strong>⚡ ' + c.nome + '</strong>' +
+      '<div class="carac-badges">' +
+        '<span>Escala ' + c.escala + '</span>' +
+        '<span>' + pc + ' PC</span>' +
+        '<span>Orç. ' + c.custo + '</span>' +
+        '<span>' + c.custoPM + ' PM</span>' +
+      '</div>' +
+    '</div>' +
+    (rows ? '<div class="carac-resumo">' + rows + '</div>' : '') +
+    (c.descricao ? '<p class="carac-descricao">' + c.descricao + '</p>' : '') +
+  '</div>'
+}
 function _abrirExpandirFonte(fonte) {
   const modal   = document.getElementById("modalExpandirFonte")
   const content = document.getElementById("expandirFonteContent")
@@ -172,19 +251,9 @@ function _abrirExpandirFonte(fonte) {
     passivosHTML += `<div class="passivo-tag">✨ Imune a danos mundanos (exceto Haki)</div>`
   }
 
-  const caracts = fonte.caracteristicas.map(c => `
-    <div class="card-info desbloqueado" style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <strong>⚡ ${c.nome}</strong>
-        <div style="display:flex;gap:8px;font-size:12px;opacity:0.7">
-          <span>Escala ${c.escala}</span>
-          <span>${PC_POR_ESCALA[c.escala] ?? c.escala} PC</span>
-          <span>${c.custoPM} PM</span>
-        </div>
-      </div>
-      ${c.descricao ? `<p style="font-size:13px;opacity:0.75;margin-bottom:6px">${c.descricao}</p>` : ""}
-    </div>
-  `).join("") || "<p style='opacity:0.4'>Nenhuma característica criada.</p>"
+  const caracts = fonte.caracteristicas.length
+    ? fonte.caracteristicas.map(c => _cardCaractExpandir(c)).join("")
+    : "<p style='opacity:0.4'>Nenhuma característica criada.</p>"
 
   content.innerHTML = `
     <div class="raca-header">
@@ -270,6 +339,19 @@ function expor() {
   // Raça / Profissão
   window.abrirModalRaca      = () => abrirModalRaca(ficha)
   window.abrirModalProfissao = () => abrirModalProfissao(ficha)
+
+  // Status arrows
+  window.ajustarStatus = (chave, delta) => {
+    const inputId = chave + 'Atual'
+    const el = document.getElementById(inputId)
+    if (!el) return
+    const max = ficha.status[chave].max || 999
+    const novo = Math.max(0, Math.min(max, (ficha.status[chave].atual || 0) + delta))
+    ficha.status[chave].atual = novo
+    el.value = novo
+    atualizarBarras(ficha)
+    salvar()
+  }
 
   // Fechar modais
   window.fecharModal               = (id) => fecharModal(id)

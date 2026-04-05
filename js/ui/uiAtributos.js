@@ -18,15 +18,26 @@ export function renderAtributos(ficha) {
 
 /** @param {import('../modelos/Ficha.js').Ficha} ficha */
 export function renderStatus(ficha) {
-  document.getElementById("paMax").innerText = ficha.status.pa.max
-  document.getElementById("pmMax").innerText = ficha.status.pm.max
-  document.getElementById("pvMax").innerText = ficha.status.pv.max
+  // Atualiza spans de max (contenteditable) — só se não tiver foco
+  const setMax = (id, chave) => {
+    const el = document.getElementById(id)
+    if (!el || document.activeElement === el) return
+    const offset = ficha.status[chave].offset ?? 0
+    el.innerText  = ficha.status[chave].max
+    // destaque visual: amarelo se tiver offset, normal se não tiver
+    el.style.color = offset !== 0 ? "#fbbf24" : ""
+    el.title       = offset !== 0
+      ? `Auto: ${ficha.status[chave].auto} + offset: ${offset > 0 ? "+" : ""}${offset}`
+      : "Clique para editar o máximo"
+  }
+  setMax("paMax", "pa")
+  setMax("pmMax", "pm")
+  setMax("pvMax", "pv")
 
   const paAtual = document.getElementById("paAtual")
   const pmAtual = document.getElementById("pmAtual")
   const pvAtual = document.getElementById("pvAtual")
 
-  // Só preenche o atual se o campo estiver vazio (não sobrescreve edição do jogador)
   if (!paAtual.value) paAtual.value = ficha.status.pa.atual
   if (!pmAtual.value) pmAtual.value = ficha.status.pm.atual
   if (!pvAtual.value) pvAtual.value = ficha.status.pv.atual
@@ -56,11 +67,23 @@ function setBarraLargura(id, ratio) {
 
 /** Atualiza o contador de pontos no topo */
 export function renderPontos(ficha) {
-  const gastos    = ficha.pontos.gastos
-  const total     = ficha.pontos.total
-  const restante  = total - gastos
+  const gastos   = ficha.pontos.gastos
+  const total    = ficha.pontos.total
+  const restante = total - gastos
 
-  document.getElementById("usado").innerText    = gastos
-  document.getElementById("restante").innerText = restante
+  document.getElementById("usado").innerText = gastos
+
+  // Total é contenteditable — só atualiza se não estiver em foco
+  const totalEl = document.getElementById("total")
+  if (totalEl && document.activeElement !== totalEl) {
+    totalEl.innerText  = total
+    const offset = ficha.pontos.offsetTotal ?? 0
+    totalEl.style.color = offset !== 0 ? "#fbbf24" : ""
+    totalEl.title       = offset !== 0
+      ? `Auto (nível ${ficha.nivel}): ${ficha.pontos.totalAuto} + offset: ${offset > 0 ? "+" : ""}${offset}`
+      : "Clique para editar o total de pontos"
+  }
+
+  document.getElementById("restante").innerText   = restante
   document.getElementById("restante").style.color = restante < 0 ? "#ef4444" : "white"
 }

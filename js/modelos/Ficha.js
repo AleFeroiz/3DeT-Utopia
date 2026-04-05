@@ -17,7 +17,7 @@ export class Ficha {
     pericias    = {},
     elementos   = [],
     status      = { pa: { atual: 0, max: 0 }, pm: { atual: 0, max: 0 }, pv: { atual: 0, max: 0 } },
-    pontos      = { total: 10, gastos: 0 }
+    pontos      = { total: 10, gastos: 0, totalAuto: 10, offsetTotal: 0 }
   } = {}) {
     this.nome        = nome
     this.racaId      = racaId
@@ -39,10 +39,20 @@ export class Ficha {
   // ── Nível ─────────────────────────────────────────────────
   _sincronizarNivel() {
     const d = getDadosNivel(this.nivel)
-    this.pontos.total        = d.ptTotal
+    // total = automático (ptTotal) + offset definido pelo jogador
+    const offsetTotal = this.pontos.offsetTotal ?? 0
+    this.pontos.totalAuto = d.ptTotal
+    this.pontos.total     = d.ptTotal + offsetTotal
     this.escalaMax           = d.escalaMax
     this.maestraLimite       = d.maestriaLimite
     this.profissaoNivelAtual = d.profissaoNivelAtual
+  }
+
+  // Chamado quando o jogador edita o total manualmente
+  setTotalManual(novoValor) {
+    const auto   = this.pontos.totalAuto ?? getDadosNivel(this.nivel).ptTotal
+    this.pontos.offsetTotal = novoValor - auto
+    this.pontos.total       = novoValor
   }
 
   setNivel(n) {
@@ -69,10 +79,9 @@ export class Ficha {
   }
 
   toggleMaestria(pericia) {
+    // Maestria não pode ser removida após aplicada
     if (this.maestrias[pericia]) {
-      delete this.maestrias[pericia]
-      this.calcularPontos()
-      return { ok: true }
+      return { ok: false, motivo: "Maestria não pode ser removida após aplicada." }
     }
     const check = this.podeMaestria(pericia)
     if (!check.ok) return check
@@ -97,14 +106,36 @@ export class Ficha {
   get pontosRestantes() { return this.pontos.total - this.pontos.gastos }
 
   // ── Status ────────────────────────────────────────────────
-  calcularStatus() {
+  // Calcula o valor automático bruto de cada status
+  _calcAutoStatus() {
     const { poder, habilidade, resistencia } = this.atributos
-    this.status.pa.max = poder       > 0 ? poder           : 1
-    this.status.pm.max = habilidade  > 0 ? habilidade * 10 : 5
-    this.status.pv.max = resistencia > 0 ? resistencia* 10 : 5
-    if (!this.status.pa.atual) this.status.pa.atual = this.status.pa.max
-    if (!this.status.pm.atual) this.status.pm.atual = this.status.pm.max
-    if (!this.status.pv.atual) this.status.pv.atual = this.status.pv.max
+    return {
+      pa: poder       > 0 ? poder           : 1,
+      pm: habilidade  > 0 ? habilidade * 10 : 5,
+      pv: resistencia > 0 ? resistencia* 10 : 5
+    }
+  }
+
+  calcularStatus() {
+    const auto = this._calcAutoStatus()
+
+    // valorFinal = automático + offset (offset começa em 0)
+    for (const chave of ['pa', 'pm', 'pv']) {
+      const offset = this.status[chave].offset ?? 0
+      this.status[chave].auto   = auto[chave]
+      this.status[chave].max    = auto[chave] + offset
+
+      if (!this.status[chave].atual) this.status[chave].atual = this.status[chave].max
+    }
+  }
+
+  // Chamado quando o jogador edita manualmente o max
+  setMaxManual(chave, novoValor) {
+    const auto   = this._calcAutoStatus()[chave]
+    const offset = novoValor - auto
+    this.status[chave].offset = offset
+    this.status[chave].auto   = auto
+    this.status[chave].max    = novoValor
   }
 
   // ── Elementos ─────────────────────────────────────────────

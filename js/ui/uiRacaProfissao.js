@@ -120,7 +120,22 @@ export function renderAbaProfissao(ficha) {
   const prof = PROFISSOES.find(p => p.id === ficha.profissaoId)
   if (!prof) return
 
-  const nivelProf = ficha.profissaoNivelAtual ?? 1
+  // nivel da habilidade = nivel real da ficha (1, 5, 10, 15)
+  const nivelFicha = ficha.nivel ?? 1
+
+  const habilsDesbloq = prof.habilidades.filter(h => h.nivel <= nivelFicha)
+  const habilsBloc    = prof.habilidades.filter(h => h.nivel >  nivelFicha)
+
+  const renderHab = (h, desbloqueada) => `
+    <div class="card-info ${desbloqueada ? "desbloqueado" : "bloqueado"}">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <span class="badge-nivel ${desbloqueada ? "" : "bloqueado"}">
+          Nível de Prof. ${h.nivel}${desbloqueada ? "" : " 🔒"}
+        </span>
+        <strong>${h.nome}</strong>
+      </div>
+      <p>${h.desc}</p>
+    </div>`
 
   container.innerHTML = `
     <div class="raca-header">
@@ -132,19 +147,16 @@ export function renderAbaProfissao(ficha) {
       <button onclick="abrirModalProfissao()" class="btn-trocar">Trocar</button>
     </div>
 
+    <div class="nivel-prof-badge">
+      Personagem nível <strong>${nivelFicha}</strong>
+      <span style="opacity:0.5;font-size:12px">— habilidades desbloqueadas: ${habilsDesbloq.length}/${prof.habilidades.length}</span>
+    </div>
+
     <div class="secao-info">
-      <h3>🎯 Habilidades</h3>
-      ${prof.habilidades.map(h => {
-        const desbloqueada = h.nivel <= nivelProf
-        return `
-          <div class="card-info ${desbloqueada ? "desbloqueado" : "bloqueado"}">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-              <span class="badge-nivel ${desbloqueada ? "" : "bloqueado"}">Nível ${h.nivel}${desbloqueada ? "" : " 🔒"}</span>
-              <strong>${h.nome}</strong>
-            </div>
-            <p>${h.desc}</p>
-          </div>`
-      }).join("")}
+      <h3>✅ Habilidades desbloqueadas (${habilsDesbloq.length})</h3>
+      ${habilsDesbloq.map(h => renderHab(h, true)).join("")}
+      ${habilsBloc.length ? `<h3 style="margin-top:12px;opacity:0.6">🔒 Próximas habilidades</h3>
+      ${habilsBloc.map(h => renderHab(h, false)).join("")}` : ""}
     </div>
   `
 }

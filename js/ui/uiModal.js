@@ -21,6 +21,29 @@ let _onSalvarFonte    = null
 let _fonteEditandoId  = null   // null = criar nova, string = editar existente
 let _getFicha         = null   // callback para obter ficha atual
 
+// ── Resumo legível das escolhas ──────────────────────────
+function _resumoEscolhas(escolhas) {
+  if (!escolhas) return {}
+  const LABELS = {
+    potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
+    alcance: 'Alcance', duracao: 'Duração', area: 'Área',
+    alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
+  }
+  const result = {}
+  for (const [chave, lista] of Object.entries(escolhas)) {
+    if (!lista?.length) continue
+    const contagem = {}
+    for (const item of lista) {
+      const k = item.nome ?? `+${item.valor}`
+      contagem[k] = (contagem[k] ?? 0) + 1
+    }
+    result[LABELS[chave] ?? chave] = Object.entries(contagem)
+      .map(([nome, qtd]) => qtd > 1 ? `${nome} ×${qtd}` : nome)
+      .join(', ')
+  }
+  return result
+}
+
 const TIPOS_DANO = [
   "Corte","Perfuração","Pancada","Veneno","Ácido",
   "Água","Fogo","Lava","Ar","Gás","Terra","Areia",
@@ -204,9 +227,14 @@ export function abrirCriarCaracteristica(editIndex = null) {
   _caracEditIndex = editIndex
   const ex = editIndex !== null ? _fonteTemp.caracteristicas[editIndex] : null
 
+  // Restaura escolhas salvas (deep copy) ou inicializa vazio
+  const escolhasSalvas = ex?.escolhas
+    ? Object.fromEntries(Object.keys(TABELAS).map(k => [k, [...(ex.escolhas[k] ?? [])]]))
+    : Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+
   _caracTemp = {
     escala:   ex?.escala ?? 1,
-    escolhas: Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+    escolhas: escolhasSalvas
   }
 
   document.getElementById("caracNome").value      = ex?.nome      ?? ""
@@ -309,9 +337,15 @@ export function renderTabelaCarac(chave) {
     const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
     const tdPm   = item.pm !== undefined ? (item.pm < 0 ? item.pm : `+${item.pm}`) : "-"
 
+    // Restaura contagem salva para empilháveis
+    if (empilhavel) {
+      estado.qtd = (_caracTemp.escolhas[chave] ?? [])
+        .filter(i => i.orcamento === item.orcamento).length
+    }
+
     tr.innerHTML = `
       <td>${tdNome}</td><td>${item.orcamento}</td><td>${tdPm}</td>
-      ${empilhavel ? `<td><span class="qtd">0</span></td>` : ""}
+      ${empilhavel ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
 
     if (empilhavel) {
@@ -375,22 +409,34 @@ function _renderCaracteristicasFonteModal() {
   }
 
   _fonteTemp.caracteristicas.forEach((c, i) => {
-    const isGratuita = c.custo === 0 && c.nome.includes("Gratuita")
+    const isZoanGratuita = c.nome.includes("Gratuita") && _fonteTemp.subtipo === "zoan"
     const div = document.createElement("div")
     div.className = "card-elemento"
     div.style.marginTop = "8px"
+    const resumo = _resumoEscolhas(c.escolhas)
+    const resumoHTML = Object.entries(resumo).map(([label, val]) =>
+      `<div class="carac-resumo-row"><span class="carac-resumo-label">${label}:</span> <span>${val}</span></div>`
+    ).join("")
+
     div.innerHTML = `
       <div class="card-header">
         <strong>${c.nome}</strong>
-        <span style="opacity:0.7;font-size:12px">Escala ${c.escala} · ${PC_POR_ESCALA[c.escala] ?? c.escala} PC · ${c.custoPM} PM</span>
+        <div style="display:flex;gap:8px;font-size:12px;opacity:0.7">
+          <span>Escala ${c.escala}</span>
+          <span>|</span>
+          <span>Orç. ${c.custo}</span>
+          <span>|</span>
+          <span>${c.custoPM} PM</span>
+        </div>
       </div>
-      ${c.descricao ? `<p style="font-size:13px;opacity:0.65;margin:4px 0">${c.descricao}</p>` : ""}
+      ${resumoHTML ? `<div class="carac-resumo">${resumoHTML}</div>` : ""}
+      ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
       <div class="card-actions" style="margin-top:8px">
-        ${!isGratuita ? `<button class="btn-editar">✏️ Editar</button>` : ""}
+        <button class="btn-editar">✏️ Editar</button>
         <button class="btn-remover">🗑️ Remover</button>
       </div>
     `
-    if (!isGratuita) div.querySelector(".btn-editar").onclick = () => abrirCriarCaracteristica(i)
+    div.querySelector(".btn-editar").onclick = () => abrirCriarCaracteristica(i)
     div.querySelector(".btn-remover").onclick = () => {
       _fonteTemp.removerCaracteristica(i)
       _atualizarPCsDisplay()

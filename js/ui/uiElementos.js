@@ -119,15 +119,15 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
     row.className = "pericia-row"
 
     row.innerHTML = `
-      <label class="pericia-label ${temPericia ? "ativa" : ""}">
+      <label class="pericia-label ${temPericia ? "ativa" : ""} ${temMaestria ? "maestria" : ""}">
         <input type="checkbox" class="chk-pericia" ${temPericia ? "checked" : ""}>
         <span>${pericia.nome}</span>
-        <span class="pericia-custo">1 PT</span>
+        ${temMaestria ? '<span class="pericia-maestria-tag">★ Maestria</span>' : '<span class="pericia-custo">1 PT</span>'}
       </label>
       ${temPericia ? `
         <button class="btn-maestria ${temMaestria ? "ativa" : ""}" 
-                title="${temMaestria ? "Remover maestria (recupera 2 PT)" : "Aplicar maestria (custa 2 PT)"}"
-                ${!podeMaestria && !temMaestria ? "disabled" : ""}>
+                title="${temMaestria ? "Maestria já aplicada (permanente)" : "Aplicar maestria (custa 2 PT)"}"
+                ${(temMaestria || (!podeMaestria && !temMaestria)) ? "disabled" : ""}>
           ⭐
         </button>` : '<div class="btn-maestria-placeholder"></div>'}
     `
