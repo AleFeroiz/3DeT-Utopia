@@ -123,11 +123,11 @@
     toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
     if (estaConfigurado()) {
       const cloud = await carregarFichasFirestore()
-      if (cloud !== null && cloud.length > 0) {
+      if (cloud !== null) {
         fichas = cloud
         Storage.salvarFichas(fichas)
         renderizar()
-        toastInfo("Fichas sincronizadas da nuvem.")
+        toastInfo(cloud.length > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada — nenhuma ficha encontrada.")
       }
     }
   })
