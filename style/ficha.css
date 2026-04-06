@@ -596,3 +596,197 @@ hr {
 .total-editavel:hover:not(:focus) {
   border-bottom-color: rgba(255,255,255,0.5);
 }
+
+/* ── MAESTRIA SIDEBAR ────────────────────────────────────── */
+.maestria-sidebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  background: #0f172a;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid #334155;
+}
+.maestria-sidebar-label { opacity: 0.6; font-size: 12px; }
+
+/* ── BASE GRATUITA ───────────────────────────────────────── */
+.base-gratuita {
+  display: flex;
+  justify-content: space-between;
+  background: #0a1628;
+  border: 1px dashed #1e3a5f;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+.base-gratuita span:first-child { opacity: 0.7; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVIDADE MOBILE / TABLET
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Tablet (até 900px) ─────────────────────────────────── */
+@media (max-width: 900px) {
+  body { padding: 12px; }
+
+  .ficha-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    min-width: unset;
+    order: -1; /* sidebar aparece acima no mobile */
+  }
+
+  .main { width: 100%; }
+
+  .circle { width: 100px; height: 100px; }
+  .circle input { font-size: 24px; width: 52px; }
+
+  .modal-content.grande {
+    width: 98vw;
+    max-height: 94vh;
+    padding: 16px;
+  }
+
+  .carac-header { flex-direction: column; }
+}
+
+/* ── Mobile (até 600px) ─────────────────────────────────── */
+@media (max-width: 600px) {
+  body { padding: 8px; }
+
+  .ficha-topbar { gap: 10px; }
+  .ficha-topbar h1 { font-size: 17px; }
+  .btn-voltar { font-size: 12px; padding: 5px 9px; }
+
+  .pontos { font-size: 13px; padding: 8px 12px; }
+
+  /* Abas menores */
+  .tabs { gap: 5px; }
+  .tab { padding: 6px 9px; font-size: 12px; }
+
+  .section { padding: 14px 12px; }
+
+  /* Círculos de atributo */
+  .circle-container { gap: 14px; }
+  .circle { width: 88px; height: 88px; }
+  .circle span { font-size: 11px; }
+  .circle input { font-size: 22px; width: 46px; }
+
+  /* Cards */
+  .card-header { font-size: 13px; flex-wrap: wrap; gap: 4px; }
+  .card-actions button { font-size: 11px; padding: 5px 4px; }
+
+  /* Sidebar compacta */
+  .sidebar { padding: 12px; border-radius: 12px; }
+  .sidebar h2 { font-size: 14px; margin-bottom: 10px; }
+  .nivel-num { font-size: 24px; }
+  .status-bloco { padding: 8px 10px; }
+  .status-bloco strong { font-size: 11px; }
+  .bar { height: 24px; }
+  .bar input { font-size: 12px; }
+  .status-arrows button { font-size: 12px; }
+
+  /* Modal padrão */
+  .modal-content {
+    padding: 16px;
+    width: 98vw;
+    max-height: 92vh;
+    border-radius: 12px;
+    gap: 8px;
+  }
+
+  .modal-content h2 { font-size: 16px; }
+  .modal-content label { font-size: 12px; }
+  .modal-content input,
+  .modal-content textarea,
+  .modal-content select { font-size: 13px; padding: 7px 9px; }
+
+  .modal-actions { flex-direction: column; gap: 6px; }
+  .modal-actions button { padding: 9px; font-size: 13px; }
+
+  /* Modal grande (lojinha) */
+  .modal-content.grande {
+    width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    padding: 12px;
+  }
+
+  /* Abas da lojinha */
+  .tabs-internas { gap: 4px; }
+  .tab-carac { padding: 5px 8px; font-size: 11px; }
+
+  /* Tabela do sistema */
+  .tabela-sistema { font-size: 12px; }
+  .tabela-sistema th,
+  .tabela-sistema td { padding: 6px 4px; }
+
+  /* Preview de orçamento */
+  .orcamento-preview { font-size: 12px; gap: 12px; padding: 8px 10px; }
+
+  /* PC display */
+  .pcs-display { font-size: 12px; gap: 10px; padding: 8px 10px; }
+
+  /* Section actions */
+  .section-actions { gap: 6px; }
+  .section-actions button { font-size: 12px; padding: 7px 10px; }
+
+  /* Perícias */
+  .pericia-label { font-size: 13px; padding: 7px 10px; }
+
+  /* Resumo de escolhas (card) */
+  .carac-resumo { font-size: 11px; }
+  .carac-resumo-label { min-width: 90px; }
+
+  /* Passivos */
+  .passivo-bloco { font-size: 12px; padding: 8px 10px; }
+
+  /* Raça/Profissão */
+  .raca-header { gap: 10px; }
+  .raca-emoji { font-size: 28px; }
+  .raca-header h2 { font-size: 17px; }
+
+  /* Index page */
+  .ficha-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .ficha-acoes { width: 100%; justify-content: flex-end; }
+}
+
+/* ── Tela muito pequena (até 380px) ─────────────────────── */
+@media (max-width: 380px) {
+  .tabs { gap: 3px; }
+  .tab { padding: 5px 7px; font-size: 11px; }
+  .circle { width: 78px; height: 78px; }
+  .circle input { font-size: 20px; }
+  .nivel-num { font-size: 20px; }
+}
+
+/* ── STATUS TEMPORÁRIO (acima do máximo) ─────────────────── */
+.bar input.status-over {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 4px rgba(255,255,255,0.5);
+}
+
+/* ── ABAS LOJINHA ISOLADA (espelho das tab-carac) ─────────── */
+.tab-iso {
+  padding: 6px 12px;
+  background: #334155;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+  user-select: none;
+}
+.tab-iso:hover  { background: #475569; }
+.tab-iso.active { background: #7c3aed; font-weight: 600; }
+
+.conteudo-iso        { display: none; }
+.conteudo-iso.active { display: block; }

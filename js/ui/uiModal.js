@@ -319,39 +319,65 @@ export function renderTabelaCarac(chave) {
   const config    = TABELAS[chave]
   const container = document.getElementById(`aba_${chave}`)
   if (!container) return
+
+  const tipo = config.tipo  // "empilhavel" | "empilhavel_mono" | "unico"
+  const grupoExclusivo = config.grupoExclusivo ?? null  // ex: "infligir"
+
   container.innerHTML = `<p style="opacity:0.6;font-size:13px;margin-bottom:8px">${config.descricao}</p>`
 
-  const empilhavel = config.tipo === "empilhavel"
+  // ── Linha de BASE GRATUITA ────────────────────────────────
+  if (config.base !== undefined) {
+    const baseRow = document.createElement("div")
+    baseRow.className = "base-gratuita"
+    baseRow.innerHTML = `<span>Base (gratuita):</span> <span>${config.base}</span>`
+    container.appendChild(baseRow)
+  }
+
+  const mostraQtd = tipo === "empilhavel" || tipo === "empilhavel_mono"
   const tabela = document.createElement("table")
   tabela.className = "tabela-sistema"
   tabela.innerHTML = `<thead><tr>
     <th>${config.label}</th><th>Orç.</th><th>PM</th>
-    ${empilhavel ? "<th>Qtd</th>" : ""}
+    ${mostraQtd ? "<th>Qtd</th>" : ""}
   </tr></thead>`
 
   const tbody = document.createElement("tbody")
+  const trPorItem = new Map()  // item → tr (para empilhavel_mono re-render)
 
   for (const item of config.dados) {
+    const chaveItem = item.nome ?? `+${item.valor}`  // identificador único da linha
     const estado = { qtd: 0 }
     const tr     = document.createElement("tr")
-    const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
-    const tdPm   = item.pm !== undefined ? (item.pm < 0 ? item.pm : `+${item.pm}`) : "-"
+    trPorItem.set(chaveItem, { tr, estado, item })
 
-    // Restaura contagem salva para empilháveis
-    if (empilhavel) {
-      estado.qtd = (_caracTemp.escolhas[chave] ?? [])
-        .filter(i => i.orcamento === item.orcamento).length
+    const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
+    const tdPm   = item.pm !== undefined ? (item.pm < 0 ? String(item.pm) : `+${item.pm}`) : "-"
+
+    // ── Restaura estado salvo ─────────────────────────────
+    const salvo = _caracTemp.escolhas[chave] ?? []
+    if (tipo === "empilhavel") {
+      estado.qtd = salvo.filter(i => (i.nome ?? `+${i.valor}`) === chaveItem).length
+    } else if (tipo === "empilhavel_mono") {
+      // mono: todas as escolhas salvas são do mesmo tipo (a linha selecionada)
+      estado.qtd = salvo.filter(i => (i.nome ?? `+${i.valor}`) === chaveItem).length
+    } else if (tipo === "unico") {
+      if (salvo.length && (salvo[0].nome ?? `+${salvo[0].valor}`) === chaveItem) {
+        tr.classList.add("selecionado")
+      }
     }
 
     tr.innerHTML = `
       <td>${tdNome}</td><td>${item.orcamento}</td><td>${tdPm}</td>
-      ${empilhavel ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
+      ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
+    tr.style.cursor = "pointer"
 
-    if (empilhavel) {
-      tr.style.cursor = "pointer"
+    // ── EMPILHAVEL normal ─────────────────────────────────
+    if (tipo === "empilhavel") {
       tr.addEventListener("click", e => {
         e.preventDefault()
+        // Grupo exclusivo: limpa a outra chave do grupo
+        if (grupoExclusivo) _limparGrupoExclusivo(grupoExclusivo, chave)
         estado.qtd++
         _caracTemp.escolhas[chave].push({ ...item })
         tr.querySelector(".qtd").innerText = estado.qtd
@@ -362,14 +388,58 @@ export function renderTabelaCarac(chave) {
         e.preventDefault()
         if (estado.qtd <= 0) return
         estado.qtd--
-        const idx = [..._caracTemp.escolhas[chave]].map(i => i.orcamento).lastIndexOf(item.orcamento)
+        const idx = _caracTemp.escolhas[chave].map(i => i.nome ?? `+${i.valor}`).lastIndexOf(chaveItem)
         if (idx !== -1) _caracTemp.escolhas[chave].splice(idx, 1)
         tr.querySelector(".qtd").innerText = estado.qtd
         _flashRow(tr, "vermelho")
         atualizarPreviewCarac()
       })
-    } else {
-      tr.style.cursor = "pointer"
+    }
+
+    // ── EMPILHAVEL_MONO: só empilha o mesmo tipo ──────────
+    else if (tipo === "empilhavel_mono") {
+      tr.addEventListener("click", e => {
+        e.preventDefault()
+        const atualChave = _caracTemp.escolhas[chave]?.[0]
+          ? (_caracTemp.escolhas[chave][0].nome ?? `+${_caracTemp.escolhas[chave][0].valor}`)
+          : null
+
+        // Troca de linha: zera estado de todas as linhas e reseta escolhas
+        if (atualChave && atualChave !== chaveItem) {
+          _caracTemp.escolhas[chave] = []
+          trPorItem.forEach(({ tr: outraTr, estado: outroEstado }) => {
+            outroEstado.qtd = 0
+            const q = outraTr.querySelector(".qtd")
+            if (q) q.innerText = 0
+            outraTr.classList.remove("selecionado")
+          })
+          _flashRow(tr, "vermelho")  // sinaliza descarte
+        }
+
+        // Empilha esta linha
+        estado.qtd++
+        _caracTemp.escolhas[chave].push({ ...item })
+        tr.querySelector(".qtd").innerText = estado.qtd
+        tr.classList.add("selecionado")
+        _flashRow(tr, "verde")
+        atualizarPreviewCarac()
+      })
+      tr.addEventListener("contextmenu", e => {
+        e.preventDefault()
+        if (estado.qtd <= 0) return
+        estado.qtd--
+        _caracTemp.escolhas[chave].pop()
+        tr.querySelector(".qtd").innerText = estado.qtd
+        if (estado.qtd === 0) tr.classList.remove("selecionado")
+        _flashRow(tr, "vermelho")
+        atualizarPreviewCarac()
+      })
+      // Marca como selecionada se tem itens
+      if (estado.qtd > 0) tr.classList.add("selecionado")
+    }
+
+    // ── UNICO ─────────────────────────────────────────────
+    else {
       tr.addEventListener("click", () => {
         _caracTemp.escolhas[chave] = [{ ...item }]
         tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
@@ -377,16 +447,41 @@ export function renderTabelaCarac(chave) {
         atualizarPreviewCarac()
       })
     }
+
     tbody.appendChild(tr)
   }
 
   tabela.appendChild(tbody)
   container.appendChild(tabela)
-  if (empilhavel) {
+
+  if (mostraQtd) {
     const dica = document.createElement("p")
     dica.style.cssText = "font-size:11px;opacity:0.4;margin-top:4px"
-    dica.innerText = "Clique esquerdo: adicionar • Clique direito: remover"
+    dica.innerText = tipo === "empilhavel_mono"
+      ? "Clique: adicionar stack • Clique direito: remover • Trocar linha descarta stack"
+      : "Clique esquerdo: adicionar • Clique direito: remover"
     container.appendChild(dica)
+  }
+
+  if (grupoExclusivo) {
+    const aviso = document.createElement("p")
+    aviso.style.cssText = "font-size:11px;opacity:0.55;margin-top:4px;color:#fbbf24"
+    aviso.innerText = "⚠️ Mutuamente exclusivo com a outra aba do grupo"
+    container.appendChild(aviso)
+  }
+}
+
+// Limpa todas as chaves do mesmo grupo exclusivo, exceto a atual
+function _limparGrupoExclusivo(grupo, chaveAtiva) {
+  for (const [k, cfg] of Object.entries(TABELAS)) {
+    if (k !== chaveAtiva && cfg.grupoExclusivo === grupo) {
+      if (_caracTemp.escolhas[k]?.length) {
+        _caracTemp.escolhas[k] = []
+        // Re-renderiza a aba afetada para atualizar qtd visualmente
+        renderTabelaCarac(k)
+        toastAviso("Stack de '" + cfg.label + "' descartado (mutuamente exclusivo).")
+      }
+    }
   }
 }
 
@@ -481,3 +576,363 @@ export function trocarAbaCarac(i) {
 
 export function abrirModal(id) { document.getElementById(id)?.classList.remove("hidden") }
 export function fecharModal(id) { document.getElementById(id)?.classList.add("hidden") }
+
+// ─────────────────────────────────────────────────────────
+//  CARACTERÍSTICA ISOLADA (sem fonte de poder)
+// ─────────────────────────────────────────────────────────
+
+let _onSalvarIsolada  = null
+let _isoladaEditIndex = null
+let _isoladaTemp      = null
+
+export function registrarCallbackIsolada(fn) { _onSalvarIsolada = fn }
+
+export function abrirCriarCaracteristicaIsolada(editIndex = null, existente = null) {
+  _isoladaEditIndex = editIndex
+  _isoladaTemp = {
+    escala:   existente?.escala ?? 1,
+    escolhas: Object.fromEntries(
+      Object.keys(TABELAS).map(k => [k, existente?.escolhas?.[k] ? [...existente.escolhas[k]] : []])
+    )
+  }
+
+  document.getElementById("isoladaNome").value      = existente?.nome      ?? ""
+  document.getElementById("isoladaDescricao").value = existente?.descricao ?? ""
+  document.getElementById("isoladaOrigem").value    = existente?.origem    ?? ""
+  document.getElementById("isoladaEscala").value    = _isoladaTemp.escala
+  document.getElementById("isoladaCustoPT").value   = existente?.custoPT   ?? 0
+
+  const ficha     = _getFicha?.()
+  const escalaMax = ficha?.escalaMax ?? 6
+  const info      = document.getElementById("isoladaEscalaInfo")
+  if (info) info.innerText = `(máx. ${escalaMax} pelo nível)`
+  document.getElementById("isoladaEscala").max = escalaMax
+
+  const titulo = document.getElementById("modalIsoladaTitulo")
+  if (titulo) titulo.innerText = editIndex !== null ? "✏️ Editar Característica Isolada" : "⚡ Criar Característica Isolada"
+
+  _atualizarPreviewIsolada()
+  abrirModal("modalCaracIsolada")
+}
+
+export function atualizarEscalaIsolada() {
+  const nova  = +document.getElementById("isoladaEscala").value || 1
+  const ficha = _getFicha?.()
+  if (ficha && nova > ficha.escalaMax) {
+    toastErro(`Escala máxima pelo nível: ${ficha.escalaMax}`)
+    document.getElementById("isoladaEscala").value = _isoladaTemp?.escala ?? 1
+    return
+  }
+  if (_isoladaTemp) {
+    _isoladaTemp.escala  = nova
+    // Reseta escolhas ao trocar escala para não ultrapassar orçamento
+    _isoladaTemp.escolhas = Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+  }
+  _atualizarPreviewIsolada()
+}
+
+function _atualizarPreviewIsolada() {
+  const escala = _isoladaTemp?.escala ?? 1
+  const limite = ORCAMENTO_POR_ESCALA[escala] ?? 10
+  const gasto  = _calcularGastoIsolada()
+  const pm     = _calcularPMIsolada()
+
+  const elMax   = document.getElementById("isoladaOrcMax")
+  const elGasto = document.getElementById("isoladaOrcGasto")
+  const elPM    = document.getElementById("isoladaOrcPM")
+  const elInfo  = document.getElementById("isoladaEscalaInfo")
+
+  if (elMax)   elMax.innerText  = limite
+  if (elGasto) { elGasto.innerText = gasto; elGasto.style.color = gasto > limite ? "#ef4444" : "#22c55e" }
+  if (elPM)    elPM.innerText   = pm
+  if (elInfo)  {
+    const ficha = _getFicha?.()
+    elInfo.innerText = `(máx. ${ficha?.escalaMax ?? 6} pelo nível)`
+  }
+}
+
+function _calcularGastoIsolada() {
+  if (!_isoladaTemp?.escolhas) return 0
+  let t = 0
+  for (const lista of Object.values(_isoladaTemp.escolhas)) for (const item of lista) t += item.orcamento ?? 0
+  return t
+}
+
+function _calcularPMIsolada() {
+  if (!_isoladaTemp?.escolhas) return 2
+  let t = 0
+  for (const lista of Object.values(_isoladaTemp.escolhas)) for (const item of lista) t += item.pm ?? 0
+  return Math.max(2, t)
+}
+
+export function confirmarCaracIsolada() {
+  const nome = document.getElementById("isoladaNome").value?.trim()
+  if (!nome) { toastErro("Digite um nome para a característica."); return }
+
+  const escala  = +document.getElementById("isoladaEscala").value  || 1
+  const custoPT = +document.getElementById("isoladaCustoPT").value || 0
+  const ficha   = _getFicha?.()
+  if (ficha && escala > ficha.escalaMax) {
+    toastErro(`Escala máxima pelo nível: ${ficha.escalaMax}`)
+    return
+  }
+
+  const gasto  = _calcularGastoIsolada()
+  const limite = ORCAMENTO_POR_ESCALA[escala]
+  if (gasto > limite) {
+    toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}. Ajuste as tabelas.`)
+    return
+  }
+
+  const c = new Caracteristica({
+    nome,
+    descricao: document.getElementById("isoladaDescricao").value,
+    origem:    document.getElementById("isoladaOrigem").value,
+    escala,
+    custoPT,
+    escolhas:  _isoladaTemp?.escolhas ?? {},
+    custo:     gasto,
+    custoPM:   _calcularPMIsolada()
+  })
+
+  _onSalvarIsolada?.(c, _isoladaEditIndex)
+  fecharModal("modalCaracIsolada")
+  toastSucesso(_isoladaEditIndex !== null ? "Característica atualizada!" : "Característica isolada criada!")
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOJINHA ISOLADA — lógica COMPLETAMENTE separada da fonte
+//  Usa seus próprios elementos DOM (iso_aba_*, isoOrc*, etc.)
+// ═══════════════════════════════════════════════════════════
+
+let _isoEscolhas = {}   // estado interno das escolhas da lojinha isolada
+let _isoEscala   = 1    // escala corrente
+
+// ── Abas ────────────────────────────────────────────────────
+export function trocarAbaIso(i) {
+  document.querySelectorAll(".tab-iso").forEach(t => t.classList.remove("active"))
+  document.querySelectorAll(".conteudo-iso").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".tab-iso")[i]?.classList.add("active")
+  document.querySelectorAll(".conteudo-iso")[i]?.classList.add("active")
+}
+
+// ── Preview de orçamento ────────────────────────────────────
+function _isoAtualizarPreview() {
+  const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
+  let gasto = 0, pm = 0
+  for (const lista of Object.values(_isoEscolhas)) {
+    for (const item of lista) { gasto += item.orcamento ?? 0; pm += item.pm ?? 0 }
+  }
+  pm = Math.max(2, pm)
+
+  const elTotal = document.getElementById("isoOrcTotal")
+  const elGasto = document.getElementById("isoOrcGasto")
+  const elPM    = document.getElementById("isoOrcPM")
+  if (elTotal) elTotal.innerText = limite
+  if (elGasto) { elGasto.innerText = gasto; elGasto.style.color = gasto > limite ? "#ef4444" : "#22c55e" }
+  if (elPM)    elPM.innerText    = pm
+}
+
+// ── Render de uma aba da lojinha isolada ────────────────────
+function _isoRenderAba(chave) {
+  const config    = TABELAS[chave]
+  const container = document.getElementById(`iso_aba_${chave}`)
+  if (!container || !config) return
+
+  const tipo           = config.tipo
+  const grupoExclusivo = config.grupoExclusivo ?? null
+
+  container.innerHTML = `<p style="opacity:0.6;font-size:13px;margin-bottom:8px">${config.descricao}</p>`
+
+  if (config.base !== undefined) {
+    const baseRow = document.createElement("div")
+    baseRow.className = "base-gratuita"
+    baseRow.innerHTML = `<span>Base (gratuita):</span><span>${config.base}</span>`
+    container.appendChild(baseRow)
+  }
+
+  const mostraQtd = tipo === "empilhavel" || tipo === "empilhavel_mono"
+  const tabela = document.createElement("table")
+  tabela.className = "tabela-sistema"
+  tabela.innerHTML = `<thead><tr>
+    <th>${config.label}</th><th>Orç.</th><th>PM</th>
+    ${mostraQtd ? "<th>Qtd</th>" : ""}
+  </tr></thead>`
+
+  const tbody     = document.createElement("tbody")
+  const trPorItem = new Map()
+
+  if (!_isoEscolhas[chave]) _isoEscolhas[chave] = []
+
+  for (const item of config.dados) {
+    const chaveItem = item.nome ?? `+${item.valor}`
+    const estado    = { qtd: 0 }
+    const tr        = document.createElement("tr")
+    trPorItem.set(chaveItem, { tr, estado, item })
+
+    const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
+    const tdPm   = item.pm !== undefined ? (item.pm < 0 ? String(item.pm) : `+${item.pm}`) : "-"
+
+    const salvo = _isoEscolhas[chave]
+    if (tipo === "empilhavel" || tipo === "empilhavel_mono") {
+      estado.qtd = salvo.filter(i => (i.nome ?? `+${i.valor}`) === chaveItem).length
+    } else if (tipo === "unico") {
+      if (salvo.length && (salvo[0].nome ?? `+${salvo[0].valor}`) === chaveItem) {
+        tr.classList.add("selecionado")
+      }
+    }
+
+    tr.innerHTML = `
+      <td>${tdNome}</td><td>${item.orcamento}</td><td>${tdPm}</td>
+      ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
+    `
+    tr.style.cursor = "pointer"
+
+    if (tipo === "empilhavel") {
+      tr.addEventListener("click", e => {
+        e.preventDefault()
+        if (grupoExclusivo) _isoLimparGrupo(grupoExclusivo, chave)
+        estado.qtd++
+        _isoEscolhas[chave].push({ ...item })
+        tr.querySelector(".qtd").innerText = estado.qtd
+        _isoFlash(tr, "verde")
+        _isoAtualizarPreview()
+      })
+      tr.addEventListener("contextmenu", e => {
+        e.preventDefault()
+        if (estado.qtd <= 0) return
+        estado.qtd--
+        const idx = _isoEscolhas[chave].map(i => i.nome ?? `+${i.valor}`).lastIndexOf(chaveItem)
+        if (idx !== -1) _isoEscolhas[chave].splice(idx, 1)
+        tr.querySelector(".qtd").innerText = estado.qtd
+        _isoFlash(tr, "vermelho")
+        _isoAtualizarPreview()
+      })
+    } else if (tipo === "empilhavel_mono") {
+      tr.addEventListener("click", e => {
+        e.preventDefault()
+        const atualChave = _isoEscolhas[chave]?.[0]
+          ? (_isoEscolhas[chave][0].nome ?? `+${_isoEscolhas[chave][0].valor}`)
+          : null
+        if (atualChave && atualChave !== chaveItem) {
+          _isoEscolhas[chave] = []
+          trPorItem.forEach(({ tr: outra, estado: outroEst }) => {
+            outroEst.qtd = 0
+            const q = outra.querySelector(".qtd"); if (q) q.innerText = 0
+            outra.classList.remove("selecionado")
+          })
+          _isoFlash(tr, "vermelho")
+        }
+        estado.qtd++
+        _isoEscolhas[chave].push({ ...item })
+        tr.querySelector(".qtd").innerText = estado.qtd
+        tr.classList.add("selecionado")
+        _isoFlash(tr, "verde")
+        _isoAtualizarPreview()
+      })
+      tr.addEventListener("contextmenu", e => {
+        e.preventDefault()
+        if (estado.qtd <= 0) return
+        estado.qtd--
+        _isoEscolhas[chave].pop()
+        tr.querySelector(".qtd").innerText = estado.qtd
+        if (estado.qtd === 0) tr.classList.remove("selecionado")
+        _isoFlash(tr, "vermelho")
+        _isoAtualizarPreview()
+      })
+      if (estado.qtd > 0) tr.classList.add("selecionado")
+    } else {
+      tr.addEventListener("click", () => {
+        _isoEscolhas[chave] = [{ ...item }]
+        tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
+        tr.classList.add("selecionado")
+        _isoAtualizarPreview()
+      })
+    }
+
+    tbody.appendChild(tr)
+  }
+
+  tabela.appendChild(tbody)
+  container.appendChild(tabela)
+
+  if (mostraQtd) {
+    const dica = document.createElement("p")
+    dica.style.cssText = "font-size:11px;opacity:0.4;margin-top:4px"
+    dica.innerText = tipo === "empilhavel_mono"
+      ? "Clique: adicionar stack • Clique direito: remover • Trocar linha descarta stack"
+      : "Clique esquerdo: adicionar • Clique direito: remover"
+    container.appendChild(dica)
+  }
+
+  if (grupoExclusivo) {
+    const aviso = document.createElement("p")
+    aviso.style.cssText = "font-size:11px;opacity:0.55;margin-top:4px;color:#fbbf24"
+    aviso.innerText = "⚠️ Mutuamente exclusivo com a outra aba do grupo"
+    container.appendChild(aviso)
+  }
+}
+
+function _isoLimparGrupo(grupo, chaveAtiva) {
+  for (const [k, cfg] of Object.entries(TABELAS)) {
+    if (k !== chaveAtiva && cfg.grupoExclusivo === grupo) {
+      if (_isoEscolhas[k]?.length) {
+        _isoEscolhas[k] = []
+        _isoRenderAba(k)
+        toastAviso("Stack de '" + cfg.label + "' descartado (mutuamente exclusivo).")
+      }
+    }
+  }
+}
+
+function _isoFlash(tr, cor) {
+  const bg = cor === "verde" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"
+  tr.style.transition = "background 0s"
+  tr.style.background = bg
+  setTimeout(() => { tr.style.transition = "background 0.7s"; tr.style.background = "" }, 30)
+}
+
+// ── Abrir lojinha isolada ────────────────────────────────────
+export function abrirLojinhaIsoladaModal(existente = null) {
+  const nome   = document.getElementById("isoladaNome")?.value ?? ""
+  const escala = +document.getElementById("isoladaEscala")?.value || 1
+
+  _isoEscala   = escala
+  // Carrega escolhas já salvas (se estiver editando) ou zera
+  _isoEscolhas = existente?.escolhas
+    ? JSON.parse(JSON.stringify(existente.escolhas))
+    : Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+  // Garante que escolhas do temp isolado sejam sincronizadas
+  if (_isoladaTemp?.escolhas) {
+    _isoEscolhas = JSON.parse(JSON.stringify(_isoladaTemp.escolhas))
+  }
+
+  const ficha     = _getFicha?.()
+  const escalaMax = ficha?.escalaMax ?? 6
+
+  const elNome   = document.getElementById("isoLojNome")
+  const elEscala = document.getElementById("isoLojEscala")
+  const elInfo   = document.getElementById("isoLojEscalaInfo")
+  if (elNome)   elNome.value   = nome
+  if (elEscala) elEscala.value = escala
+  if (elInfo)   elInfo.innerText = `(máx. ${escalaMax} pelo nível)`
+
+  for (const chave of Object.keys(TABELAS)) _isoRenderAba(chave)
+  trocarAbaIso(0)
+  _isoAtualizarPreview()
+  abrirModal("modalIsoladaLojinha")
+}
+
+// ── Confirmar (salva escolhas de volta ao _isoladaTemp) ──────
+export function confirmarIsoladaLojinha() {
+  const gasto  = Object.values(_isoEscolhas).flat().reduce((s, i) => s + (i.orcamento ?? 0), 0)
+  const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
+  if (gasto > limite) {
+    toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`)
+    return
+  }
+  if (_isoladaTemp) _isoladaTemp.escolhas = JSON.parse(JSON.stringify(_isoEscolhas))
+  _atualizarPreviewIsolada()
+  fecharModal("modalIsoladaLojinha")
+  toastSucesso("Tabelas configuradas!")
+}

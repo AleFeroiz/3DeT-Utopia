@@ -14,14 +14,18 @@ export class Caracteristica {
   constructor({
     nome      = "Nova Característica",
     descricao = "",
+    origem    = "",
     escala    = 1,
+    custoPT   = 0,
     escolhas  = {},
     custo     = 0,
     custoPM   = 2
   } = {}) {
     this.nome      = nome
     this.descricao = descricao
+    this.origem    = origem    // para características isoladas
     this.escala    = escala
+    this.custoPT   = custoPT   // custo em PT (para isoladas)
     this.escolhas  = escolhas
     this.custo     = custo
     this.custoPM   = Math.max(2, custoPM)

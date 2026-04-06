@@ -21,7 +21,7 @@
     </div>
 
     <div class="pontos">
-      Pontos gastos: <span id="usado">0</span> / <span id="total" class="total-editavel" contenteditable="true" title="Clique para editar o total de pontos">10</span>
+      Pontos gastos: <span id="usado" class="total-editavel" contenteditable="true" title="Clique para editar pontos gastos">0</span> <span id="gastosOffset" style="font-size:11px;opacity:0.5"></span> / <span id="total" class="total-editavel" contenteditable="true" title="Clique para editar o total de pontos">10</span> &nbsp;<span id="pontosOffset" style="font-size:11px;opacity:0.5"></span>
       &nbsp;|&nbsp; Restante: <span id="restante">10</span>
     </div>
 
@@ -91,8 +91,10 @@
     <div class="section">
       <div class="section-actions">
         <button onclick="criarFonte()">🍎 Criar Fonte de Poder</button>
+        <button onclick="criarCaracteristicaIsolada()">⚡ Criar Característica Isolada</button>
       </div>
       <div id="listaFontes"></div>
+      <div id="listaCaracteristicasIsoladas"></div>
     </div>
 
     <!-- ABA 6: RAÇA -->
@@ -130,6 +132,12 @@
       </div>
       <div id="nivelInfo"      class="nivel-info"></div>
       <div id="nivelRecompensa" class="nivel-recompensa" style="display:none"></div>
+      <div class="maestria-sidebar">
+        <span class="maestria-sidebar-label">Maestrias:</span>
+        <span id="maestriaAtual" class="max-editavel" contenteditable="true" title="Clique para editar maestrias atuais">0</span>
+        <span>/</span>
+        <span id="maestriaLimite" class="max-editavel" contenteditable="true" title="Clique para editar o limite de maestrias">0</span>
+      </div>
     </div>
 
     <hr style="border-color:#334155;margin:4px 0">
@@ -327,6 +335,53 @@
   </div>
 </div>
 
+<!-- ══ MODAL: LOJINHA CARACTERÍSTICA ISOLADA ════════════════ -->
+<div id="modalIsoladaLojinha" class="modal hidden" style="z-index:150">
+  <div class="modal-content grande">
+    <h2 id="isoladaLojinhaTitulo">⚡ Tabelas — Característica Isolada</h2>
+    <div class="carac-header">
+      <div style="flex:2">
+        <label>Nome</label>
+        <input id="isoLojNome" placeholder="Ex: Conqueror's Haki" disabled style="opacity:0.6;cursor:default">
+      </div>
+      <div style="flex:1">
+        <label>Escala <span id="isoLojEscalaInfo" style="opacity:0.5;font-size:11px"></span></label>
+        <input id="isoLojEscala" type="number" value="1" min="1" max="6" disabled style="opacity:0.6;cursor:default">
+      </div>
+    </div>
+    <div class="tabs-internas">
+      <div class="tab-iso active" onclick="trocarAbaIso(0)">Potência</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(1)">Pressão</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(2)">Execução</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(3)">Alcance</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(4)">Duração</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(5)">Área</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(6)">Alvos</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(7)">Condições</div>
+      <div class="tab-iso"        onclick="trocarAbaIso(8)">Descontos</div>
+    </div>
+    <div class="conteudo-iso active" id="iso_aba_potencia"></div>
+    <div class="conteudo-iso"        id="iso_aba_pressao"></div>
+    <div class="conteudo-iso"        id="iso_aba_execucao"></div>
+    <div class="conteudo-iso"        id="iso_aba_alcance"></div>
+    <div class="conteudo-iso"        id="iso_aba_duracao"></div>
+    <div class="conteudo-iso"        id="iso_aba_area"></div>
+    <div class="conteudo-iso"        id="iso_aba_alvos"></div>
+    <div class="conteudo-iso"        id="iso_aba_condicoes"></div>
+    <div class="conteudo-iso"        id="iso_aba_descontos"></div>
+    <hr>
+    <div class="orcamento-preview">
+      <span>Orçamento: <strong id="isoOrcTotal">10</strong></span>
+      <span>Gasto: <strong id="isoOrcGasto" style="color:#22c55e">0</strong></span>
+      <span>PM total: <strong id="isoOrcPM">2</strong></span>
+    </div>
+    <div class="modal-actions">
+      <button onclick="confirmarIsoladaLojinha()">✅ Confirmar</button>
+      <button onclick="fecharIsoladaLojinha()" style="background:#475569">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Escolher Raça -->
 <div id="modalEscolhaRaca" class="modal hidden">
   <div class="modal-content">
@@ -349,6 +404,39 @@
   </div>
 </div>
 
+
+<!-- ══ MODAL: CARACTERÍSTICA ISOLADA ═══════════════════════ -->
+<div id="modalCaracIsolada" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalIsoladaTitulo">⚡ Criar Característica Isolada</h2>
+    <label>Nome</label>
+    <input id="isoladaNome" placeholder="Ex: Conqueror's Haki">
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px">
+        <label>Escala (1–6) <span id="isoladaEscalaInfo" style="opacity:0.5;font-size:11px"></span></label>
+        <input type="number" id="isoladaEscala" value="1" min="1" max="6" oninput="atualizarEscalaIsolada()">
+      </div>
+      <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px">
+        <label>Custo em PT <span style="opacity:0.5;font-size:11px">(0 = gratuita)</span></label>
+        <input type="number" id="isoladaCustoPT" value="0" min="0">
+      </div>
+    </div>
+    <label>Origem / Fonte</label>
+    <textarea id="isoladaOrigem" placeholder="Ex: Fruto do Diabo herdado de Xebec, treinamento com Silvers Rayleigh..." style="min-height:55px"></textarea>
+    <label>Descrição</label>
+    <textarea id="isoladaDescricao" placeholder="Descreva o efeito narrativo..." style="min-height:55px"></textarea>
+    <div id="isoladaOrcamentoPreview" class="orcamento-preview" style="font-size:13px">
+      <span>Orç. máx: <strong id="isoladaOrcMax">10</strong></span>
+      <span>Gasto: <strong id="isoladaOrcGasto" style="color:#22c55e">0</strong></span>
+      <span>PM: <strong id="isoladaOrcPM">2</strong></span>
+    </div>
+    <button onclick="abrirLojinhaIsolada()" style="background:#7c3aed;border:none;color:white;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;width:100%;margin-top:4px">🛒 Configurar Tabelas de Poder</button>
+    <div class="modal-actions">
+      <button onclick="confirmarCaracIsolada()">✅ Salvar</button>
+      <button onclick="fecharModal('modalCaracIsolada')" style="background:#475569">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

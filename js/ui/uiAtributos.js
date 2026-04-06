@@ -55,14 +55,49 @@ export function atualizarBarras(ficha) {
   const pmMax = ficha.status.pm.max || 1
   const pvMax = ficha.status.pv.max || 1
 
-  setBarraLargura("paFill", paAtual / paMax)
-  setBarraLargura("pmFill", pmAtual / pmMax)
-  setBarraLargura("pvFill", pvAtual / pvMax)
+  _setBarraStatus("paFill", "paBackground", paAtual, paMax,
+    { normal: "linear-gradient(90deg,#1d4ed8,#3b82f6)", over: "linear-gradient(90deg,#38bdf8,#bfdbfe)" })
+  _setBarraStatus("pmFill", "pmBackground", pmAtual, pmMax,
+    { normal: "linear-gradient(90deg,#7e22ce,#a855f7)", over: "linear-gradient(90deg,#e879f9,#f5d0fe)" })
+  _setBarraStatus("pvFill", "pvBackground", pvAtual, pvMax,
+    { normal: "linear-gradient(90deg,#991b1b,#ef4444)", over: "linear-gradient(90deg,#fb923c,#fde68a)" })
 }
 
-function setBarraLargura(id, ratio) {
-  const pct = Math.min(Math.max(ratio * 100, 0), 100).toFixed(1)
-  document.getElementById(id).style.width = pct + "%"
+function _setBarraStatus(fillId, bgId, atual, max, colors) {
+  const fill = document.getElementById(fillId)
+  const bg   = document.getElementById(bgId)
+  if (!fill) return
+
+  const over  = atual > max
+  const ratio = over ? 1 : (atual / max)
+  fill.style.width      = Math.min(ratio * 100, 100).toFixed(1) + "%"
+  fill.style.background = over ? colors.over : colors.normal
+
+  if (over) {
+    fill.style.boxShadow = "0 0 6px 1px rgba(255,255,255,0.18)"
+    fill.style.filter    = "brightness(1.1)"
+    if (bg) {
+      bg.style.outline    = "1px solid rgba(255,255,255,0.18)"
+      bg.style.borderRadius = "6px"
+    }
+  } else {
+    fill.style.boxShadow = ""
+    fill.style.filter    = ""
+    if (bg) {
+      bg.style.outline = ""
+    }
+  }
+
+  // Estiliza o input numérico dentro da barra
+  const inputId = bgId.replace("Background", "Atual")
+  const input   = document.getElementById(inputId)
+  if (input) {
+    if (over) {
+      input.classList.add("status-over")
+    } else {
+      input.classList.remove("status-over")
+    }
+  }
 }
 
 /** Atualiza o contador de pontos no topo */
@@ -71,16 +106,32 @@ export function renderPontos(ficha) {
   const total    = ficha.pontos.total
   const restante = total - gastos
 
-  document.getElementById("usado").innerText = gastos
+  // "usado" (gastos) — contenteditable com offset
+  const usadoEl = document.getElementById("usado")
+  if (usadoEl && document.activeElement !== usadoEl) {
+    usadoEl.innerText = gastos
+    const offsetG = ficha.pontos.offsetGastos ?? 0
+    usadoEl.style.color = offsetG !== 0 ? "#fbbf24" : ""
+    usadoEl.title       = offsetG !== 0
+      ? `Auto: ${ficha.pontos.gastosAuto} + offset: ${offsetG > 0 ? "+" : ""}${offsetG}`
+      : "Clique para editar pontos gastos"
+  }
 
-  // Total é contenteditable — só atualiza se não estiver em foco
+  // Indicador de offset nos gastos
+  const gastosOffEl = document.getElementById("gastosOffset")
+  if (gastosOffEl) {
+    const off = ficha.pontos.offsetGastos ?? 0
+    gastosOffEl.textContent = off !== 0 ? `(base ${ficha.pontos.gastosAuto} ${off > 0 ? "+" : ""}${off})` : ""
+  }
+
+  // "total" — contenteditable com offset
   const totalEl = document.getElementById("total")
   if (totalEl && document.activeElement !== totalEl) {
     totalEl.innerText  = total
     const offset = ficha.pontos.offsetTotal ?? 0
     totalEl.style.color = offset !== 0 ? "#fbbf24" : ""
     totalEl.title       = offset !== 0
-      ? `Auto (nível ${ficha.nivel}): ${ficha.pontos.totalAuto} + offset: ${offset > 0 ? "+" : ""}${offset}`
+      ? `Auto (nível ${ficha.nivel}): ${ficha.pontos.totalAuto} ${offset > 0 ? "+" : ""}${offset}`
       : "Clique para editar o total de pontos"
   }
 

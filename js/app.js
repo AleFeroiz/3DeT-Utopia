@@ -6,12 +6,15 @@ import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 
 import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras } from "./ui/uiAtributos.js"
-import { renderElementos, renderPericias } from "./ui/uiElementos.js"
+import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
 import {
   registrarCallbacks, abrirListaLivro, abrirCriarElemento, confirmarCriacaoElemento,
   abrirCriarFonte, atualizarCustoFonte, atualizarSubtipoFonte, confirmarSalvarFonte,
   abrirCriarCaracteristica, atualizarEscala, confirmarCriarCaracteristica,
-  renderCaracteristicasFonte, trocarAbaCarac, fecharModal, atualizarPreviewCarac
+  renderCaracteristicasFonte, trocarAbaCarac, fecharModal, atualizarPreviewCarac,
+  registrarCallbackIsolada, abrirCriarCaracteristicaIsolada,
+  atualizarEscalaIsolada, confirmarCaracIsolada,
+  abrirLojinhaIsoladaModal, confirmarIsoladaLojinha, trocarAbaIso
 } from "./ui/uiModal.js"
 import {
   registrarCallbackRacaProf, renderSidebarRacaProf,
@@ -52,6 +55,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     getFicha: () => ficha
   })
 
+  registrarCallbackIsolada((carac, editIndex) => {
+    if (!ficha.caracteristicasIsoladas) ficha.caracteristicasIsoladas = []
+    if (editIndex !== null && editIndex !== undefined) {
+      ficha.caracteristicasIsoladas[editIndex] = carac
+    } else {
+      ficha.caracteristicasIsoladas.push(carac)
+    }
+    renderTudo(); salvar()
+  })
+
   registrarCallbackRacaProf((dados) => {
     Object.assign(ficha, dados)
     renderTudo(); salvar()
@@ -70,6 +83,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ─────────────────────────────────────────────────────────
 //  RENDER CENTRAL
 // ─────────────────────────────────────────────────────────
+function _renderPericias() {
+  renderPericias(ficha,
+    (id) => { ficha.togglePericia(id); _renderPericias(); renderPontos(ficha); salvar() },
+    (id) => {
+      const res = ficha.toggleMaestria(id)
+      if (!res.ok) { toastAviso(res.motivo); return }
+      _renderPericias(); renderPontos(ficha); salvar()
+      toastSucesso(ficha.maestrias[id] ? "Maestria aplicada! (2 PT)" : "Maestria removida.")
+    }
+  )
+}
+
 function renderTudo() {
   renderAtributos(ficha)
   renderStatus(ficha)
@@ -78,20 +103,36 @@ function renderTudo() {
   renderSidebarRacaProf(ficha)
   renderAbaRaca(ficha)
   renderAbaProfissao(ficha)
-  renderPericias(ficha,
-    (id) => { ficha.togglePericia(id); renderPericias(ficha, ...arguments); renderPontos(ficha); salvar() },
-    (id) => {
-      const res = ficha.toggleMaestria(id)
-      if (!res.ok) { toastAviso(res.motivo); return }
-      renderPericias(ficha, ...arguments); renderPontos(ficha); salvar()
-      toastSucesso(ficha.maestrias[id] ? "Maestria aplicada!" : "Maestria removida.")
-    }
-  )
+  const _onTogglePericia = (id) => {
+    ficha.togglePericia(id)
+    _renderPericias()
+    renderPontos(ficha)
+    salvar()
+  }
+  const _onToggleMaestria = (id) => {
+    const res = ficha.toggleMaestria(id)
+    if (!res.ok) { toastAviso(res.motivo); return }
+    _renderPericias()
+    renderPontos(ficha)
+    salvar()
+    toastSucesso(ficha.maestrias[id] ? "Maestria aplicada! (2 PT)" : "Maestria removida.")
+  }
+  renderPericias(ficha, _onTogglePericia, _onToggleMaestria)
   renderElementos(ficha, {
     onEditar:       (id) => { const el = ficha.encontrarElemento(id); if (el) abrirCriarElemento(el.tipo, el) },
     onRemover:      (id) => { ficha.removerElemento(id); renderTudo(); salvar() },
     onEditarFonte:  (id) => { const f = ficha.encontrarElemento(id); if (f) abrirCriarFonte(f) },
     onExpandirFonte:(id) => { const f = ficha.encontrarElemento(id); if (f) _abrirExpandirFonte(f) }
+  })
+  renderCaracteristicasIsoladas(ficha, {
+    onEditar:  (i) => {
+      const c = ficha.caracteristicasIsoladas?.[i]
+      if (c) abrirCriarCaracteristicaIsolada(i, c)
+    },
+    onRemover: (i) => {
+      ficha.caracteristicasIsoladas?.splice(i, 1)
+      renderTudo(); salvar()
+    }
   })
   _atualizarUILogin()
 }
@@ -99,16 +140,35 @@ function renderTudo() {
 function _renderNivel() {
   const el = document.getElementById("nivelAtual")
   if (el) el.textContent = ficha.nivel
+
   const info = document.getElementById("nivelInfo")
   if (info) {
     const d = ficha.dadosNivel
-    info.textContent = `Escala máx: ${d.escalaMax} | Maestrias: ${ficha.totalMaestrias}/${d.maestriaLimite}`
+    info.textContent = `Escala máx: ${d.escalaMax}`
   }
+
   const recomp = document.getElementById("nivelRecompensa")
   if (recomp) {
     const d = ficha.dadosNivel
     recomp.textContent = d.recompensa || ""
     recomp.style.display = d.recompensa ? "block" : "none"
+  }
+
+  // Maestria sidebar — editable spans
+  const mAtual  = document.getElementById("maestriaAtual")
+  const mLimite = document.getElementById("maestriaLimite")
+  if (mAtual  && document.activeElement !== mAtual)  mAtual.innerText  = ficha.totalMaestrias
+  if (mLimite && document.activeElement !== mLimite) {
+    const offset = ficha.maestras?.offsetLimite ?? 0
+    mLimite.innerText  = ficha.maestraLimite
+    mLimite.style.color = offset !== 0 ? "#fbbf24" : ""
+  }
+
+  // Pontos offset hint
+  const offEl = document.getElementById("pontosOffset")
+  if (offEl) {
+    const off = ficha.pontos.offsetTotal ?? 0
+    offEl.textContent = off !== 0 ? `(base ${ficha.pontos.totalAuto} ${off > 0 ? "+" : ""}${off})` : ""
   }
 }
 
@@ -173,6 +233,39 @@ function _bindStatusInputs() {
     el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
   }
   bindMax("paMax", "pa"); bindMax("pmMax", "pm"); bindMax("pvMax", "pv")
+
+  // Bind "usado" (pontos gastos) — editável com offset
+  const usadoEl = document.getElementById("usado")
+  if (usadoEl) {
+    usadoEl.addEventListener("blur", () => {
+      const val = parseInt(usadoEl.innerText.trim(), 10)
+      if (!isNaN(val) && val >= 0) {
+        ficha.setGastosManual(val)
+        renderPontos(ficha); salvar()
+      } else {
+        usadoEl.innerText = ficha.pontos.gastos
+      }
+    })
+    usadoEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); usadoEl.blur() } })
+    usadoEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
+
+  // Bind maestria atual (readonly display — não é editável diretamente, calculado)
+  // Bind maestria LIMITE — offset sobre o automático do nível
+  const mLimiteEl = document.getElementById("maestriaLimite")
+  if (mLimiteEl) {
+    mLimiteEl.addEventListener("blur", () => {
+      const val = parseInt(mLimiteEl.innerText.trim(), 10)
+      if (!isNaN(val) && val >= 0) {
+        ficha.setMaestraLimiteManual(val)
+        _renderNivel(); salvar()
+      } else {
+        mLimiteEl.innerText = ficha.maestraLimite
+      }
+    })
+    mLimiteEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mLimiteEl.blur() } })
+    mLimiteEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
 
   // Bind pontos total — sistema de OFFSET: total = ptTotal(nível) + offsetTotal
   const totalEl = document.getElementById("total")
@@ -325,7 +418,14 @@ function expor() {
   window.confirmarCriacao = () => { confirmarCriacaoElemento(); renderTudo(); salvar() }
 
   // Fontes
-  window.criarFonte               = () => abrirCriarFonte(null)
+  window.criarFonte                     = () => abrirCriarFonte(null)
+  window.criarCaracteristicaIsolada     = () => abrirCriarCaracteristicaIsolada(null, null)
+  window.confirmarCaracIsolada          = confirmarCaracIsolada
+  window.atualizarEscalaIsolada         = atualizarEscalaIsolada
+  window.abrirLojinhaIsolada            = () => abrirLojinhaIsoladaModal()
+  window.confirmarIsoladaLojinha        = confirmarIsoladaLojinha
+  window.fecharIsoladaLojinha           = () => fecharModal("modalIsoladaLojinha")
+  window.trocarAbaIso                   = trocarAbaIso
   window.salvarFonte              = confirmarSalvarFonte
   window.atualizarCustoFonte      = atualizarCustoFonte
   window.atualizarSubtipoFonte    = atualizarSubtipoFonte
@@ -345,8 +445,7 @@ function expor() {
     const inputId = chave + 'Atual'
     const el = document.getElementById(inputId)
     if (!el) return
-    const max = ficha.status[chave].max || 999
-    const novo = Math.max(0, Math.min(max, (ficha.status[chave].atual || 0) + delta))
+    const novo = Math.max(0, (ficha.status[chave].atual || 0) + delta)
     ficha.status[chave].atual = novo
     el.value = novo
     atualizarBarras(ficha)
@@ -357,7 +456,8 @@ function expor() {
   window.fecharModal               = (id) => fecharModal(id)
   window.fecharModalCriar          = () => fecharModal("modalCriar")
   window.fecharModalFonte          = () => fecharModal("modalFonte")
-  window.fecharModalCaracteristica = () => fecharModal("modalCaracteristica")
+  window.fecharModalCaracteristica  = () => fecharModal("modalCaracteristica")
+  window.fecharModalCaracIsolada    = () => fecharModal("modalCaracIsolada")
   window.fecharExpandirFonte       = () => fecharModal("modalExpandirFonte")
   window.fecharModalRaca           = () => fecharModal("modalEscolhaRaca")
   window.fecharModalProfissao      = () => fecharModal("modalEscolhaProfissao")

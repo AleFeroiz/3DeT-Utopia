@@ -17,14 +17,16 @@ export class Ficha {
     pericias    = {},
     elementos   = [],
     status      = { pa: { atual: 0, max: 0 }, pm: { atual: 0, max: 0 }, pv: { atual: 0, max: 0 } },
-    pontos      = { total: 10, gastos: 0, totalAuto: 10, offsetTotal: 0 }
+    pontos      = { total: 10, gastos: 0, totalAuto: 10, offsetTotal: 0 },
+    caracteristicasIsoladas = []
   } = {}) {
     this.nome        = nome
     this.racaId      = racaId
     this.profissaoId = profissaoId
     this.nivel       = Math.max(1, Math.min(20, nivel))
     this.maestrias   = { ...maestrias }
-    this.atributos   = { ...atributos }
+    this.atributos              = { ...atributos }
+    this.caracteristicasIsoladas = [...(caracteristicasIsoladas ?? [])]
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
       e.tipo === "fonte" ? FonteDePoder.fromJSON(e) : ElementoFicha.fromJSON(e)
@@ -44,7 +46,8 @@ export class Ficha {
     this.pontos.totalAuto = d.ptTotal
     this.pontos.total     = d.ptTotal + offsetTotal
     this.escalaMax           = d.escalaMax
-    this.maestraLimite       = d.maestriaLimite
+    const offsetLimite = this.maestras?.offsetLimite ?? 0
+    this.maestraLimite = d.maestriaLimite + offsetLimite
     this.profissaoNivelAtual = d.profissaoNivelAtual
   }
 
@@ -70,7 +73,7 @@ export class Ficha {
 
   podeMaestria(pericia) {
     if (!this.pericias[pericia])         return { ok: false, motivo: "Você precisa ter esta perícia primeiro." }
-    if (this.maestrias[pericia])         return { ok: false, motivo: "Já possui maestria nesta perícia." }
+    // (maestria é toggle — se já tem, o toggle remove)
     if (this.maestraLimite === 0)        return { ok: false, motivo: "Maestria disponível apenas a partir do nível 3." }
     if (this.totalMaestrias >= this.maestraLimite)
       return { ok: false, motivo: `Limite de maestrias atingido (${this.maestraLimite}).` }
@@ -79,15 +82,25 @@ export class Ficha {
   }
 
   toggleMaestria(pericia) {
-    // Maestria não pode ser removida após aplicada
     if (this.maestrias[pericia]) {
-      return { ok: false, motivo: "Maestria não pode ser removida após aplicada." }
+      // Remove maestria — devolve 2 PT
+      delete this.maestrias[pericia]
+      this.calcularPontos()
+      return { ok: true, removeu: true }
     }
     const check = this.podeMaestria(pericia)
     if (!check.ok) return check
     this.maestrias[pericia] = true
     this.calcularPontos()
-    return { ok: true }
+    return { ok: true, removeu: false }
+  }
+
+  // Editar limite de maestrias manualmente (offset)
+  setMaestraLimiteManual(novoValor) {
+    const autoLimite = this.dadosNivel.maestriaLimite
+    this.maestras = this.maestras ?? {}
+    this.maestras.offsetLimite = novoValor - autoLimite
+    this.maestraLimite = novoValor
   }
 
   // ── Pontos ────────────────────────────────────────────────
@@ -99,8 +112,17 @@ export class Ficha {
     for (const e of this.elementos) gastos += (e.custo ?? 0)
     for (const v of Object.values(this.pericias)) if (v) gastos += 1
     gastos += this.totalMaestrias * 2
-    this.pontos.gastos = gastos
-    return gastos
+    this.pontos.gastosAuto   = gastos
+    // gastos final = automático + offset manual
+    this.pontos.gastos       = gastos + (this.pontos.offsetGastos ?? 0)
+    return this.pontos.gastos
+  }
+
+  // Jogador edita manualmente os pontos gastos (offset aditivo)
+  setGastosManual(novoValor) {
+    const auto = this.pontos.gastosAuto ?? 0
+    this.pontos.offsetGastos = novoValor - auto
+    this.pontos.gastos       = novoValor
   }
 
   get pontosRestantes() { return this.pontos.total - this.pontos.gastos }
@@ -156,7 +178,8 @@ export class Ficha {
       nome: this.nome, racaId: this.racaId, profissaoId: this.profissaoId,
       nivel: this.nivel, maestrias: this.maestrias,
       atributos: this.atributos, pericias: this.pericias,
-      elementos: this.elementos, status: this.status, pontos: this.pontos
+      elementos: this.elementos, status: this.status, pontos: this.pontos,
+      caracteristicasIsoladas: this.caracteristicasIsoladas ?? []
     }
   }
 

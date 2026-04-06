@@ -141,3 +141,72 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
     container.appendChild(row)
   }
 }
+
+// ── RENDER CARACTERÍSTICAS ISOLADAS ──────────────────────
+export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
+  const container = document.getElementById("listaCaracteristicasIsoladas")
+  if (!container) return
+  container.innerHTML = ""
+
+  const isoladas = ficha.caracteristicasIsoladas ?? []
+  if (!isoladas.length) return
+
+  const titulo = document.createElement("h3")
+  titulo.textContent = "⚡ Características Isoladas"
+  titulo.style.cssText = "font-size:14px;opacity:0.7;margin:16px 0 8px"
+  container.appendChild(titulo)
+
+  const LABELS = {
+    potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
+    alcance: 'Alcance', duracao: 'Duração', area: 'Área',
+    alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
+  }
+
+  isoladas.forEach((c, i) => {
+    const card = document.createElement("div")
+    card.className = "card-elemento"
+    card.style.borderColor = "#7c3aed"
+
+    // Resumo das escolhas das tabelas
+    const escolhas = c.escolhas ?? {}
+    const resumoLinhas = []
+    for (const [chave, lista] of Object.entries(escolhas)) {
+      if (!lista?.length) continue
+      const contagem = {}
+      for (const item of lista) {
+        const k = item.nome ?? `+${item.valor}`
+        contagem[k] = (contagem[k] ?? 0) + 1
+      }
+      const valStr = Object.entries(contagem).map(([n, q]) => q > 1 ? `${n} ×${q}` : n).join(", ")
+      resumoLinhas.push(`<div class="carac-resumo-row"><span class="carac-resumo-label">${LABELS[chave] ?? chave}:</span><span>${valStr}</span></div>`)
+    }
+    const resumoHTML = resumoLinhas.length
+      ? `<div class="carac-resumo">${resumoLinhas.join("")}</div>`
+      : ""
+
+    const custoPTHTML = c.custoPT
+      ? `<span style="background:#1e3a5f;padding:1px 7px;border-radius:4px;font-size:11px;color:#93c5fd">${c.custoPT} PT</span>`
+      : ""
+
+    card.innerHTML = `
+      <div class="card-header">
+        <strong>⚡ ${c.nome}</strong>
+        <div style="display:flex;gap:6px;font-size:12px;align-items:center;flex-wrap:wrap">
+          ${custoPTHTML}
+          <span style="opacity:0.6">Escala ${c.escala}</span>
+          <span style="opacity:0.6">${c.custoPM} PM</span>
+        </div>
+      </div>
+      ${c.origem ? `<p style="font-size:12px;opacity:0.55;margin:3px 0;font-style:italic">📍 ${c.origem}</p>` : ""}
+      ${resumoHTML}
+      ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
+      <div class="card-actions" style="margin-top:8px">
+        <button class="btn-editar">✏️ Editar</button>
+        <button class="btn-remover">🗑️ Remover</button>
+      </div>
+    `
+    card.querySelector(".btn-editar").onclick  = () => onEditar(i)
+    card.querySelector(".btn-remover").onclick = () => onRemover(i)
+    container.appendChild(card)
+  })
+}

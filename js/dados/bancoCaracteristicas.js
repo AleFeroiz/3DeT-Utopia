@@ -27,6 +27,7 @@ export const TABELAS = {
 
   potencia: {
     label: "Potência",
+    base: "0 (sem potência)",
     descricao: "Usada para dano, cura e força de efeitos diretos.",
     tipo: "empilhavel",
     dados: [
@@ -39,6 +40,7 @@ export const TABELAS = {
 
   pressao: {
     label: "Pressão",
+    base: "0 (sem pressão)",
     descricao: "Usada para testes resistidos, controle e imposição de condições.",
     tipo: "empilhavel",
     dados: [
@@ -53,6 +55,7 @@ export const TABELAS = {
 
   execucao: {
     label: "Execução",
+    base: "Padrão (1 Ação) — gratuito",
     descricao: "Execuções mais lentas aliviam o custo; mais rápidas exigem mais PM.",
     tipo: "unico",
     dados: [
@@ -65,6 +68,7 @@ export const TABELAS = {
 
   alcance: {
     label: "Alcance",
+    base: "Pessoal — gratuito",
     descricao: "Distância máxima que a característica pode atingir.",
     tipo: "unico",
     dados: [
@@ -79,8 +83,9 @@ export const TABELAS = {
 
   duracao: {
     label: "Duração",
-    descricao: "Por quanto tempo o efeito persiste. Pode ser empilhada comprando a mesma opção mais de uma vez.",
-    tipo: "empilhavel",
+    base: "Instantânea — gratuito",
+    descricao: "Escolha um tipo de duração e empilhe ele. Trocar de linha descarta o stack anterior.",
+    tipo: "empilhavel_mono",
     dados: [
       { nome: "Instantânea (Base)", orcamento: 0,  pm: 0  },
       { nome: "1 Rodada",           orcamento: 2,  pm: 1  },
@@ -94,8 +99,10 @@ export const TABELAS = {
 
   area: {
     label: "Área",
+    base: "1 alvo (base) — sem custo",
     descricao: "Expande quem a técnica atinge em raio. Mutuamente exclusivo com Alvos Adicionais.",
     tipo: "empilhavel",
+    grupoExclusivo: "infligir",
     dados: [
       { nome: "1 metro",  orcamento: 2,  pm: 2 },
       { nome: "3 metros", orcamento: 6,  pm: 4 },
@@ -105,8 +112,10 @@ export const TABELAS = {
 
   alvos: {
     label: "Alvos Adicionais",
+    base: "1 alvo (base) — sem custo",
     descricao: "Permite atingir mais de um alvo individualmente. Mutuamente exclusivo com Área.",
     tipo: "empilhavel",
+    grupoExclusivo: "infligir",
     dados: [
       { nome: "1 alvo",   orcamento: 1, pm: 1 },
       { nome: "3 alvos",  orcamento: 4, pm: 2 },
