@@ -59,10 +59,10 @@ export const TABELAS = {
     descricao: "Execuções mais lentas aliviam o custo; mais rápidas exigem mais PM.",
     tipo: "unico",
     dados: [
-      { nome: "Padrão (Base)",  orcamento: 0, pm: 0  },
-      { nome: "Completa",       orcamento: 2, pm: 3  },
-      { nome: "Movimento",      orcamento: 8, pm: 3  },
-      { nome: "Reação",         orcamento: 6, pm: 2  }
+      { nome: "Padrão (Base)",  orcamento: 0, pm:  0, gratuita: true },
+      { nome: "Completa",       orcamento: 2, pm: -3 },
+      { nome: "Movimento",      orcamento: 8, pm:  3 },
+      { nome: "Reação",         orcamento: 6, pm:  2 }
     ]
   },
 
@@ -72,7 +72,7 @@ export const TABELAS = {
     descricao: "Distância máxima que a característica pode atingir.",
     tipo: "unico",
     dados: [
-      { nome: "Pessoal (Base)", orcamento: 0,  pm: 0 },
+      { nome: "Pessoal (Base)", orcamento: 0,  pm: 0, gratuita: true },
       { nome: "Toque",          orcamento: 1,  pm: 0 },
       { nome: "Perto",          orcamento: 2,  pm: 1 },
       { nome: "Longe",          orcamento: 4,  pm: 2 },
@@ -87,7 +87,7 @@ export const TABELAS = {
     descricao: "Escolha um tipo de duração e empilhe ele. Trocar de linha descarta o stack anterior.",
     tipo: "empilhavel_mono",
     dados: [
-      { nome: "Instantânea (Base)", orcamento: 0,  pm: 0  },
+      { nome: "Instantânea (Base)", orcamento: 0,  pm: 0, gratuita: true  },
       { nome: "1 Rodada",           orcamento: 2,  pm: 1  },
       { nome: "1 Cena",             orcamento: 5,  pm: 3  },
       { nome: "1 Hora",             orcamento: 12, pm: 6  },

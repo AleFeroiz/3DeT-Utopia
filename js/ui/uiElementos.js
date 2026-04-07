@@ -61,7 +61,7 @@ function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover) {
   const listaCaract = fonte.caracteristicas?.length
     ? fonte.caracteristicas.map(c => `
         <div class="carac-item">
-          <span>⚡ ${c.nome} <em style="opacity:0.5;font-size:11px">E${c.escala}</em></span>
+          <span>⚡ ${c.nome} <em style="opacity:0.5;font-size:11px">E${c.escala}</em>${c.gratuita ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:0 4px;border-radius:3px">GRÁTIS</span>' : ''}</span>
           <span style="font-size:12px">${c.custoPM} PM</span>
         </div>`).join("")
     : "<p style='opacity:0.4;font-size:13px'>Nenhuma característica.</p>"
@@ -121,16 +121,44 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
     row.innerHTML = `
       <label class="pericia-label ${temPericia ? "ativa" : ""} ${temMaestria ? "maestria" : ""}">
         <input type="checkbox" class="chk-pericia" ${temPericia ? "checked" : ""}>
-        <span>${pericia.nome}</span>
+        <span class="pericia-nome-btn" title="Ver descrição">${pericia.emoji ?? ""} ${pericia.nome}</span>
         ${temMaestria ? '<span class="pericia-maestria-tag">★ Maestria</span>' : '<span class="pericia-custo">1 PT</span>'}
       </label>
       ${temPericia ? `
-        <button class="btn-maestria ${temMaestria ? "ativa" : ""}" 
+        <button class="btn-maestria ${temMaestria ? "ativa" : ""}"
                 title="${temMaestria ? "Maestria já aplicada (permanente)" : "Aplicar maestria (custa 2 PT)"}"
                 ${(temMaestria || (!podeMaestria && !temMaestria)) ? "disabled" : ""}>
           ⭐
         </button>` : '<div class="btn-maestria-placeholder"></div>'}
     `
+
+    // Tooltip de descrição ao clicar no nome
+    if (pericia.desc) {
+      const nomeBtn = row.querySelector(".pericia-nome-btn")
+      nomeBtn.style.cursor = "help"
+      nomeBtn.onclick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // Remove tooltip anterior se existir
+        const existente = document.getElementById("pericia-tooltip")
+        if (existente) {
+          existente.remove()
+          if (existente.dataset.periciaId === pericia.id) return  // toggle: fecha se clicou no mesmo
+        }
+        const tip = document.createElement("div")
+        tip.id = "pericia-tooltip"
+        tip.dataset.periciaId = pericia.id
+        tip.className = "pericia-tooltip"
+        tip.innerHTML = `
+          <div class="pericia-tooltip-header">
+            <strong>${pericia.emoji ?? ""} ${pericia.nome}</strong>
+            <button class="pericia-tooltip-fechar" onclick="document.getElementById('pericia-tooltip')?.remove()">✕</button>
+          </div>
+          <p>${pericia.desc}</p>
+        `
+        row.appendChild(tip)
+      }
+    }
 
     row.querySelector(".chk-pericia").onchange = () => onToggle(pericia.id)
     if (temPericia) {
@@ -170,15 +198,30 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
     // Resumo das escolhas das tabelas
     const escolhas = c.escolhas ?? {}
     const resumoLinhas = []
-    for (const [chave, lista] of Object.entries(escolhas)) {
-      if (!lista?.length) continue
+    const BASES_PADRAO = {
+      execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea',
+      area: '1 alvo', alvos: '1 alvo'
+    }
+    const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
+    for (const chave of todasChaves) {
+      const lista = escolhas[chave] ?? []
+      const itensExibir = lista.filter(i => !i.gratuita)
+      if (itensExibir.length === 0) {
+        if (BASES_PADRAO[chave]) {
+          resumoLinhas.push(`<div class="carac-resumo-row"><span class="carac-resumo-label">${LABELS[chave] ?? chave}:</span><span style="opacity:0.45;font-style:italic">${BASES_PADRAO[chave]} (padrão)</span></div>`)
+        }
+        continue
+      }
       const contagem = {}
-      for (const item of lista) {
+      let total = 0
+      for (const item of itensExibir) {
         const k = item.nome ?? `+${item.valor}`
         contagem[k] = (contagem[k] ?? 0) + 1
+        if (item.valor !== undefined) total += item.valor * 1
       }
       const valStr = Object.entries(contagem).map(([n, q]) => q > 1 ? `${n} ×${q}` : n).join(", ")
-      resumoLinhas.push(`<div class="carac-resumo-row"><span class="carac-resumo-label">${LABELS[chave] ?? chave}:</span><span>${valStr}</span></div>`)
+      const totalStr = total > 0 ? ` <span style="opacity:0.45">= ${total}</span>` : ""
+      resumoLinhas.push(`<div class="carac-resumo-row"><span class="carac-resumo-label">${LABELS[chave] ?? chave}:</span><span>${valStr}${totalStr}</span></div>`)
     }
     const resumoHTML = resumoLinhas.length
       ? `<div class="carac-resumo">${resumoLinhas.join("")}</div>`

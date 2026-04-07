@@ -294,16 +294,29 @@ const _LABELS_ESCOLHAS = {
 }
 function _resumoEscolhas(escolhas) {
   if (!escolhas) return {}
+  const BASES_PADRAO = {
+    execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea',
+    area: '1 alvo', alvos: '1 alvo'
+  }
   const result = {}
-  for (const [chave, lista] of Object.entries(escolhas)) {
-    if (!lista?.length) continue
+  const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
+  for (const chave of todasChaves) {
+    const lista = escolhas[chave] ?? []
+    const itens = lista.filter(i => !i.gratuita)
+    if (itens.length === 0) {
+      if (BASES_PADRAO[chave]) result[_LABELS_ESCOLHAS[chave] ?? chave] = '<span style="opacity:0.45;font-style:italic">' + BASES_PADRAO[chave] + ' (padrão)</span>'
+      continue
+    }
     const cnt = {}
-    for (const item of lista) {
+    let total = 0
+    for (const item of itens) {
       const k = item.nome ?? (item.valor !== undefined ? ('+' + item.valor) : '?')
       cnt[k] = (cnt[k] ?? 0) + 1
+      if (item.valor !== undefined) total += item.valor * 1
     }
-    result[_LABELS_ESCOLHAS[chave] ?? chave] = Object.entries(cnt)
-      .map(([n, q]) => q > 1 ? (n + ' x' + q) : n).join(', ')
+    const partes = Object.entries(cnt).map(([n, q]) => q > 1 ? (n + ' ×' + q) : n).join(', ')
+    const totalStr = total > 0 ? ' <span style="opacity:0.45">= ' + total + '</span>' : ''
+    result[_LABELS_ESCOLHAS[chave] ?? chave] = partes + totalStr
   }
   return result
 }
@@ -313,14 +326,17 @@ function _cardCaractExpandir(c) {
   const rows = Object.entries(resumo)
     .map(([l,v]) => '<div class="carac-resumo-row"><span class="carac-resumo-label">' + l + ':</span> <span>' + v + '</span></div>')
     .join('')
-  const pc = PC_POR_ESCALA[c.escala] ?? c.escala
-  return '<div class="card-info desbloqueado" style="margin-bottom:10px">' +
+  const pc = c.gratuita ? '0 PC' : ((PC_POR_ESCALA[c.escala] ?? c.escala) + ' PC')
+  const gratuitaBadge = c.gratuita
+    ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px">GRÁTIS</span>'
+    : ''
+  return '<div class="card-info desbloqueado" style="margin-bottom:10px' + (c.gratuita ? ';border-color:#22c55e' : '') + '">' +
     '<div class="carac-header-row">' +
-      '<strong>⚡ ' + c.nome + '</strong>' +
+      '<strong>⚡ ' + c.nome + gratuitaBadge + '</strong>' +
       '<div class="carac-badges">' +
         '<span>Escala ' + c.escala + '</span>' +
-        '<span>' + pc + ' PC</span>' +
-        '<span>Orç. ' + c.custo + '</span>' +
+        '<span>' + pc + '</span>' +
+        (c.gratuita ? '' : '<span>Orç. ' + c.custo + '</span>') +
         '<span>' + c.custoPM + ' PM</span>' +
       '</div>' +
     '</div>' +

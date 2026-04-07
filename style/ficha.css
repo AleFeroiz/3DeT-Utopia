@@ -790,3 +790,55 @@ hr {
 
 .conteudo-iso        { display: none; }
 .conteudo-iso.active { display: block; }
+
+/* ── TOOLTIP DE DESCRIÇÃO DE PERÍCIA ─────────────────────── */
+.pericia-nome-btn {
+  text-decoration: underline dotted rgba(255,255,255,0.3);
+  transition: color 0.15s;
+}
+.pericia-nome-btn:hover { color: #93c5fd; }
+
+.pericia-tooltip {
+  position: relative;
+  background: #0f172a;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: fadeInTip 0.15s ease;
+}
+
+.pericia-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.pericia-tooltip-fechar {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.pericia-tooltip-fechar:hover { color: white; }
+
+.pericia-tooltip p {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@keyframes fadeInTip {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

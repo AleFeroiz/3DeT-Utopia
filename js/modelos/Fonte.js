@@ -52,7 +52,10 @@ export class FonteDePoder extends ElementoFicha {
   }
 
   get pcsGastos() {
-    return this.caracteristicas.reduce((acc, c) => acc + (PC_POR_ESCALA[c.escala] ?? c.escala), 0)
+    return this.caracteristicas.reduce((acc, c) => {
+      if (c.gratuita) return acc
+      return acc + (PC_POR_ESCALA[c.escala] ?? c.escala)
+    }, 0)
   }
 
   get pcsDisponiveis() {

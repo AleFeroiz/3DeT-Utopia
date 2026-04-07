@@ -21,6 +21,20 @@ let _onSalvarFonte    = null
 let _fonteEditandoId  = null   // null = criar nova, string = editar existente
 let _getFicha         = null   // callback para obter ficha atual
 
+// ── Escolhas iniciais com bases gratuitas pré-selecionadas ─
+function _escolhasIniciais() {
+  const result = {}
+  for (const [chave, cfg] of Object.entries(TABELAS)) {
+    const base = cfg.dados.find(d => d.gratuita)
+    if (base) {
+      result[chave] = [{ ...base }]
+    } else {
+      result[chave] = []
+    }
+  }
+  return result
+}
+
 // ── Resumo legível das escolhas ──────────────────────────
 function _resumoEscolhas(escolhas) {
   if (!escolhas) return {}
@@ -29,17 +43,43 @@ function _resumoEscolhas(escolhas) {
     alcance: 'Alcance', duracao: 'Duração', area: 'Área',
     alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
   }
+  // Bases padrão a exibir quando nenhuma escolha extra foi feita
+  const BASES_PADRAO = {
+    execucao: 'Padrão',
+    alcance:  'Pessoal',
+    duracao:  'Instantânea',
+    area:     '1 alvo',
+    alvos:    '1 alvo'
+  }
   const result = {}
-  for (const [chave, lista] of Object.entries(escolhas)) {
-    if (!lista?.length) continue
+
+  // Reúne todas as chaves possíveis (escolhas + bases)
+  const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
+
+  for (const chave of todasChaves) {
+    const lista = escolhas[chave] ?? []
+    const itensExtra = lista.filter(i => !i.gratuita)
+
+    if (itensExtra.length === 0) {
+      // Sem escolha extra — mostra base padrão se existir
+      if (BASES_PADRAO[chave]) {
+        result[LABELS[chave] ?? chave] = `<span style="opacity:0.45;font-style:italic">${BASES_PADRAO[chave]} (padrão)</span>`
+      }
+      continue
+    }
+
     const contagem = {}
-    for (const item of lista) {
+    let total = 0
+    for (const item of itensExtra) {
       const k = item.nome ?? `+${item.valor}`
       contagem[k] = (contagem[k] ?? 0) + 1
+      if (item.valor !== undefined) total += item.valor * 1
     }
-    result[LABELS[chave] ?? chave] = Object.entries(contagem)
+    const partes = Object.entries(contagem)
       .map(([nome, qtd]) => qtd > 1 ? `${nome} ×${qtd}` : nome)
       .join(', ')
+    const totalStr = total > 0 ? ` <span style="opacity:0.5">= ${total}</span>` : ''
+    result[LABELS[chave] ?? chave] = partes + totalStr
   }
   return result
 }
@@ -212,7 +252,7 @@ export function confirmarSalvarFonte() {
   if (_fonteTemp.subtipo === "zoan" && !_fonteTemp.passivos.caracGratuitaConcedida) {
     _fonteTemp.caracteristicas.unshift(new Caracteristica({
       nome: "Forma Zoan (Gratuita)", descricao: "Característica gratuita de Escala 3 concedida pela Zoan.",
-      escala: 3, custo: 0, custoPM: 6
+      escala: 3, custo: 0, custoPM: 6, gratuita: true
     }))
     _fonteTemp.passivos.caracGratuitaConcedida = true
   }
@@ -230,7 +270,7 @@ export function abrirCriarCaracteristica(editIndex = null) {
   // Restaura escolhas salvas (deep copy) ou inicializa vazio
   const escolhasSalvas = ex?.escolhas
     ? Object.fromEntries(Object.keys(TABELAS).map(k => [k, [...(ex.escolhas[k] ?? [])]]))
-    : Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+    : _escolhasIniciais()
 
   _caracTemp = {
     escala:   ex?.escala ?? 1,
@@ -240,6 +280,8 @@ export function abrirCriarCaracteristica(editIndex = null) {
   document.getElementById("caracNome").value      = ex?.nome      ?? ""
   document.getElementById("caracDescricao").value = ex?.descricao ?? ""
   document.getElementById("caracEscala").value    = _caracTemp.escala
+  const chkGrat = document.getElementById("caracGratuita")
+  if (chkGrat) chkGrat.checked = ex?.gratuita ?? false
   document.getElementById("modalCaracTitulo").innerText =
     editIndex !== null ? "✏️ Editar Característica" : "⚡ Nova Característica"
 
@@ -291,16 +333,16 @@ export function confirmarCriarCaracteristica() {
   const limite = ORCAMENTO_POR_ESCALA[_caracTemp.escala]
   if (gasto > limite) { toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`); return }
 
+  const gratuita = document.getElementById("caracGratuita")?.checked ?? false
   const pcsNec   = PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala
-  const pcsLivres = _fonteTemp.pcsDisponiveis + (_caracEditIndex !== null ? pcsNec : 0)
-  if (_caracEditIndex === null && pcsNec > _fonteTemp.pcsDisponiveis) {
+  if (!gratuita && _caracEditIndex === null && pcsNec > _fonteTemp.pcsDisponiveis) {
     toastErro(`PCs insuficientes! Esta escala requer ${pcsNec} PC(s).`); return
   }
-
   const dados = {
     nome:      document.getElementById("caracNome").value || "Característica",
     descricao: document.getElementById("caracDescricao").value,
     escala:    _caracTemp.escala,
+    gratuita,
     escolhas:  _caracTemp.escolhas,
     custo:     gasto,
     custoPM:   calcularPMCarac()
@@ -352,13 +394,13 @@ export function renderTabelaCarac(chave) {
 
     const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
     const tdPm   = item.pm !== undefined ? (item.pm < 0 ? String(item.pm) : `+${item.pm}`) : "-"
+    const tdOrc  = item.gratuita ? `<span style="opacity:0.4;font-size:11px">grátis</span>` : item.orcamento
 
     // ── Restaura estado salvo ─────────────────────────────
     const salvo = _caracTemp.escolhas[chave] ?? []
     if (tipo === "empilhavel") {
       estado.qtd = salvo.filter(i => (i.nome ?? `+${i.valor}`) === chaveItem).length
     } else if (tipo === "empilhavel_mono") {
-      // mono: todas as escolhas salvas são do mesmo tipo (a linha selecionada)
       estado.qtd = salvo.filter(i => (i.nome ?? `+${i.valor}`) === chaveItem).length
     } else if (tipo === "unico") {
       if (salvo.length && (salvo[0].nome ?? `+${salvo[0].valor}`) === chaveItem) {
@@ -367,9 +409,16 @@ export function renderTabelaCarac(chave) {
     }
 
     tr.innerHTML = `
-      <td>${tdNome}</td><td>${item.orcamento}</td><td>${tdPm}</td>
+      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td><td>${tdOrc}</td><td>${tdPm}</td>
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
+    // Itens gratuitos: aparência bloqueada, não são clicáveis
+    if (item.gratuita) {
+      tr.style.cursor  = "default"
+      tr.style.opacity = "0.6"
+      tr.style.background = "rgba(34,197,94,0.07)"
+      continue
+    }
     tr.style.cursor = "pointer"
 
     // ── EMPILHAVEL normal ─────────────────────────────────
@@ -504,22 +553,27 @@ function _renderCaracteristicasFonteModal() {
   }
 
   _fonteTemp.caracteristicas.forEach((c, i) => {
-    const isZoanGratuita = c.nome.includes("Gratuita") && _fonteTemp.subtipo === "zoan"
     const div = document.createElement("div")
     div.className = "card-elemento"
     div.style.marginTop = "8px"
+    if (c.gratuita) div.style.borderColor = "#22c55e"
+
     const resumo = _resumoEscolhas(c.escolhas)
     const resumoHTML = Object.entries(resumo).map(([label, val]) =>
       `<div class="carac-resumo-row"><span class="carac-resumo-label">${label}:</span> <span>${val}</span></div>`
     ).join("")
 
+    const gratuitaBadge = c.gratuita
+      ? `<span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px;margin-left:4px">GRÁTIS</span>`
+      : ""
+
     div.innerHTML = `
       <div class="card-header">
-        <strong>${c.nome}</strong>
+        <strong>${c.nome}${gratuitaBadge}</strong>
         <div style="display:flex;gap:8px;font-size:12px;opacity:0.7">
           <span>Escala ${c.escala}</span>
           <span>|</span>
-          <span>Orç. ${c.custo}</span>
+          ${c.gratuita ? '<span style="color:#86efac">0 PC</span>' : `<span>Orç. ${c.custo}</span>`}
           <span>|</span>
           <span>${c.custoPM} PM</span>
         </div>
@@ -528,14 +582,17 @@ function _renderCaracteristicasFonteModal() {
       ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
       <div class="card-actions" style="margin-top:8px">
         <button class="btn-editar">✏️ Editar</button>
-        <button class="btn-remover">🗑️ Remover</button>
+        ${c.gratuita ? "" : `<button class="btn-remover">🗑️ Remover</button>`}
       </div>
     `
     div.querySelector(".btn-editar").onclick = () => abrirCriarCaracteristica(i)
-    div.querySelector(".btn-remover").onclick = () => {
-      _fonteTemp.removerCaracteristica(i)
-      _atualizarPCsDisplay()
-      _renderCaracteristicasFonteModal()
+    const btnRemover = div.querySelector(".btn-remover")
+    if (btnRemover) {
+      btnRemover.onclick = () => {
+        _fonteTemp.removerCaracteristica(i)
+        _atualizarPCsDisplay()
+        _renderCaracteristicasFonteModal()
+      }
     }
     container.appendChild(div)
   })
@@ -546,13 +603,16 @@ export function renderCaracteristicasFonte() { _renderCaracteristicasFonteModal(
 // ── Cálculos ──────────────────────────────────────────────
 function calcularGastoCarac() {
   let t = 0
-  for (const lista of Object.values(_caracTemp.escolhas)) for (const item of lista) t += item.orcamento ?? 0
+  for (const lista of Object.values(_caracTemp.escolhas))
+    for (const item of lista)
+      if (!item.gratuita) t += item.orcamento ?? 0
   return t
 }
 
 function calcularPMCarac() {
   let t = 0
-  for (const lista of Object.values(_caracTemp.escolhas)) for (const item of lista) t += item.pm ?? 0
+  for (const lista of Object.values(_caracTemp.escolhas))
+    for (const item of lista) t += item.pm ?? 0
   return Math.max(2, t)
 }
 
@@ -626,7 +686,7 @@ export function atualizarEscalaIsolada() {
   if (_isoladaTemp) {
     _isoladaTemp.escala  = nova
     // Reseta escolhas ao trocar escala para não ultrapassar orçamento
-    _isoladaTemp.escolhas = Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+    _isoladaTemp.escolhas = _escolhasIniciais()
   }
   _atualizarPreviewIsolada()
 }
@@ -654,7 +714,9 @@ function _atualizarPreviewIsolada() {
 function _calcularGastoIsolada() {
   if (!_isoladaTemp?.escolhas) return 0
   let t = 0
-  for (const lista of Object.values(_isoladaTemp.escolhas)) for (const item of lista) t += item.orcamento ?? 0
+  for (const lista of Object.values(_isoladaTemp.escolhas))
+    for (const item of lista)
+      if (!item.gratuita) t += item.orcamento ?? 0
   return t
 }
 
@@ -721,7 +783,10 @@ function _isoAtualizarPreview() {
   const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
   let gasto = 0, pm = 0
   for (const lista of Object.values(_isoEscolhas)) {
-    for (const item of lista) { gasto += item.orcamento ?? 0; pm += item.pm ?? 0 }
+    for (const item of lista) {
+      if (!item.gratuita) gasto += item.orcamento ?? 0
+      pm += item.pm ?? 0
+    }
   }
   pm = Math.max(2, pm)
 
@@ -772,6 +837,7 @@ function _isoRenderAba(chave) {
 
     const tdNome = item.valor !== undefined ? `+${item.valor}` : item.nome
     const tdPm   = item.pm !== undefined ? (item.pm < 0 ? String(item.pm) : `+${item.pm}`) : "-"
+    const tdOrc  = item.gratuita ? `<span style="opacity:0.4;font-size:11px">grátis</span>` : item.orcamento
 
     const salvo = _isoEscolhas[chave]
     if (tipo === "empilhavel" || tipo === "empilhavel_mono") {
@@ -783,9 +849,16 @@ function _isoRenderAba(chave) {
     }
 
     tr.innerHTML = `
-      <td>${tdNome}</td><td>${item.orcamento}</td><td>${tdPm}</td>
+      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td><td>${tdOrc}</td><td>${tdPm}</td>
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
+
+    if (item.gratuita) {
+      tr.style.cursor     = "default"
+      tr.style.opacity    = "0.6"
+      tr.style.background = "rgba(34,197,94,0.07)"
+      continue
+    }
     tr.style.cursor = "pointer"
 
     if (tipo === "empilhavel") {
@@ -901,7 +974,7 @@ export function abrirLojinhaIsoladaModal(existente = null) {
   // Carrega escolhas já salvas (se estiver editando) ou zera
   _isoEscolhas = existente?.escolhas
     ? JSON.parse(JSON.stringify(existente.escolhas))
-    : Object.fromEntries(Object.keys(TABELAS).map(k => [k, []]))
+    : _escolhasIniciais()
   // Garante que escolhas do temp isolado sejam sincronizadas
   if (_isoladaTemp?.escolhas) {
     _isoEscolhas = JSON.parse(JSON.stringify(_isoladaTemp.escolhas))
@@ -925,7 +998,7 @@ export function abrirLojinhaIsoladaModal(existente = null) {
 
 // ── Confirmar (salva escolhas de volta ao _isoladaTemp) ──────
 export function confirmarIsoladaLojinha() {
-  const gasto  = Object.values(_isoEscolhas).flat().reduce((s, i) => s + (i.orcamento ?? 0), 0)
+  const gasto  = Object.values(_isoEscolhas).flat().reduce((s, i) => i.gratuita ? s : s + (i.orcamento ?? 0), 0)
   const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
   if (gasto > limite) {
     toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`)
