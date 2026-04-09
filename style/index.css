@@ -1,0 +1,232 @@
+/* ============================================================
+   index.css — Estilos da página de listagem (pastas + fichas)
+   ============================================================ */
+
+/* ── TOOLBAR ─────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.btn-pasta { background: #7c3aed; }
+
+/* ── FICHAS SEM PASTA ────────────────────────────────────── */
+#areaSemPasta {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.area-sem-pasta-label {
+  font-size: 11px;
+  opacity: 0.35;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* ── PASTA ───────────────────────────────────────────────── */
+.pasta-bloco {
+  margin-bottom: 12px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pasta-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: #1e293b;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.pasta-header:hover { background: #263447; }
+
+.pasta-toggle {
+  font-size: 11px;
+  opacity: 0.55;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.pasta-toggle.fechada { transform: rotate(-90deg); }
+
+.pasta-nome {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pasta-nome-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #3b82f6;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  padding: 0 2px;
+  min-width: 0;
+}
+
+.pasta-count {
+  font-size: 12px;
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.pasta-acoes {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.pasta-acoes button {
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 8px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.pasta-acoes button:hover { background: #334155; color: white; }
+.btn-del-pasta:hover      { background: #7f1d1d !important; border-color: #ef4444 !important; color: #fca5a5 !important; }
+
+/* ── CONTEÚDO DA PASTA ───────────────────────────────────── */
+.pasta-conteudo {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #0d1526;
+  min-height: 52px;
+}
+.pasta-conteudo.fechada { display: none !important; }
+
+.pasta-vazia {
+  text-align: center;
+  padding: 14px 0;
+  opacity: 0.3;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ── DROP ZONE ───────────────────────────────────────────── */
+.drop-zone {
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+  border: 2px dashed transparent;
+}
+.drop-zone.dragover {
+  border-color: #3b82f6;
+  background: rgba(59,130,246,0.06);
+}
+
+/* ── FICHA CARD ──────────────────────────────────────────── */
+.ficha-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 16px;
+  cursor: grab;
+  transition: border-color 0.2s, opacity 0.2s;
+}
+.ficha-card:hover  { border-color: #3b82f6; }
+.ficha-card.dragging { opacity: 0.35; box-shadow: none; }
+
+.ficha-info { flex: 1; min-width: 0; }
+.ficha-nome {
+  font-size: 15px;
+  font-weight: 600;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ficha-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+.ficha-acoes {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ficha-acoes .btn {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+.btn-dupl   { background: #0369a1; }
+.btn-deletar{ background: #7f1d1d; }
+
+/* ── MODAL PASTA ─────────────────────────────────────────── */
+.modal-pasta {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+}
+.modal-pasta.hidden { display: none !important; }
+
+.modal-pasta-content {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 24px;
+  width: min(380px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-pasta-content h2 { font-size: 17px; }
+.modal-pasta-content input {
+  width: 100%;
+  padding: 9px 12px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.modal-pasta-content input:focus { outline: none; border-color: #7c3aed; }
+
+.modal-pasta-btns {
+  display: flex;
+  gap: 8px;
+}
+.modal-pasta-btns button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  transition: filter 0.15s;
+}
+.modal-pasta-btns button:first-child { background: #7c3aed; }
+.modal-pasta-btns button:last-child  { background: #475569; }
+.modal-pasta-btns button:hover       { filter: brightness(1.15); }

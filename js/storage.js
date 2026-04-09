@@ -4,7 +4,8 @@
 
 const CHAVES = {
   FICHAS:      "rpg_fichas",
-  FICHA_ATUAL: "rpg_fichaAtual"
+  FICHA_ATUAL: "rpg_fichaAtual",
+  PASTAS:      "rpg_pastas"
 }
 
 export const Storage = {
@@ -34,7 +35,6 @@ export const Storage = {
     localStorage.setItem(CHAVES.FICHA_ATUAL, String(index))
   },
 
-  // Retorna o objeto bruto da ficha atual (ou null)
   carregarFichaAtual() {
     const fichas = this.carregarFichas()
     const idx    = this.getIndiceFichaAtual()
@@ -42,12 +42,25 @@ export const Storage = {
     return { ficha: fichas[idx], index: idx }
   },
 
-  // Grava o estado da ficha atual de volta no array
   salvarFichaAtual(fichaObj) {
     const fichas = this.carregarFichas()
     const idx    = this.getIndiceFichaAtual()
     if (idx === null) return
     fichas[idx] = fichaObj
     this.salvarFichas(fichas)
+  },
+
+  // ---------- pastas (index.html) ----------
+
+  carregarPastas() {
+    try {
+      return JSON.parse(localStorage.getItem(CHAVES.PASTAS)) ?? []
+    } catch {
+      return []
+    }
+  },
+
+  salvarPastas(pastas) {
+    localStorage.setItem(CHAVES.PASTAS, JSON.stringify(pastas))
   }
 }
