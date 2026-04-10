@@ -61,6 +61,9 @@ export function atualizarBarras(ficha) {
     { normal: "linear-gradient(90deg,#7e22ce,#a855f7)", over: "linear-gradient(90deg,#e879f9,#f5d0fe)" })
   _setBarraStatus("pvFill", "pvBackground", pvAtual, pvMax,
     { normal: "linear-gradient(90deg,#991b1b,#ef4444)", over: "linear-gradient(90deg,#fb923c,#fde68a)" })
+
+  // Teste de morte: aparece quando PV = 0
+  _atualizarTesteMorte(pvAtual, ficha)
 }
 
 function _setBarraStatus(fillId, bgId, atual, max, colors) {
@@ -137,4 +140,31 @@ export function renderPontos(ficha) {
 
   document.getElementById("restante").innerText   = restante
   document.getElementById("restante").style.color = restante < 0 ? "#ef4444" : "white"
+}
+
+// ── Teste de Morte (PV = 0) ───────────────────────────────
+export function _atualizarTesteMorte(pvAtual, ficha) {
+  const container = document.getElementById("testeMorteContainer")
+  if (!container) return
+
+  if (pvAtual > 0) {
+    container.style.display = "none"
+    return
+  }
+
+  container.style.display = "block"
+  const marcadores = ficha?.status?.pv?.testeMorte ?? [false, false, false]
+
+  container.innerHTML = `
+    <div class="teste-morte-label">💀 Testes de Morte</div>
+    <div class="teste-morte-bolinhas">
+      ${marcadores.map((marcado, i) => `
+        <button class="bolinha-morte ${marcado ? 'marcada' : ''}"
+          onclick="marcarTesteMorte(${i})"
+          title="${marcado ? 'Falha marcada' : 'Clique para marcar falha'}">
+          ${marcado ? '💀' : '○'}
+        </button>`).join('')}
+    </div>
+    ${marcadores.filter(Boolean).length >= 3 ? '<div class="teste-morte-aviso">⚠️ Personagem morto!</div>' : ''}
+  `
 }

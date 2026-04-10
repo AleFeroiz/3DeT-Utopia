@@ -20,17 +20,21 @@ export class Caracteristica {
     gratuita  = false,
     escolhas  = {},
     custo     = 0,
-    custoPM   = 2
+    custoPM   = 2,
+    amplificada = null,
+    reduzida    = null
   } = {}) {
-    this.nome      = nome
-    this.descricao = descricao
-    this.origem    = origem
-    this.escala    = escala
-    this.custoPT   = custoPT
-    this.gratuita  = gratuita   // não desconta PCs da fonte
-    this.escolhas  = escolhas
-    this.custo     = custo
-    this.custoPM   = Math.max(2, custoPM)
+    this.nome        = nome
+    this.descricao   = descricao
+    this.origem      = origem
+    this.escala      = escala
+    this.custoPT     = custoPT
+    this.gratuita    = gratuita
+    this.escolhas    = escolhas
+    this.custo       = custo
+    this.custoPM     = Math.max(2, custoPM)
+    this.amplificada = amplificada  // { custoPM, detalhes } | null
+    this.reduzida    = reduzida     // { custoPM, detalhes } | null
   }
 
   static fromJSON(obj) {

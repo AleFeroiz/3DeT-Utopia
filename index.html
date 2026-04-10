@@ -3,17 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3DeT One Piece — Fichas</title>
+  <title>3DeT One Piece</title>
   <link rel="stylesheet" href="style/global.css">
   <link rel="stylesheet" href="style/toast.css">
   <link rel="stylesheet" href="style/index.css">
 </head>
 <body>
 <div class="container index-container">
+
+  <!-- ── HEADER ──────────────────────────────────────────── -->
   <header class="index-header">
-    <div>
-      <h1>⚓ 3DeT One Piece</h1>
-      <p class="subtitulo">Gerencie suas fichas de personagem</p>
+    <div class="header-left">
+      <h1 id="tituloSite">⚓ 3DeT One Piece</h1>
+      <p class="subtitulo" id="subtituloSite">Gerencie suas fichas de personagem</p>
     </div>
     <div class="login-header" id="loginArea">
       <span id="userInfoIndex" class="user-info-header"></span>
@@ -22,13 +24,94 @@
     </div>
   </header>
 
-  <div class="toolbar">
-    <button class="btn btn-criar" id="btnNova">+ Nova Ficha</button>
-    <button class="btn btn-pasta" id="btnNovaPasta">📁 Nova Pasta</button>
+  <!-- ── TOGGLE PLAYER / MESTRE ──────────────────────────── -->
+  <div class="modo-toggle-wrapper">
+    <button class="modo-btn modo-btn-player active" id="btnModoPlayer" onclick="setModo('player')">
+      <span class="modo-icon">⚔️</span>
+      <span>Player</span>
+    </button>
+    <div class="modo-divisor"></div>
+    <button class="modo-btn modo-btn-mestre" id="btnModoMestre" onclick="setModo('mestre')">
+      <span class="modo-icon">📖</span>
+      <span>Mestre</span>
+    </button>
   </div>
 
-  <div id="areaSemPasta" class="drop-zone"></div>
-  <div id="listaPastas"></div>
+  <!-- ── CONTEÚDO PLAYER ─────────────────────────────────── -->
+  <div id="painelPlayer" class="painel-modo">
+    <div class="toolbar">
+      <button class="btn btn-criar" id="btnNova">+ Nova Ficha</button>
+      <button class="btn btn-pasta" id="btnNovaPasta">📁 Nova Pasta</button>
+    </div>
+    <div id="areaSemPasta" class="drop-zone"></div>
+    <div id="listaPastas"></div>
+  </div>
+
+  <!-- ── CONTEÚDO MESTRE ─────────────────────────────────── -->
+  <div id="painelMestre" class="painel-modo hidden">
+
+    <!-- VIAGEM ─────────────────────────────────────────── -->
+    <div class="viagem-painel">
+      <div class="viagem-header">
+        <div>
+          <h2 class="viagem-titulo">🧭 Sistema de Viagem</h2>
+          <p class="viagem-sub">Gera ambiente, 3 rotas aleatórias e calcula o NR de cada uma</p>
+        </div>
+        <button id="btnGerarViagem" class="btn-gerar-viagem">🎲 Gerar Viagem</button>
+      </div>
+
+      <!-- Configuração rápida -->
+      <div class="viagem-config">
+        <div class="viagem-config-grupo">
+          <label>🌍 Ambiente</label>
+          <select id="viagemAmbiente">
+            <option value="aleatorio">🎲 Aleatório</option>
+            <option value="0">🌿 Estável (−1)</option>
+            <option value="1">⚡ Instável (+1)</option>
+            <option value="2">💀 Hostil (+3)</option>
+          </select>
+        </div>
+        <div class="viagem-config-grupo">
+          <label>🚢 Ritmo</label>
+          <select id="viagemRitmo">
+            <option value="0">😴 Lento (−1)</option>
+            <option value="1" selected>⚓ Normal (0)</option>
+            <option value="2">💨 Acelerado (+2)</option>
+          </select>
+        </div>
+        <div class="viagem-config-grupo">
+          <label>⚓ Porte do Navio</label>
+          <select id="viagemPorte">
+            <option value="0">🛶 Pequeno (−1)</option>
+            <option value="1" selected>⛵ Médio (0)</option>
+            <option value="2">🚢 Grande (+1)</option>
+          </select>
+        </div>
+        <div class="viagem-config-grupo">
+          <label>🔧 Estado do Navio</label>
+          <select id="viagemEstado">
+            <option value="0" selected>✅ Normal (0)</option>
+            <option value="1">⚠️ Avariado (+1)</option>
+            <option value="2">🔴 Crítico (+2)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div id="viagemResultado" class="viagem-resultado hidden"></div>
+    </div>
+
+    <hr class="viagem-divisor">
+
+    <!-- FICHAS DO MESTRE ─────────────────────────────── -->
+    <div class="toolbar">
+      <button class="btn btn-criar-mestre" id="btnNovaMestre">+ Nova Ficha (Mestre)</button>
+      <button class="btn btn-pasta-mestre" id="btnNovaPastaMestre">📁 Nova Pasta</button>
+    </div>
+    <div id="areaSemPastaMestre" class="drop-zone"></div>
+    <div id="listaPastasMestre"></div>
+  </div>
+
 </div>
 
 <!-- Modal criar/renomear pasta -->

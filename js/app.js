@@ -5,16 +5,18 @@
 import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 
-import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras } from "./ui/uiAtributos.js"
+import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras, _atualizarTesteMorte } from "./ui/uiAtributos.js"
 import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
 import {
   registrarCallbacks, abrirListaLivro, abrirCriarElemento, confirmarCriacaoElemento,
   abrirCriarFonte, atualizarCustoFonte, atualizarSubtipoFonte, confirmarSalvarFonte,
-  abrirCriarCaracteristica, atualizarEscala, confirmarCriarCaracteristica,
+  abrirCriarCaracteristica, atualizarEscala, atualizarLimiteEscala, confirmarCriarCaracteristica,
   renderCaracteristicasFonte, trocarAbaCarac, fecharModal, atualizarPreviewCarac,
+  toggleVariante, selecionarAbaVariante,
   registrarCallbackIsolada, abrirCriarCaracteristicaIsolada,
   atualizarEscalaIsolada, confirmarCaracIsolada,
-  abrirLojinhaIsoladaModal, confirmarIsoladaLojinha, trocarAbaIso
+  abrirLojinhaIsoladaModal, confirmarIsoladaLojinha, trocarAbaIso,
+  selecionarAbaVarianteIso, toggleVarianteIso
 } from "./ui/uiModal.js"
 import {
   registrarCallbackRacaProf, renderSidebarRacaProf,
@@ -77,6 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Firebase
   await inicializarFirebase()
+  _renderAnotacoes()
   _atualizarUILogin()
 })
 
@@ -93,6 +96,78 @@ function _renderPericias() {
       toastSucesso(ficha.maestrias[id] ? "Maestria aplicada! (2 PT)" : "Maestria removida.")
     }
   )
+}
+
+function _renderAnotacoes() {
+  const a = ficha.anotacoes ?? {}
+  const set = (id, val) => {
+    const el = document.getElementById(id)
+    if (el && document.activeElement !== el) el.value = val ?? ""
+  }
+  set("anotObjetivo",      a.objetivo)
+  set("anotHistoria",      a.historia)
+  set("anotPersonalidade", a.personalidade)
+  set("anotNotas",         a.notas)
+}
+
+function _renderInventario() {
+  const inv      = ficha.inventario ?? { itens: [], offsetPeso: 0 }
+  const pesoMax  = ficha.pesoMaxInventario
+  const pesoAtual = ficha.pesoAtualInventario
+  const offset   = inv.offsetPeso ?? 0
+  const auto     = (ficha.atributos.resistencia ?? 0) * 5
+
+  // Atualiza display de peso
+  const elAtual = document.getElementById("invPesoAtual")
+  const elMax   = document.getElementById("invPesoMax")
+  const elOff   = document.getElementById("invPesoOffset")
+  const elFill  = document.getElementById("invBarraFill")
+
+  if (elAtual) { elAtual.textContent = pesoAtual; elAtual.style.color = pesoAtual > pesoMax ? "#ef4444" : "#22c55e" }
+  if (elMax && document.activeElement !== elMax) {
+    elMax.innerText   = pesoMax
+    elMax.style.color = offset !== 0 ? "#fbbf24" : ""
+    elMax.title       = offset !== 0 ? `Auto (Res×5): ${auto} + offset: ${offset > 0 ? "+" : ""}${offset}` : "Clique para editar o máximo (base: Resistência × 5)"
+  }
+  if (elOff) elOff.textContent = offset !== 0 ? `(base ${auto} + offset ${offset > 0 ? "+" : ""}${offset})` : `(Resistência ${ficha.atributos.resistencia ?? 0} × 5)`
+  if (elFill) {
+    const ratio = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
+    const over  = pesoAtual > pesoMax
+    elFill.style.width      = (ratio * 100).toFixed(1) + "%"
+    elFill.style.background = over
+      ? "linear-gradient(90deg,#ef4444,#fca5a5)"
+      : ratio > 0.75
+        ? "linear-gradient(90deg,#f59e0b,#fcd34d)"
+        : "linear-gradient(90deg,#16a34a,#4ade80)"
+  }
+
+  // Renderiza lista de itens
+  const container = document.getElementById("listaItens")
+  if (!container) return
+  container.innerHTML = ""
+
+  if (!inv.itens.length) {
+    container.innerHTML = `<div class="aba-vazia" style="padding:32px 0"><p style="opacity:0.5">Nenhum item no inventário.</p></div>`
+    return
+  }
+
+  inv.itens.forEach(item => {
+    const card = document.createElement("div")
+    card.className = "inv-item-card"
+    card.innerHTML = `
+      <div class="inv-item-info">
+        <div class="inv-item-nome">${item.nome}</div>
+        ${item.descricao ? `<div class="inv-item-desc">${item.descricao}</div>` : ""}
+      </div>
+      <div class="inv-item-direita">
+        <span class="inv-item-peso">⚖️ ${item.peso ?? 0}</span>
+        <div class="inv-item-acoes">
+          <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
+          <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
+        </div>
+      </div>`
+    container.appendChild(card)
+  })
 }
 
 function renderTudo() {
@@ -134,6 +209,8 @@ function renderTudo() {
       renderTudo(); salvar()
     }
   })
+  _renderAnotacoes()
+  _renderInventario()
   _atualizarUILogin()
 }
 
@@ -320,6 +397,27 @@ function _resumoEscolhas(escolhas) {
   }
   return result
 }
+function _htmlVariantesExpandir(c) {
+  const renderV = (v, tipo) => {
+    if (!v) return ''
+    const amp   = tipo === 'amplificada'
+    const icone = amp ? '⬆️' : '⬇️'
+    const label = amp ? 'Amplificada' : 'Reduzida'
+    const cor   = amp ? '#f59e0b' : '#60a5fa'
+    const linhas = v.detalhes.map(d => {
+      const dc = d.destaque === 'amp' ? '#fbbf24' : d.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.45)'
+      return '<span style="color:' + dc + ';font-size:11px">' + d.label + ': <strong>' + d.valor + '</strong></span>'
+    }).join(' · ')
+    return '<div style="border:1px solid ' + cor + '55;border-radius:6px;padding:5px 8px;margin-top:5px;background:' + (amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)') + '">' +
+      '<span style="font-size:11px;font-weight:600;color:' + cor + '">' + icone + ' ' + label + ' — ' + v.custoPM + ' PM</span>' +
+      '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">' + linhas + '</div>' +
+    '</div>'
+  }
+  const ha = renderV(c.amplificada, 'amplificada')
+  const hr = renderV(c.reduzida,    'reduzida')
+  return (ha || hr) ? '<div style="margin-top:4px">' + ha + hr + '</div>' : ''
+}
+
 function _cardCaractExpandir(c) {
   const PC_POR_ESCALA = {1:1,2:2,3:3,4:4,5:5,6:6}
   const resumo = _resumoEscolhas(c.escolhas)
@@ -328,7 +426,7 @@ function _cardCaractExpandir(c) {
     .join('')
   const pc = c.gratuita ? '0 PC' : ((PC_POR_ESCALA[c.escala] ?? c.escala) + ' PC')
   const gratuitaBadge = c.gratuita
-    ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px">GRÁTIS</span>'
+    ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px">GRÁTIS em PCs</span>'
     : ''
   return '<div class="card-info desbloqueado" style="margin-bottom:10px' + (c.gratuita ? ';border-color:#22c55e' : '') + '">' +
     '<div class="carac-header-row">' +
@@ -341,6 +439,7 @@ function _cardCaractExpandir(c) {
       '</div>' +
     '</div>' +
     (rows ? '<div class="carac-resumo">' + rows + '</div>' : '') +
+    _htmlVariantesExpandir(c) +
     (c.descricao ? '<p class="carac-descricao">' + c.descricao + '</p>' : '') +
   '</div>'
 }
@@ -352,8 +451,31 @@ function _abrirExpandirFonte(fonte) {
   const PC_POR_ESCALA = { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6 }
 
   let passivosHTML = ""
-  if (fonte.subtipo === "zoan" && fonte.passivos?.zoan_resistencias?.length) {
-    passivosHTML += `<div class="passivo-tag">🛡️ Resistente a: <strong>${fonte.passivos.zoan_resistencias.join(", ")}</strong></div>`
+  if (fonte.subtipo === "zoan") {
+    const resH = fonte.passivos?.zoan_res_hibrida
+    const resC = fonte.passivos?.zoan_res_completa
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>⚙️ Regra de Transformação</strong>
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Mudar de forma custa uma <strong>Ação Completa</strong>. Durante a transição você é considerado <strong>Indefeso</strong>.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🧍 Forma Humana</strong> — <span style="color:#94a3b8">Custo: Nenhum</span>
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Apenas características de Escala 1 da fruta.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🐺 Forma Híbrida</strong> — <span style="color:#fbbf24">3 PM</span>
+      ${resH?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resH.join(", ")}</span>` : ""}
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Mista: (5×Resistência) + (5×Habilidade) em PV/PM temporários. Escalas 1 e 2 + ficha normal liberadas.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🦖 Forma Zoan (Animal)</strong> — <span style="color:#f87171">6 PM</span>
+      ${resC?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resC.join(", ")}</span>` : ""}
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Animalesca: (10×Resistência) + (10×Habilidade) em PV/PM temporários. Todas as escalas liberadas, mas ficha normal indisponível.</p>
+    </div>`
   }
   if (fonte.subtipo === "logia" && fonte.passivos?.elemento) {
     passivosHTML += `<div class="passivo-tag">🌊 Elemento: <strong>${fonte.passivos.elemento}</strong></div>`
@@ -418,7 +540,9 @@ function expor() {
   window.atualizar = () => {
     sincronizarAtributosParaFicha(ficha)
     ficha.calcularStatus(); ficha.calcularPontos()
-    renderStatus(ficha); renderPontos(ficha); salvar()
+    renderStatus(ficha); renderPontos(ficha)
+    _renderInventario()
+    salvar()
   }
 
   // Nível
@@ -442,15 +566,20 @@ function expor() {
   window.confirmarIsoladaLojinha        = confirmarIsoladaLojinha
   window.fecharIsoladaLojinha           = () => fecharModal("modalIsoladaLojinha")
   window.trocarAbaIso                   = trocarAbaIso
+  window.selecionarAbaVarianteIso       = selecionarAbaVarianteIso
+  window.toggleVarianteIso              = toggleVarianteIso
   window.salvarFonte              = confirmarSalvarFonte
   window.atualizarCustoFonte      = atualizarCustoFonte
   window.atualizarSubtipoFonte    = atualizarSubtipoFonte
   window.abrirModalCaracteristica = () => abrirCriarCaracteristica(null)
   window.adicionarCaracteristica  = confirmarCriarCaracteristica
   window.atualizarEscala          = atualizarEscala
+  window.atualizarLimiteEscala    = atualizarLimiteEscala
 
   // Abas característica
-  window.trocarAbaCarac = trocarAbaCarac
+  window.trocarAbaCarac        = trocarAbaCarac
+  window.toggleVariante        = toggleVariante
+  window.selecionarAbaVariante = selecionarAbaVariante
 
   // Raça / Profissão
   window.abrirModalRaca      = () => abrirModalRaca(ficha)
@@ -465,6 +594,82 @@ function expor() {
     ficha.status[chave].atual = novo
     el.value = novo
     atualizarBarras(ficha)
+    salvar()
+  }
+
+  window.marcarTesteMorte = (idx) => {
+    if (!ficha.status.pv.testeMorte) ficha.status.pv.testeMorte = [false, false, false]
+    ficha.status.pv.testeMorte[idx] = !ficha.status.pv.testeMorte[idx]
+    const pvAtual = +document.getElementById("pvAtual").value || 0
+    _atualizarTesteMorte(pvAtual, ficha)
+    salvar()
+  }
+
+  // Anotações
+  window.salvarAnotacao = (campo, valor) => {
+    if (!ficha.anotacoes) ficha.anotacoes = {}
+    ficha.anotacoes[campo] = valor
+    salvar()
+  }
+
+  // Inventário
+  let _itemEditandoId = null
+
+  window.abrirModalItem = () => {
+    _itemEditandoId = null
+    document.getElementById("modalItemTitulo").innerText = "🎒 Adicionar Item"
+    document.getElementById("itemNome").value       = ""
+    document.getElementById("itemDescricao").value  = ""
+    document.getElementById("itemPeso").value       = "0"
+    window.syncStepper?.("itemPeso")
+    fecharModal("modalItem") // reset
+    document.getElementById("modalItem").classList.remove("hidden")
+  }
+
+  window.abrirEditarItem = (id) => {
+    const item = ficha.inventario.itens.find(i => i.id === id)
+    if (!item) return
+    _itemEditandoId = id
+    document.getElementById("modalItemTitulo").innerText = "✏️ Editar Item"
+    document.getElementById("itemNome").value       = item.nome ?? ""
+    document.getElementById("itemDescricao").value  = item.descricao ?? ""
+    document.getElementById("itemPeso").value       = item.peso ?? 0
+    window.syncStepper?.("itemPeso")
+    document.getElementById("modalItem").classList.remove("hidden")
+  }
+
+  window.confirmarSalvarItem = () => {
+    const nome = document.getElementById("itemNome").value.trim()
+    if (!nome) { toastErro("Digite um nome para o item."); return }
+    const item = {
+      nome,
+      descricao: document.getElementById("itemDescricao").value.trim(),
+      peso:      +document.getElementById("itemPeso").value || 0
+    }
+    if (_itemEditandoId) {
+      ficha.editarItem(_itemEditandoId, item)
+      toastSucesso("Item atualizado!")
+    } else {
+      ficha.adicionarItem(item)
+      toastSucesso("Item adicionado!")
+    }
+    fecharModal("modalItem")
+    _renderInventario()
+    salvar()
+  }
+
+  window.removerItem = (id) => {
+    ficha.removerItem(id)
+    _renderInventario()
+    salvar()
+    toastAviso("Item removido.")
+  }
+
+  window.editarPesoMaxInventario = (val) => {
+    const novo = parseInt(val) || 0
+    const auto = (ficha.atributos.resistencia ?? 0) * 5
+    ficha.inventario.offsetPeso = novo - auto
+    _renderInventario()
     salvar()
   }
 

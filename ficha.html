@@ -35,6 +35,8 @@
       <div class="tab"        onclick="trocarAba(5)">Fontes de Poder</div>
       <div class="tab"        onclick="trocarAba(6)">Raça</div>
       <div class="tab"        onclick="trocarAba(7)">Profissão</div>
+      <div class="tab"        onclick="trocarAba(8)">📝 Anotações</div>
+      <div class="tab"        onclick="trocarAba(9)">🎒 Inventário</div>
     </div>
 
     <!-- ABA 0: ATRIBUTOS -->
@@ -115,6 +117,63 @@
           <button onclick="abrirModalProfissao()" class="btn-acao">⚒️ Escolher Profissão</button>
         </div>
       </div>
+    </div>
+
+    <!-- ABA 8: ANOTAÇÕES -->
+    <div class="section">
+      <div class="anotacoes-grid">
+
+        <div class="anotacao-bloco">
+          <label class="anotacao-label">🎯 Objetivo</label>
+          <textarea id="anotObjetivo" class="anotacao-area"
+            placeholder="Qual é o objetivo do seu personagem? O que ele busca nesse mundo?..."
+            oninput="salvarAnotacao('objetivo', this.value)"></textarea>
+        </div>
+
+        <div class="anotacao-bloco">
+          <label class="anotacao-label">📖 História</label>
+          <textarea id="anotHistoria" class="anotacao-area"
+            placeholder="De onde ele veio? O que viveu? Qual é sua origem?..."
+            oninput="salvarAnotacao('historia', this.value)"></textarea>
+        </div>
+
+        <div class="anotacao-bloco">
+          <label class="anotacao-label">🧠 Personalidade</label>
+          <textarea id="anotPersonalidade" class="anotacao-area"
+            placeholder="Como ele age? Seus traços, manias, medos, virtudes?..."
+            oninput="salvarAnotacao('personalidade', this.value)"></textarea>
+        </div>
+
+        <div class="anotacao-bloco anotacao-bloco--full">
+          <label class="anotacao-label">🗒️ Anotações Atuais</label>
+          <textarea id="anotNotas" class="anotacao-area anotacao-area--tall"
+            placeholder="Notas de sessão, itens coletados, NPCs conhecidos, eventos importantes..."
+            oninput="salvarAnotacao('notas', this.value)"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ABA 9: INVENTÁRIO -->
+    <div class="section">
+      <div class="inv-header">
+        <div class="inv-peso-bloco">
+          <div class="inv-peso-label">⚖️ Carga</div>
+          <div class="inv-peso-valores">
+            <span id="invPesoAtual" class="inv-peso-atual">0</span>
+            <span class="inv-peso-sep">/</span>
+            <span id="invPesoMax" class="inv-peso-max max-editavel" contenteditable="true"
+              title="Clique para editar o máximo (base: Resistência × 5)"
+              onblur="editarPesoMaxInventario(this.innerText)">0</span>
+          </div>
+          <div id="invPesoOffset" class="inv-peso-offset" style="font-size:11px;opacity:0.45;min-height:14px"></div>
+          <div class="inv-barra-bg">
+            <div id="invBarraFill" class="inv-barra-fill"></div>
+          </div>
+        </div>
+        <button class="inv-btn-add" onclick="abrirModalItem()">＋ Adicionar Item</button>
+      </div>
+      <div id="listaItens" class="inv-lista"></div>
     </div>
 
   </div><!-- /main -->
@@ -198,6 +257,7 @@
         <button onclick="ajustarStatus('pv',+5)" title="+5">»</button>
       </div>
     </div>
+    <div id="testeMorteContainer" style="display:none"></div>
 
     <hr style="border-color:#334155;margin:8px 0">
 
@@ -231,7 +291,7 @@
     <label>Nome</label>
     <input id="novoNome" placeholder="Nome do elemento">
     <label>Custo (PT)</label>
-    <input type="number" id="novoCusto" value="0">
+    <div class="num-stepper"><button type="button" class="step-btn" onclick="stepperDec('novoCusto',1,-99,99)">‹</button><input type="number" id="novoCusto" value="0" min="-99" max="99" style="display:none"><span class="step-val" id="step_val_novoCusto">0</span><button type="button" class="step-btn" onclick="stepperInc('novoCusto',1,-99,99)">›</button></div>
     <label>Descrição</label>
     <textarea id="novoDescricao" placeholder="Descrição mecânica..."></textarea>
     <label>Notas</label>
@@ -259,8 +319,6 @@
       <option value="logia">Logia (Akuma no Mi)</option>
     </select>
     <div id="passivosConfig"></div>
-    <label>Pontos Investidos (PT) <span id="fonteCustoMin" style="opacity:0.5;font-size:12px"></span></label>
-    <input type="number" id="fonteCusto" value="0" min="0" oninput="atualizarCustoFonte()">
     <div class="pcs-display">
       <span>PCs totais: <strong id="fontePCsTotal">0</strong></span>
       <span>Gastos: <strong id="fontePCsGastos">0</strong></span>
@@ -297,11 +355,11 @@
       </div>
       <div style="flex:1">
         <label>Escala (1–6) <span id="escalaMaxInfo" style="opacity:0.5;font-size:11px"></span></label>
-        <input type="number" id="caracEscala" value="1" min="1" max="6" oninput="atualizarEscala()">
+        <div class="num-stepper"><button type="button" class="step-btn" onclick="stepperDec('caracEscala',1,1,6);atualizarEscala()">‹</button><input type="number" id="caracEscala" value="1" min="1" max="6" style="display:none"><span class="step-val" id="step_val_caracEscala">1</span><button type="button" class="step-btn" onclick="stepperInc('caracEscala',1,1,6);atualizarEscala()">›</button></div>
       </div>
       <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:4px;justify-content:flex-end">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
-          <input type="checkbox" id="caracGratuita" style="width:16px;height:16px;accent-color:#22c55e">
+          <input type="checkbox" id="caracGratuita" style="width:16px;height:16px;accent-color:#22c55e" onchange="atualizarLimiteEscala()">
           <span style="font-size:12px;color:#86efac">Grátis em PCs</span>
         </label>
       </div>
@@ -334,6 +392,7 @@
       <span>Gasto: <strong id="orcamentoGasto">0</strong></span>
       <span>PM total: <strong id="orcamentoPM">2</strong></span>
     </div>
+    <div id="painelVariantes" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
     <div class="modal-actions">
       <button onclick="adicionarCaracteristica()">✅ Criar</button>
       <button onclick="fecharModalCaracteristica()">Cancelar</button>
@@ -381,6 +440,7 @@
       <span>Gasto: <strong id="isoOrcGasto" style="color:#22c55e">0</strong></span>
       <span>PM total: <strong id="isoOrcPM">2</strong></span>
     </div>
+    <div id="painelVariantesIso" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
     <div class="modal-actions">
       <button onclick="confirmarIsoladaLojinha()">✅ Confirmar</button>
       <button onclick="fecharIsoladaLojinha()" style="background:#475569">Cancelar</button>
@@ -420,11 +480,11 @@
     <div style="display:flex;gap:12px;flex-wrap:wrap">
       <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px">
         <label>Escala (1–6) <span id="isoladaEscalaInfo" style="opacity:0.5;font-size:11px"></span></label>
-        <input type="number" id="isoladaEscala" value="1" min="1" max="6" oninput="atualizarEscalaIsolada()">
+        <div class="num-stepper"><button type="button" class="step-btn" onclick="stepperDec('isoladaEscala',1,1,6);atualizarEscalaIsolada()">‹</button><input type="number" id="isoladaEscala" value="1" min="1" max="6" style="display:none"><span class="step-val" id="step_val_isoladaEscala">1</span><button type="button" class="step-btn" onclick="stepperInc('isoladaEscala',1,1,6);atualizarEscalaIsolada()">›</button></div>
       </div>
       <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px">
         <label>Custo em PT <span style="opacity:0.5;font-size:11px">(0 = gratuita)</span></label>
-        <input type="number" id="isoladaCustoPT" value="0" min="0">
+        <div class="num-stepper"><button type="button" class="step-btn" onclick="stepperDec('isoladaCustoPT',1,0,99)">‹</button><input type="number" id="isoladaCustoPT" value="0" min="0" max="99" style="display:none"><span class="step-val" id="step_val_isoladaCustoPT">0</span><button type="button" class="step-btn" onclick="stepperInc('isoladaCustoPT',1,0,99)">›</button></div>
       </div>
     </div>
     <label>Origem / Fonte</label>
@@ -444,6 +504,63 @@
   </div>
 </div>
 
+<!-- Modal: Adicionar/Editar Item do Inventário -->
+<div id="modalItem" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalItemTitulo">🎒 Adicionar Item</h2>
+    <label>Nome</label>
+    <input id="itemNome" placeholder="Ex: Espada de Aço, Mapa do Tesouro...">
+    <label>Peso</label>
+    <div class="num-stepper">
+      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,0,999)">‹</button>
+      <input type="number" id="itemPeso" value="0" min="0" max="999" style="display:none">
+      <span class="step-val" id="step_val_itemPeso">0</span>
+      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,0,999)">›</button>
+    </div>
+    <label>Descrição</label>
+    <textarea id="itemDescricao" placeholder="Detalhes, origem, efeitos especiais..." style="min-height:70px"></textarea>
+    <div class="modal-actions">
+      <button onclick="confirmarSalvarItem()">✅ Salvar</button>
+      <button onclick="fecharModal('modalItem')" style="background:#475569">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Stepper helpers ───────────────────────────────────────
+function _stepperSet(id, val) {
+  const input = document.getElementById(id)
+  const span  = document.getElementById('step_val_' + id)
+  if (!input) return
+  const min = +input.min ?? -Infinity
+  const max = +input.max ??  Infinity
+  const clamped = Math.max(min, Math.min(max, val))
+  input.value = clamped
+  if (span) span.textContent = clamped
+  // Sync max attribute from possible dynamic updates
+  const dynamicMax = +input.max
+  if (!isNaN(dynamicMax) && clamped > dynamicMax) {
+    input.value = dynamicMax
+    if (span) span.textContent = dynamicMax
+  }
+}
+function stepperInc(id, step, min, max) {
+  const input = document.getElementById(id)
+  if (!input) return
+  _stepperSet(id, (+input.value || 0) + (step ?? 1))
+}
+function stepperDec(id, step, min, max) {
+  const input = document.getElementById(id)
+  if (!input) return
+  _stepperSet(id, (+input.value || 0) - (step ?? 1))
+}
+// Called by app.js to sync stepper display after programmatic changes
+window.syncStepper = function(id) {
+  const input = document.getElementById(id)
+  const span  = document.getElementById('step_val_' + id)
+  if (input && span) span.textContent = input.value
+}
+</script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

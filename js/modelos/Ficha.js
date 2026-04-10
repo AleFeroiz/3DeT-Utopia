@@ -18,7 +18,14 @@ export class Ficha {
     elementos   = [],
     status      = { pa: { atual: 0, max: 0 }, pm: { atual: 0, max: 0 }, pv: { atual: 0, max: 0 } },
     pontos      = { total: 10, gastos: 0, totalAuto: 10, offsetTotal: 0 },
-    caracteristicasIsoladas = []
+    caracteristicasIsoladas = [],
+    anotacoes = {
+      objetivo:    "",
+      historia:    "",
+      personalidade: "",
+      notas:       ""
+    },
+    inventario = { itens: [], offsetPeso: 0 }
   } = {}) {
     this.nome        = nome
     this.racaId      = racaId
@@ -27,6 +34,16 @@ export class Ficha {
     this.maestrias   = { ...maestrias }
     this.atributos              = { ...atributos }
     this.caracteristicasIsoladas = [...(caracteristicasIsoladas ?? [])]
+    this.anotacoes = {
+      objetivo:      anotacoes?.objetivo      ?? "",
+      historia:      anotacoes?.historia      ?? "",
+      personalidade: anotacoes?.personalidade ?? "",
+      notas:         anotacoes?.notas         ?? ""
+    }
+    this.inventario = {
+      itens:      [...(inventario?.itens      ?? [])],
+      offsetPeso: inventario?.offsetPeso ?? 0
+    }
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
       e.tipo === "fonte" ? FonteDePoder.fromJSON(e) : ElementoFicha.fromJSON(e)
@@ -160,6 +177,28 @@ export class Ficha {
     this.status[chave].max    = novoValor
   }
 
+  // ── Inventário ────────────────────────────────────────────
+  get pesoMaxInventario() {
+    return (this.atributos.resistencia ?? 0) * 5 + (this.inventario.offsetPeso ?? 0)
+  }
+
+  get pesoAtualInventario() {
+    return (this.inventario.itens ?? []).reduce((s, item) => s + (Number(item.peso) || 0), 0)
+  }
+
+  adicionarItem(item) {
+    this.inventario.itens.push({ ...item, id: crypto.randomUUID() })
+  }
+
+  removerItem(id) {
+    this.inventario.itens = this.inventario.itens.filter(i => i.id !== id)
+  }
+
+  editarItem(id, dados) {
+    const idx = this.inventario.itens.findIndex(i => i.id === id)
+    if (idx !== -1) this.inventario.itens[idx] = { ...this.inventario.itens[idx], ...dados }
+  }
+
   // ── Elementos ─────────────────────────────────────────────
   adicionarElemento(e)    { this.elementos.push(e); this.calcularPontos() }
   removerElemento(id)     { this.elementos = this.elementos.filter(e => e.id !== id); this.calcularPontos() }
@@ -179,7 +218,9 @@ export class Ficha {
       nivel: this.nivel, maestrias: this.maestrias,
       atributos: this.atributos, pericias: this.pericias,
       elementos: this.elementos, status: this.status, pontos: this.pontos,
-      caracteristicasIsoladas: this.caracteristicasIsoladas ?? []
+      caracteristicasIsoladas: this.caracteristicasIsoladas ?? [],
+      anotacoes: this.anotacoes,
+      inventario: this.inventario
     }
   }
 

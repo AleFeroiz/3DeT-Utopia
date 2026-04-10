@@ -1,11 +1,30 @@
+// ============================================================
+//  firebase.js — Firebase Auth (Google) + Firestore
+//  INSTRUÇÕES DE SETUP:
+//  1. Crie um projeto em https://console.firebase.google.com
+//  2. Ative Authentication > Google
+//  3. Ative Firestore Database
+//  4. Vá em Project Settings > Seus apps > Web > copie o firebaseConfig
+//  5. Substitua o objeto FIREBASE_CONFIG abaixo
+//  6. No Firestore, adicione esta regra de segurança:
+//     rules_version = '2';
+//     service cloud.firestore {
+//       match /databases/{database}/documents {
+//         match /users/{userId}/{document=**} {
+//           allow read, write: if request.auth.uid == userId;
+//         }
+//       }
+//     }
+// ============================================================
 
+// ⚠️  SUBSTITUA COM SEU PRÓPRIO CONFIG DO FIREBASE
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB0SVvvQIrpy4w1cotLkFnl8VUVYoddxdg",
-  authDomain: "site-ficha-3det-utopia.firebaseapp.com",
-  projectId: "site-ficha-3det-utopia",
-  storageBucket: "site-ficha-3det-utopia.firebasestorage.app",
-  messagingSenderId: "77965862037",
-  appId: "1:77965862037:web:e31028b5264f868bfde79c"
+  apiKey:            "COLE_AQUI",
+  authDomain:        "COLE_AQUI",
+  projectId:         "COLE_AQUI",
+  storageBucket:     "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId:             "COLE_AQUI"
 }
 
 const FIREBASE_CONFIGURED = !Object.values(FIREBASE_CONFIG).includes("COLE_AQUI")

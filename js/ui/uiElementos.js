@@ -4,6 +4,32 @@
 
 import { LISTA_PERICIAS } from "../dados/banco.js"
 
+// ── Helper: HTML das variantes para cards ──────────────────
+function _htmlVariantesCardIso(c) {
+  const renderV = (v, tipo) => {
+    if (!v) return ''
+    const amp   = tipo === 'amplificada'
+    const icone = amp ? '⬆️' : '⬇️'
+    const label = amp ? 'Amplificada' : 'Reduzida'
+    const cor   = amp ? '#f59e0b' : '#60a5fa'
+    // v tem { custoPM, chave, label, valor, destaque } — formato direto
+    const corDetalhe = v.destaque === 'amp' ? '#fbbf24'
+      : v.destaque === 'red' ? '#93c5fd'
+      : 'rgba(255,255,255,0.45)'
+    const linhaDetalhe = v.label && v.valor
+      ? `<span style="color:${corDetalhe};font-size:11px">${v.label}: <strong>${v.valor}</strong></span>`
+      : ''
+    return `<div style="border:1px solid ${cor}55;border-radius:6px;padding:5px 8px;margin-top:5px;background:${amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)'}">
+      <span style="font-size:11px;font-weight:600;color:${cor}">${icone} ${label} — ${v.custoPM} PM</span>
+      ${linhaDetalhe ? `<div style="margin-top:3px">${linhaDetalhe}</div>` : ''}
+    </div>`
+  }
+  const ha = renderV(c.amplificada, 'amplificada')
+  const hr = renderV(c.reduzida,    'reduzida')
+  if (!ha && !hr) return ''
+  return `<div style="margin-top:4px">${ha}${hr}</div>`
+}
+
 export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onExpandirFonte }) {
   const containers = {
     vantagem:    document.getElementById("listaVantagens"),
@@ -68,8 +94,10 @@ function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover) {
 
   let passivosHTML = ""
   if (fonte.subtipo === "zoan") {
-    const res = fonte.passivos?.zoan_resistencias
-    if (res?.length) passivosHTML += `<div class="passivo-tag">🛡️ Resist.: ${res.join(", ")}</div>`
+    const resH = fonte.passivos?.zoan_res_hibrida
+    const resC = fonte.passivos?.zoan_res_completa
+    passivosHTML += `<div class="passivo-tag">🐺 Híbrida (3 PM)${resH?.length ? ` · 🛡️ ${resH.join(", ")}` : ""}</div>`
+    passivosHTML += `<div class="passivo-tag">🦖 Completa (6 PM)${resC?.length ? ` · 🛡️ ${resC.join(", ")}` : ""}</div>`
   }
   if (fonte.subtipo === "logia" && fonte.passivos?.elemento) {
     passivosHTML += `<div class="passivo-tag">🌊 ${fonte.passivos.elemento}</div>`
@@ -231,6 +259,9 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
       ? `<span style="background:#1e3a5f;padding:1px 7px;border-radius:4px;font-size:11px;color:#93c5fd">${c.custoPT} PT</span>`
       : ""
 
+    // Variantes amplificada / reduzida
+    const variantesHTML = _htmlVariantesCardIso(c)
+
     card.innerHTML = `
       <div class="card-header">
         <strong>⚡ ${c.nome}</strong>
@@ -242,6 +273,7 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
       </div>
       ${c.origem ? `<p style="font-size:12px;opacity:0.55;margin:3px 0;font-style:italic">📍 ${c.origem}</p>` : ""}
       ${resumoHTML}
+      ${variantesHTML}
       ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
       <div class="card-actions" style="margin-top:8px">
         <button class="btn-editar">✏️ Editar</button>

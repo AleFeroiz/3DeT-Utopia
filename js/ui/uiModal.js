@@ -5,6 +5,7 @@
 import { BANCO_ELEMENTOS              } from "../dados/banco.js"
 import { toastErro, toastSucesso, toastAviso } from "./uiToast.js" 
 import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js"
+import { computarVarianteAba, abasDisponiveis } from "../dados/amplificacao.js"
 import { ElementoFicha                } from "../modelos/Elemento.js"
 import { FonteDePoder, PC_POR_ESCALA  } from "../modelos/Fonte.js"
 import { Caracteristica               } from "../modelos/Caracteristica.js"
@@ -123,6 +124,7 @@ export function abrirCriarElemento(tipo, elementoExistente = null) {
   document.getElementById("modalCriarTitulo").innerText = elementoExistente ? `Editar ${tipo}` : `Criar ${tipo}`
   document.getElementById("novoNome").value      = elementoExistente?.nome      ?? ""
   document.getElementById("novoCusto").value     = elementoExistente?.custo     ?? 0
+  window.syncStepper?.("novoCusto")
   document.getElementById("novoDescricao").value = elementoExistente?.descricao ?? ""
   document.getElementById("novoNotas").value     = elementoExistente?.notas     ?? ""
   abrirModal("modalCriar")
@@ -157,11 +159,18 @@ export function abrirCriarFonte(fonteExistente = null) {
   document.getElementById("fonteSubtipo").value = _fonteTemp.subtipo ?? "geral"
   document.getElementById("modalFonteTitulo").innerText = fonteExistente ? "✏️ Editar Fonte de Poder" : "🍎 Criar Fonte de Poder"
 
+  // _renderPassivosConfig primeiro para criar os elementos do custo no DOM
+  _renderPassivosConfig()
   _aplicarCustoMinimo()
   _atualizarPCsDisplay()
-  _renderPassivosConfig()
   _renderCaracteristicasFonteModal()
   abrirModal("modalFonte")
+
+  // Garantir scroll no topo após renderização
+  requestAnimationFrame(() => {
+    const mc = document.getElementById("modalFonte")?.querySelector(".modal-content")
+    if (mc) mc.scrollTop = 0
+  })
 }
 
 const CUSTO_MINIMO_SUBTIPO = { geral: 1, paramecia: 1, zoan: 2, logia: 3 }
@@ -172,10 +181,12 @@ function _aplicarCustoMinimo() {
   const custoAtual = _fonteTemp.custo ?? 0
   const custoFinal = Math.max(min, custoAtual)
   _fonteTemp.atualizarCusto(custoFinal)
-  document.getElementById("fonteCusto").value = custoFinal
-  document.getElementById("fonteCusto").min = min
-  const hint = document.getElementById("fonteCustoMin")
-  if (hint) hint.innerText = `(mínimo: ${min} PT)`
+  // Os elementos do custo são renderizados por _renderPassivosConfig()
+  // mas podem já existir se a função for chamada depois
+  const inputEl = document.getElementById("fonteCusto")
+  const hintEl  = document.getElementById("fonteCustoMin")
+  if (inputEl) { inputEl.value = custoFinal; inputEl.min = min; window.syncStepper?.("fonteCusto") }
+  if (hintEl)  hintEl.innerText = `(mínimo: ${min} PT)`
 }
 
 export function atualizarCustoFonte() {
@@ -183,15 +194,16 @@ export function atualizarCustoFonte() {
   const min = CUSTO_MINIMO_SUBTIPO[subtipo] ?? 1
   const val = Math.max(min, +document.getElementById("fonteCusto").value || 0)
   document.getElementById("fonteCusto").value = val
+  window.syncStepper?.("fonteCusto")
   _fonteTemp.atualizarCusto(val)
   _atualizarPCsDisplay()
 }
 
 export function atualizarSubtipoFonte() {
   _fonteTemp.subtipo = document.getElementById("fonteSubtipo").value
+  _renderPassivosConfig()
   _aplicarCustoMinimo()
   _atualizarPCsDisplay()
-  _renderPassivosConfig()
 }
 
 function _atualizarPCsDisplay() {
@@ -208,16 +220,78 @@ function _renderPassivosConfig() {
   const subtipo = document.getElementById("fonteSubtipo").value
   container.innerHTML = ""
 
+  const inputStyle = "width:100%;margin-top:6px;padding:8px;border-radius:8px;background:#0f172a;color:white;border:1px solid #334155;font-family:inherit;font-size:13px"
+  const labelStyle = "font-size:12px;opacity:0.6;margin-top:10px;display:block"
+
+  // ── Bloco de custo (sempre visível para todos os subtipos) ──
+  const min = CUSTO_MINIMO_SUBTIPO[subtipo] ?? 1
+  const custoAtual = Math.max(min, _fonteTemp.custo ?? 0)
+  const custoBloco = document.createElement("div")
+  custoBloco.innerHTML = `
+    <label style="font-size:13px;opacity:0.75;margin-top:4px">
+      Pontos Investidos (PT)
+      <span id="fonteCustoMin" style="opacity:0.5;font-size:12px;margin-left:4px">(mínimo: ${min} PT)</span>
+    </label>
+    <div class="num-stepper">
+      <button type="button" class="step-btn" onclick="stepperDec('fonteCusto',1,0,999);atualizarCustoFonte()">‹</button>
+      <input type="number" id="fonteCusto" value="${custoAtual}" min="${min}" max="999" style="display:none">
+      <span class="step-val" id="step_val_fonteCusto">${custoAtual}</span>
+      <button type="button" class="step-btn" onclick="stepperInc('fonteCusto',1,0,999);atualizarCustoFonte()">›</button>
+    </div>`
+  container.appendChild(custoBloco)
+
+  // Sincroniza o modelo com o valor renderizado
+  _fonteTemp.atualizarCusto(custoAtual)
+
   if (subtipo === "zoan") {
-    const resAtual = (_fonteTemp.passivos?.zoan_resistencias ?? []).join(", ")
+    const resHibrida  = (_fonteTemp.passivos?.zoan_res_hibrida  ?? []).join(", ")
+    const resCompleta = (_fonteTemp.passivos?.zoan_res_completa ?? []).join(", ")
+
     container.innerHTML = `
       <div class="passivo-bloco">
-        <p>🐾 <strong>Zoan</strong> — Tipos de dano para RESISTÊNCIA passiva:</p>
-        <input id="zoanResistencias" placeholder="Ex: Fogo, Corte"
-          value="${resAtual}"
-          style="width:100%;margin-top:6px;padding:8px;border-radius:8px;background:#0f172a;color:white;border:1px solid #334155"
-          oninput="_salvarResistenciasZoan(this.value)">
-        <p style="font-size:12px;opacity:0.5;margin-top:4px">Separe por vírgula. Uma característica Escala 3 gratuita será concedida automaticamente.</p>
+        <p>🐾 <strong>Zoan</strong> — Regras fixas do sistema:</p>
+
+        <div class="zoan-regra-bloco">
+          <p class="zoan-regra-titulo">⚙️ Regra de Transformação</p>
+          <p class="zoan-regra-texto">Mudar de forma custa uma <strong>Ação Completa</strong>. Durante a rodada de transição você é considerado <strong>Indefeso</strong>.</p>
+        </div>
+
+        <div class="zoan-forma-bloco">
+          <p class="zoan-forma-titulo">🧍 Forma Humana (Normal)</p>
+          <ul class="zoan-lista">
+            <li><strong>Custo:</strong> Nenhum.</li>
+            <li><strong>Limitação:</strong> Apenas características de Escala de Poder 1 da fruta.</li>
+          </ul>
+        </div>
+
+        <div class="zoan-forma-bloco zoan-hibrida">
+          <p class="zoan-forma-titulo">🐺 Forma Híbrida</p>
+          <ul class="zoan-lista">
+            <li><strong>Custo:</strong> 3 PM.</li>
+            <li><strong>Vontade Mista:</strong> Receba (5 × Resistência) e (5 × Habilidade) em PV e PM temporários.</li>
+            <li><strong>Limitação:</strong> Libera Escalas 1 e 2 da fruta + ficha normal completa.</li>
+          </ul>
+          <span style="${labelStyle}">Resistência desta forma (1 tipo de dano):</span>
+          <input id="zoanResHibrida" placeholder="Ex: Corte"
+            value="${resHibrida}" style="${inputStyle}"
+            oninput="_salvarZoan('zoan_res_hibrida', this.value)">
+        </div>
+
+        <div class="zoan-forma-bloco zoan-completa">
+          <p class="zoan-forma-titulo">🦖 Forma Zoan (Animal)</p>
+          <ul class="zoan-lista">
+            <li><strong>Custo:</strong> 6 PM.</li>
+            <li><strong>Ataque Básico:</strong> Crie um ataque conceituado no animal (conta como Escala 2).</li>
+            <li><strong>Vontade Animalesca:</strong> Receba (10 × Resistência) e (10 × Habilidade) em PV e PM temporários.</li>
+            <li><strong>Limitação:</strong> Libera todas as escalas da fruta, mas ficha normal fica indisponível.</li>
+          </ul>
+          <span style="${labelStyle}">Resistências desta forma (2 tipos de dano):</span>
+          <input id="zoanResCompleta" placeholder="Ex: Corte, Pancada"
+            value="${resCompleta}" style="${inputStyle}"
+            oninput="_salvarZoan('zoan_res_completa', this.value)">
+        </div>
+
+        <p style="font-size:11px;opacity:0.4;margin-top:8px">✦ Uma característica Escala 3 gratuita será concedida automaticamente.</p>
       </div>`
   } else if (subtipo === "logia") {
     const elAtual = _fonteTemp.passivos?.elemento ?? ""
@@ -225,8 +299,7 @@ function _renderPassivosConfig() {
       <div class="passivo-bloco">
         <p>🌊 <strong>Logia</strong> — Elemento da sua fruta:</p>
         <input id="logiaElemento" placeholder="Ex: Fogo, Gelo, Eletricidade..."
-          value="${elAtual}"
-          style="width:100%;margin-top:6px;padding:8px;border-radius:8px;background:#0f172a;color:white;border:1px solid #334155"
+          value="${elAtual}" style="${inputStyle}"
           oninput="_salvarElementoLogia(this.value)">
         <p style="font-size:12px;opacity:0.6;margin-top:8px">→ Imune ao elemento escolhido<br>→ Imune a danos mundanos (exceto Haki)</p>
       </div>`
@@ -235,6 +308,14 @@ function _renderPassivosConfig() {
 
 window._salvarResistenciasZoan = (val) => {
   _fonteTemp.passivos.zoan_resistencias = val.split(",").map(s => s.trim()).filter(Boolean)
+}
+window._salvarZoan = (campo, val) => {
+  if (!_fonteTemp?.passivos) return
+  if (campo === 'zoan_res_hibrida' || campo === 'zoan_res_completa') {
+    _fonteTemp.passivos[campo] = val.split(',').map(s => s.trim()).filter(Boolean)
+  } else {
+    _fonteTemp.passivos[campo] = val
+  }
 }
 window._salvarElementoLogia = (val) => {
   _fonteTemp.passivos.elemento = val.trim()
@@ -273,13 +354,16 @@ export function abrirCriarCaracteristica(editIndex = null) {
     : _escolhasIniciais()
 
   _caracTemp = {
-    escala:   ex?.escala ?? 1,
-    escolhas: escolhasSalvas
+    escala:      ex?.escala ?? 1,
+    escolhas:    escolhasSalvas,
+    amplificada: ex?.amplificada ?? null,
+    reduzida:    ex?.reduzida    ?? null
   }
 
   document.getElementById("caracNome").value      = ex?.nome      ?? ""
   document.getElementById("caracDescricao").value = ex?.descricao ?? ""
   document.getElementById("caracEscala").value    = _caracTemp.escala
+  window.syncStepper?.("caracEscala")
   const chkGrat = document.getElementById("caracGratuita")
   if (chkGrat) chkGrat.checked = ex?.gratuita ?? false
   document.getElementById("modalCaracTitulo").innerText =
@@ -293,39 +377,57 @@ export function abrirCriarCaracteristica(editIndex = null) {
 }
 
 export function atualizarEscala() {
-  const nova = +document.getElementById("caracEscala").value || 1
+  const nova  = +document.getElementById("caracEscala").value || 1
   const ficha = _getFicha?.()
 
-  // Verifica escala máxima da ficha (por nível)
   if (ficha && nova > ficha.escalaMax) {
     toastErro(`Sua escala máxima é ${ficha.escalaMax} (nível ${ficha.nivel}). Suba de nível para desbloquear.`)
     document.getElementById("caracEscala").value = _caracTemp.escala
+  window.syncStepper?.("caracEscala")
     return
   }
 
-  const pcsNec = PC_POR_ESCALA[nova] ?? nova
-  const pcsLivres = _fonteTemp.pcsDisponiveis + (_caracEditIndex !== null ? (PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala) : 0)
-  if (pcsNec > pcsLivres) {
-    toastErro(`PCs insuficientes! Escala ${nova} requer ${pcsNec} PC(s), mas há ${_fonteTemp.pcsDisponiveis} disponíveis.`)
-    document.getElementById("caracEscala").value = _caracTemp.escala
-    return
+  const isGratuita = document.getElementById("caracGratuita")?.checked ?? false
+  if (!isGratuita) {
+    const pcsNec    = PC_POR_ESCALA[nova] ?? nova
+    const pcsLivres = _fonteTemp.pcsDisponiveis + (_caracEditIndex !== null ? (PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala) : 0)
+    if (pcsNec > pcsLivres) {
+      toastErro(`PCs insuficientes! Escala ${nova} requer ${pcsNec} PC(s), mas há ${_fonteTemp.pcsDisponiveis} disponíveis.`)
+      document.getElementById("caracEscala").value = _caracTemp.escala
+  window.syncStepper?.("caracEscala")
+      return
+    }
   }
+
   _caracTemp.escala = nova
   _atualizarLimiteEscalaCarac()
   atualizarPreviewCarac()
 }
 
-function _atualizarLimiteEscalaCarac() {
-  const pcsLivres = _fonteTemp.pcsDisponiveis + (_caracEditIndex !== null ? (PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala) : 0)
-  const ficha = _getFicha?.()
-  const escalaMaxFicha = ficha?.escalaMax ?? 6
+export function atualizarLimiteEscala() {
+  _atualizarLimiteEscalaCarac()
+}
 
-  const escalaMaxPC = Object.entries(PC_POR_ESCALA).filter(([,pc]) => pc <= pcsLivres).map(([e]) => +e).pop() ?? 1
-  const escalaMax = Math.min(escalaMaxPC, escalaMaxFicha)
+function _atualizarLimiteEscalaCarac() {
+  const ficha          = _getFicha?.()
+  const escalaMaxFicha = ficha?.escalaMax ?? 6
+  const isGratuita     = document.getElementById("caracGratuita")?.checked ?? false
+
+  let escalaMax
+  if (isGratuita) {
+    // Característica gratuita: não limita por PCs, só pelo nível
+    escalaMax = escalaMaxFicha
+    const info = document.getElementById("escalaMaxInfo")
+    if (info) info.innerText = `(máx. ${escalaMax} pelo nível — grátis em PCs)`
+  } else {
+    const pcsLivres = _fonteTemp.pcsDisponiveis + (_caracEditIndex !== null ? (PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala) : 0)
+    const escalaMaxPC = Object.entries(PC_POR_ESCALA).filter(([,pc]) => pc <= pcsLivres).map(([e]) => +e).pop() ?? 1
+    escalaMax = Math.min(escalaMaxPC, escalaMaxFicha)
+    const info = document.getElementById("escalaMaxInfo")
+    if (info) info.innerText = `(máx. ${escalaMax} · ${_fonteTemp.pcsDisponiveis} PC · nível libera até ${escalaMaxFicha})`
+  }
 
   document.getElementById("caracEscala").max = escalaMax
-  const info = document.getElementById("escalaMaxInfo")
-  if (info) info.innerText = `(máx. ${escalaMax} · ${_fonteTemp.pcsDisponiveis} PC · nível libera até ${escalaMaxFicha})`
 }
 
 export function confirmarCriarCaracteristica() {
@@ -339,13 +441,15 @@ export function confirmarCriarCaracteristica() {
     toastErro(`PCs insuficientes! Esta escala requer ${pcsNec} PC(s).`); return
   }
   const dados = {
-    nome:      document.getElementById("caracNome").value || "Característica",
-    descricao: document.getElementById("caracDescricao").value,
-    escala:    _caracTemp.escala,
+    nome:        document.getElementById("caracNome").value || "Característica",
+    descricao:   document.getElementById("caracDescricao").value,
+    escala:      _caracTemp.escala,
     gratuita,
-    escolhas:  _caracTemp.escolhas,
-    custo:     gasto,
-    custoPM:   calcularPMCarac()
+    escolhas:    _caracTemp.escolhas,
+    custo:       gasto,
+    custoPM:     calcularPMCarac(),
+    amplificada: _caracTemp.amplificada ?? null,
+    reduzida:    _caracTemp.reduzida    ?? null
   }
 
   if (_caracEditIndex !== null) _fonteTemp.editarCaracteristica(_caracEditIndex, dados)
@@ -542,6 +646,33 @@ function _flashRow(tr, cor) {
 }
 
 // ── Render lista de características na modal de fonte ────
+// ── HTML das variantes para cards ─────────────────────────
+function _htmlVariantesCard(c) {
+  const renderV = (v, tipo) => {
+    if (!v) return ''
+    const amp   = tipo === 'amplificada'
+    const icone = amp ? '⬆️' : '⬇️'
+    const label = amp ? 'Amplificada' : 'Reduzida'
+    const cor   = amp ? '#f59e0b' : '#60a5fa'
+    // v tem { custoPM, chave, label, valor, destaque } — um único item
+    const corDetalhe = v.destaque === 'amp' ? '#fbbf24'
+      : v.destaque === 'red' ? '#93c5fd'
+      : 'rgba(255,255,255,0.45)'
+    const linhaDetalhe = v.label && v.valor
+      ? `<span style="color:${corDetalhe};font-size:11px">${v.label}: <strong>${v.valor}</strong></span>`
+      : ''
+    return `<div style="border:1px solid ${cor}55;border-radius:6px;padding:5px 8px;margin-top:5px;background:${amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)'}">
+      <span style="font-size:11px;font-weight:600;color:${cor}">${icone} ${label} — ${v.custoPM} PM</span>
+      ${linhaDetalhe ? `<div style="margin-top:3px">${linhaDetalhe}</div>` : ''}
+    </div>`
+  }
+
+  const ha = renderV(c.amplificada, 'amplificada')
+  const hr = renderV(c.reduzida,    'reduzida')
+  if (!ha && !hr) return ''
+  return `<div style="margin-top:4px">${ha}${hr}</div>`
+}
+
 function _renderCaracteristicasFonteModal() {
   const container = document.getElementById("listaCaracteristicas")
   if (!container || !_fonteTemp) return
@@ -564,8 +695,10 @@ function _renderCaracteristicasFonteModal() {
     ).join("")
 
     const gratuitaBadge = c.gratuita
-      ? `<span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px;margin-left:4px">GRÁTIS</span>`
+      ? `<span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px;margin-left:4px">GRÁTIS em PCs</span>`
       : ""
+
+    const variantesHTML = _htmlVariantesCard(c)
 
     div.innerHTML = `
       <div class="card-header">
@@ -579,6 +712,7 @@ function _renderCaracteristicasFonteModal() {
         </div>
       </div>
       ${resumoHTML ? `<div class="carac-resumo">${resumoHTML}</div>` : ""}
+      ${variantesHTML}
       ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
       <div class="card-actions" style="margin-top:8px">
         <button class="btn-editar">✏️ Editar</button>
@@ -587,12 +721,10 @@ function _renderCaracteristicasFonteModal() {
     `
     div.querySelector(".btn-editar").onclick = () => abrirCriarCaracteristica(i)
     const btnRemover = div.querySelector(".btn-remover")
-    if (btnRemover) {
-      btnRemover.onclick = () => {
-        _fonteTemp.removerCaracteristica(i)
-        _atualizarPCsDisplay()
-        _renderCaracteristicasFonteModal()
-      }
+    if (btnRemover) btnRemover.onclick = () => {
+      _fonteTemp.removerCaracteristica(i)
+      _atualizarPCsDisplay()
+      _renderCaracteristicasFonteModal()
     }
     container.appendChild(div)
   })
@@ -606,6 +738,9 @@ function calcularGastoCarac() {
   for (const lista of Object.values(_caracTemp.escolhas))
     for (const item of lista)
       if (!item.gratuita) t += item.orcamento ?? 0
+  // Amplificar e Reduzir custam 4 de orçamento cada
+  if (_caracTemp.amplificada) t += 4
+  if (_caracTemp.reduzida)    t += 4
   return t
 }
 
@@ -624,6 +759,102 @@ export function atualizarPreviewCarac() {
   document.getElementById("orcamentoGasto").innerText = gasto
   document.getElementById("orcamentoPM").innerText    = pm
   document.getElementById("orcamentoGasto").style.color = gasto > limite ? "#ef4444" : "#22c55e"
+  _renderPainelVariantes()
+}
+
+// ── Painel de Variantes (Amplificada / Reduzida) ──────────
+// Cada variante armazena: { chave, label, valor, custoPM, destaque } | null
+
+function _renderPainelVariantes() {
+  const container = document.getElementById("painelVariantes")
+  if (!container || !_caracTemp) return
+
+  const abas = abasDisponiveis(_caracTemp.escolhas)
+
+  const renderBloco = (tipo) => {
+    const amp     = tipo === 'amplificada'
+    const icone   = amp ? '⬆️' : '⬇️'
+    const label   = amp ? 'Amplificada' : 'Reduzida'
+    const cor     = amp ? '#f59e0b' : '#60a5fa'
+    const corBg   = amp ? 'rgba(245,158,11,0.07)' : 'rgba(96,165,250,0.07)'
+    const variant = _caracTemp[tipo]
+
+    // Seletor de abas (select)
+    const optsHTML = abas.map(a =>
+      `<option value="${a.chave}" ${variant?.chave === a.chave ? 'selected' : ''}>${a.label}</option>`
+    ).join('')
+    const selectHTML = `<select onchange="selecionarAbaVariante('${tipo}', this.value)"
+      style="background:#0f172a;color:${cor};border:1px solid ${cor}55;border-radius:5px;padding:2px 6px;font-size:12px;cursor:pointer">
+      ${optsHTML}
+    </select>`
+
+    if (!variant) {
+      return `<div class="variante-bloco" style="border-color:${cor}30">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span style="font-size:12px;opacity:0.6">${icone} Forma ${label}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${abas.length ? selectHTML : ''}
+            <button onclick="toggleVariante('${tipo}')"
+              style="background:${cor}22;border:1px solid ${cor}55;color:${cor};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+      </div>`
+    }
+
+    const corDetalhe = variant.destaque === 'amp' ? '#fbbf24' : variant.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.5)'
+
+    return `<div class="variante-bloco" style="border-color:${cor};background:${corBg}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600;color:${cor}">${icone} Forma ${label} — ${variant.custoPM} PM</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${abas.length ? selectHTML : ''}
+          <button onclick="toggleVariante('${tipo}')"
+            style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px">
+            ✕ Remover
+          </button>
+        </div>
+      </div>
+      <span style="color:${corDetalhe};font-size:12px">${variant.label}: <strong>${variant.valor}</strong></span>
+    </div>`
+  }
+
+  container.innerHTML = `
+    <div style="font-size:11px;opacity:0.45;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Formas Alternativas</div>
+    ${renderBloco('amplificada')}
+    ${renderBloco('reduzida')}
+  `
+}
+
+export function selecionarAbaVariante(tipo, chave) {
+  if (!_caracTemp) return
+  const variant = _caracTemp[tipo]
+  if (!variant) return  // só muda a aba se já tiver sido adicionada
+  const novo = computarVarianteAba(_caracTemp.escolhas, chave, tipo)
+  if (!novo) { toastErro(`Não é possível ${tipo === 'amplificada' ? 'amplificar' : 'reduzir'} a aba ${chave}.`); return }
+  _caracTemp[tipo] = novo
+  _renderPainelVariantes()
+}
+
+export function toggleVariante(tipo) {
+  if (!_caracTemp) return
+  if (_caracTemp[tipo]) {
+    _caracTemp[tipo] = null
+    toastAviso(`Forma ${tipo} removida.`)
+    atualizarPreviewCarac()
+    return
+  }
+  // Pega a aba do select correspondente
+  const selId = tipo === 'amplificada' ? 0 : 1
+  const sels  = document.getElementById("painelVariantes")?.querySelectorAll("select")
+  const chave = sels?.[selId]?.value ?? abasDisponiveis(_caracTemp.escolhas)[0]?.chave
+  if (!chave) { toastErro('Nenhuma aba disponível.'); return }
+  const computed = computarVarianteAba(_caracTemp.escolhas, chave, tipo)
+  if (!computed) { toastErro(`Não é possível ${tipo === 'amplificada' ? 'amplificar' : 'reduzir'} a aba selecionada.`); return }
+  _caracTemp[tipo] = computed
+  toastSucesso(`Forma ${tipo} adicionada!`)
+  atualizarPreviewCarac()
 }
 
 // ── Abas ──────────────────────────────────────────────────
@@ -660,7 +891,9 @@ export function abrirCriarCaracteristicaIsolada(editIndex = null, existente = nu
   document.getElementById("isoladaDescricao").value = existente?.descricao ?? ""
   document.getElementById("isoladaOrigem").value    = existente?.origem    ?? ""
   document.getElementById("isoladaEscala").value    = _isoladaTemp.escala
+  window.syncStepper?.("isoladaEscala")
   document.getElementById("isoladaCustoPT").value   = existente?.custoPT   ?? 0
+  window.syncStepper?.("isoladaCustoPT")
 
   const ficha     = _getFicha?.()
   const escalaMax = ficha?.escalaMax ?? 6
@@ -681,6 +914,7 @@ export function atualizarEscalaIsolada() {
   if (ficha && nova > ficha.escalaMax) {
     toastErro(`Escala máxima pelo nível: ${ficha.escalaMax}`)
     document.getElementById("isoladaEscala").value = _isoladaTemp?.escala ?? 1
+  window.syncStepper?.("isoladaEscala")
     return
   }
   if (_isoladaTemp) {
@@ -717,6 +951,9 @@ function _calcularGastoIsolada() {
   for (const lista of Object.values(_isoladaTemp.escolhas))
     for (const item of lista)
       if (!item.gratuita) t += item.orcamento ?? 0
+  // Amplificar e Reduzir custam 4 de orçamento cada
+  if (_isoladaTemp.amplificada) t += 4
+  if (_isoladaTemp.reduzida)    t += 4
   return t
 }
 
@@ -748,13 +985,15 @@ export function confirmarCaracIsolada() {
 
   const c = new Caracteristica({
     nome,
-    descricao: document.getElementById("isoladaDescricao").value,
-    origem:    document.getElementById("isoladaOrigem").value,
+    descricao:   document.getElementById("isoladaDescricao").value,
+    origem:      document.getElementById("isoladaOrigem").value,
     escala,
     custoPT,
-    escolhas:  _isoladaTemp?.escolhas ?? {},
-    custo:     gasto,
-    custoPM:   _calcularPMIsolada()
+    escolhas:    _isoladaTemp?.escolhas    ?? {},
+    amplificada: _isoladaTemp?.amplificada ?? null,
+    reduzida:    _isoladaTemp?.reduzida    ?? null,
+    custo:       gasto,
+    custoPM:     _calcularPMIsolada()
   })
 
   _onSalvarIsolada?.(c, _isoladaEditIndex)
@@ -767,8 +1006,10 @@ export function confirmarCaracIsolada() {
 //  Usa seus próprios elementos DOM (iso_aba_*, isoOrc*, etc.)
 // ═══════════════════════════════════════════════════════════
 
-let _isoEscolhas = {}   // estado interno das escolhas da lojinha isolada
-let _isoEscala   = 1    // escala corrente
+let _isoEscolhas    = {}   // estado interno das escolhas da lojinha isolada
+let _isoEscala      = 1    // escala corrente
+let _isoAmplificada = null // variante amplificada da lojinha isolada
+let _isoReduzida    = null // variante reduzida da lojinha isolada
 
 // ── Abas ────────────────────────────────────────────────────
 export function trocarAbaIso(i) {
@@ -788,6 +1029,9 @@ function _isoAtualizarPreview() {
       pm += item.pm ?? 0
     }
   }
+  // Amplificar e Reduzir custam 4 de orçamento cada
+  if (_isoAmplificada) gasto += 4
+  if (_isoReduzida)    gasto += 4
   pm = Math.max(2, pm)
 
   const elTotal = document.getElementById("isoOrcTotal")
@@ -796,6 +1040,7 @@ function _isoAtualizarPreview() {
   if (elTotal) elTotal.innerText = limite
   if (elGasto) { elGasto.innerText = gasto; elGasto.style.color = gasto > limite ? "#ef4444" : "#22c55e" }
   if (elPM)    elPM.innerText    = pm
+  _renderPainelVariantesIso()
 }
 
 // ── Render de uma aba da lojinha isolada ────────────────────
@@ -965,20 +1210,110 @@ function _isoFlash(tr, cor) {
   setTimeout(() => { tr.style.transition = "background 0.7s"; tr.style.background = "" }, 30)
 }
 
+// ── Painel de Variantes da Lojinha Isolada ──────────────────
+function _renderPainelVariantesIso() {
+  const container = document.getElementById("painelVariantesIso")
+  if (!container) return
+  const abas = abasDisponiveis(_isoEscolhas)
+
+  const renderBloco = (tipo) => {
+    const amp     = tipo === 'amplificada'
+    const icone   = amp ? '⬆️' : '⬇️'
+    const label   = amp ? 'Amplificada' : 'Reduzida'
+    const cor     = amp ? '#f59e0b' : '#60a5fa'
+    const corBg   = amp ? 'rgba(245,158,11,0.07)' : 'rgba(96,165,250,0.07)'
+    const variant = amp ? _isoAmplificada : _isoReduzida
+
+    const optsHTML = abas.map(a =>
+      `<option value="${a.chave}" ${variant?.chave === a.chave ? 'selected' : ''}>${a.label}</option>`
+    ).join('')
+    const selectHTML = `<select onchange="selecionarAbaVarianteIso('${tipo}', this.value)"
+      style="background:#0f172a;color:${cor};border:1px solid ${cor}55;border-radius:5px;padding:2px 6px;font-size:12px;cursor:pointer">
+      ${optsHTML}
+    </select>`
+
+    if (!variant) {
+      return `<div class="variante-bloco" style="border-color:${cor}30">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span style="font-size:12px;opacity:0.6">${icone} Forma ${label}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${abas.length ? selectHTML : ''}
+            <button onclick="toggleVarianteIso('${tipo}')"
+              style="background:${cor}22;border:1px solid ${cor}55;color:${cor};padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+      </div>`
+    }
+
+    const corDet = variant.destaque === 'amp' ? '#fbbf24' : '#93c5fd'
+    return `<div class="variante-bloco" style="border-color:${cor};background:${corBg}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600;color:${cor}">${icone} Forma ${label} — ${variant.custoPM} PM</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${abas.length ? selectHTML : ''}
+          <button onclick="toggleVarianteIso('${tipo}')"
+            style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px">
+            ✕ Remover
+          </button>
+        </div>
+      </div>
+      <span style="color:${corDet};font-size:12px">${variant.label}: <strong>${variant.valor}</strong></span>
+    </div>`
+  }
+
+  container.innerHTML = `
+    <div style="font-size:11px;opacity:0.45;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Formas Alternativas</div>
+    ${renderBloco('amplificada')}
+    ${renderBloco('reduzida')}
+  `
+}
+
+export function selecionarAbaVarianteIso(tipo, chave) {
+  const amp = tipo === 'amplificada'
+  const v   = amp ? _isoAmplificada : _isoReduzida
+  if (!v) return
+  const novo = computarVarianteAba(_isoEscolhas, chave, tipo)
+  if (!novo) { toastErro('Não é possível aplicar essa variante na aba selecionada.'); return }
+  if (amp) _isoAmplificada = novo; else _isoReduzida = novo
+  _renderPainelVariantesIso()
+}
+
+export function toggleVarianteIso(tipo) {
+  const amp = tipo === 'amplificada'
+  if (amp ? _isoAmplificada : _isoReduzida) {
+    if (amp) _isoAmplificada = null; else _isoReduzida = null
+    toastAviso(`Forma ${tipo} removida.`)
+    _isoAtualizarPreview()
+    return
+  }
+  const sels  = document.getElementById("painelVariantesIso")?.querySelectorAll("select")
+  const selIdx = amp ? 0 : 1
+  const chave = sels?.[selIdx]?.value ?? abasDisponiveis(_isoEscolhas)[0]?.chave
+  if (!chave) { toastErro('Nenhuma aba disponível.'); return }
+  const computed = computarVarianteAba(_isoEscolhas, chave, tipo)
+  if (!computed) { toastErro('Não é possível aplicar essa variante.'); return }
+  if (amp) _isoAmplificada = computed; else _isoReduzida = computed
+  toastSucesso(`Forma ${tipo} adicionada!`)
+  _isoAtualizarPreview()
+}
+
 // ── Abrir lojinha isolada ────────────────────────────────────
 export function abrirLojinhaIsoladaModal(existente = null) {
   const nome   = document.getElementById("isoladaNome")?.value ?? ""
   const escala = +document.getElementById("isoladaEscala")?.value || 1
 
   _isoEscala   = escala
-  // Carrega escolhas já salvas (se estiver editando) ou zera
   _isoEscolhas = existente?.escolhas
     ? JSON.parse(JSON.stringify(existente.escolhas))
     : _escolhasIniciais()
-  // Garante que escolhas do temp isolado sejam sincronizadas
   if (_isoladaTemp?.escolhas) {
     _isoEscolhas = JSON.parse(JSON.stringify(_isoladaTemp.escolhas))
   }
+  // Carrega variantes salvas
+  _isoAmplificada = _isoladaTemp?.amplificada ?? null
+  _isoReduzida    = _isoladaTemp?.reduzida    ?? null
 
   const ficha     = _getFicha?.()
   const escalaMax = ficha?.escalaMax ?? 6
@@ -986,8 +1321,8 @@ export function abrirLojinhaIsoladaModal(existente = null) {
   const elNome   = document.getElementById("isoLojNome")
   const elEscala = document.getElementById("isoLojEscala")
   const elInfo   = document.getElementById("isoLojEscalaInfo")
-  if (elNome)   elNome.value   = nome
-  if (elEscala) elEscala.value = escala
+  if (elNome)   elNome.value     = nome
+  if (elEscala) elEscala.value   = escala
   if (elInfo)   elInfo.innerText = `(máx. ${escalaMax} pelo nível)`
 
   for (const chave of Object.keys(TABELAS)) _isoRenderAba(chave)
@@ -996,15 +1331,22 @@ export function abrirLojinhaIsoladaModal(existente = null) {
   abrirModal("modalIsoladaLojinha")
 }
 
-// ── Confirmar (salva escolhas de volta ao _isoladaTemp) ──────
+// ── Confirmar (salva escolhas + variantes de volta ao _isoladaTemp) ──
 export function confirmarIsoladaLojinha() {
-  const gasto  = Object.values(_isoEscolhas).flat().reduce((s, i) => i.gratuita ? s : s + (i.orcamento ?? 0), 0)
+  let gasto = Object.values(_isoEscolhas).flat().reduce((s, i) => i.gratuita ? s : s + (i.orcamento ?? 0), 0)
+  // Amplificar e Reduzir custam 4 de orçamento cada
+  if (_isoAmplificada) gasto += 4
+  if (_isoReduzida)    gasto += 4
   const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
   if (gasto > limite) {
     toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`)
     return
   }
-  if (_isoladaTemp) _isoladaTemp.escolhas = JSON.parse(JSON.stringify(_isoEscolhas))
+  if (_isoladaTemp) {
+    _isoladaTemp.escolhas    = JSON.parse(JSON.stringify(_isoEscolhas))
+    _isoladaTemp.amplificada = _isoAmplificada
+    _isoladaTemp.reduzida    = _isoReduzida
+  }
   _atualizarPreviewIsolada()
   fecharModal("modalIsoladaLojinha")
   toastSucesso("Tabelas configuradas!")

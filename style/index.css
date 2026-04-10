@@ -230,3 +230,377 @@
 .modal-pasta-btns button:first-child { background: #7c3aed; }
 .modal-pasta-btns button:last-child  { background: #475569; }
 .modal-pasta-btns button:hover       { filter: brightness(1.15); }
+
+/* ════════════════════════════════════════════════════════════
+   TOGGLE PLAYER / MESTRE
+   ════════════════════════════════════════════════════════════ */
+
+.modo-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 0;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.modo-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 22px;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  transition: all 0.2s;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.modo-btn:hover { color: #94a3b8; }
+
+.modo-btn-player.active {
+  background: #1e3a5f;
+  color: #93c5fd;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.modo-btn-mestre.active {
+  background: #4c0519;
+  color: #fca5a5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.modo-icon { font-size: 16px; }
+
+.modo-divisor {
+  width: 1px;
+  height: 24px;
+  background: #334155;
+  margin: 0 2px;
+}
+
+/* ── Painel de modo ─────────────────────────────────────── */
+.painel-modo { }
+.painel-modo.hidden { display: none !important; }
+
+/* ── Tema MESTRE — aplica quando body[data-modo="mestre"] ── */
+
+body[data-modo="mestre"] .btn-criar-mestre {
+  background: #dc2626;
+}
+body[data-modo="mestre"] .btn-criar-mestre:hover {
+  filter: brightness(1.15);
+}
+
+body[data-modo="mestre"] .btn-pasta-mestre {
+  background: #7f1d1d;
+}
+
+body[data-modo="mestre"] .pasta-bloco {
+  border-color: #7f1d1d;
+}
+
+body[data-modo="mestre"] .pasta-header {
+  background: #1c0a0a;
+}
+body[data-modo="mestre"] .pasta-header:hover {
+  background: #2a0f0f;
+}
+
+body[data-modo="mestre"] .pasta-conteudo {
+  background: #120808;
+}
+
+body[data-modo="mestre"] .ficha-card:hover {
+  border-color: #ef4444;
+}
+
+body[data-modo="mestre"] .drop-zone.dragover {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+
+body[data-modo="mestre"] .modal-pasta-content input:focus {
+  border-color: #ef4444;
+}
+body[data-modo="mestre"] .modal-pasta-btns button:first-child {
+  background: #dc2626;
+}
+
+/* Header vermelho no modo mestre */
+body[data-modo="mestre"] h1 {
+  color: #fca5a5;
+}
+
+/* Botão abrir ficha vermelho no modo mestre */
+body[data-modo="mestre"] .btn-abrir {
+  background: #991b1b;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .modo-btn { padding: 8px 14px; font-size: 13px; }
+  .modo-icon { font-size: 14px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SISTEMA DE VIAGEM
+   ════════════════════════════════════════════════════════════ */
+
+.viagem-painel {
+  background: #0d1526;
+  border: 1px solid #1e3a5f;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 8px;
+}
+
+body[data-modo="mestre"] .viagem-painel {
+  border-color: #4c0519;
+  background: #0d0808;
+}
+
+.viagem-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.viagem-titulo {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+
+.viagem-sub {
+  font-size: 12px;
+  opacity: 0.5;
+  margin: 0;
+}
+
+.btn-gerar-viagem {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+.btn-gerar-viagem:hover  { filter: brightness(1.15); }
+.btn-gerar-viagem:active { transform: scale(0.97); }
+
+body[data-modo="mestre"] .btn-gerar-viagem {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+}
+
+/* Config */
+.viagem-config {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.viagem-config-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viagem-config-grupo label {
+  font-size: 11px;
+  opacity: 0.55;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.viagem-config-grupo select {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: white;
+  padding: 7px 9px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.viagem-config-grupo select:focus { outline: none; border-color: #7c3aed; }
+body[data-modo="mestre"] .viagem-config-grupo select:focus { border-color: #dc2626; }
+
+/* Divisor */
+.viagem-divisor {
+  border: none;
+  border-top: 1px solid #1e293b;
+  margin: 16px 0;
+}
+body[data-modo="mestre"] .viagem-divisor { border-color: #3f0000; }
+
+/* Resultado */
+.viagem-resultado { margin-top: 16px; animation: fadeSlide 0.25s ease; }
+.viagem-resultado.hidden { display: none !important; }
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.viagem-resultado-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Bloco ambiente */
+.viagem-bloco {
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.viagem-bloco-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.viagem-bloco-icon { font-size: 22px; flex-shrink: 0; }
+
+.viagem-bloco-header strong { font-size: 14px; display: block; }
+
+.viagem-nr {
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.viagem-bloco-desc {
+  font-size: 12px;
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* Config resumo */
+.viagem-config-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* Título rotas */
+.viagem-rotas-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Rotas */
+.viagem-rotas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.viagem-rota {
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #0a101e;
+}
+
+.viagem-rota-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.viagem-rota-num {
+  font-size: 11px;
+  opacity: 0.4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.viagem-rota-tipo {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.viagem-nr-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.viagem-rota-desc {
+  font-size: 12px;
+  opacity: 0.5;
+  margin: 0 0 8px;
+}
+
+.viagem-evento {
+  background: #0d1526;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.viagem-dado {
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+.viagem-evento p {
+  margin: 0;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.viagem-nota {
+  font-size: 11px;
+  opacity: 0.35;
+  text-align: center;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .viagem-painel { padding: 14px; }
+  .viagem-header { flex-direction: column; }
+  .btn-gerar-viagem { width: 100%; text-align: center; }
+  .viagem-config { grid-template-columns: 1fr 1fr; }
+}
