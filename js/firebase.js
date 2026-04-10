@@ -17,14 +17,13 @@
 //     }
 // ============================================================
 
-// ⚠️  SUBSTITUA COM SEU PRÓPRIO CONFIG DO FIREBASE
 const FIREBASE_CONFIG = {
-  apiKey:            "COLE_AQUI",
-  authDomain:        "COLE_AQUI",
-  projectId:         "COLE_AQUI",
-  storageBucket:     "COLE_AQUI",
-  messagingSenderId: "COLE_AQUI",
-  appId:             "COLE_AQUI"
+  apiKey: "AIzaSyB0SVvvQIrpy4w1cotLkFnl8VUVYoddxdg",
+  authDomain: "site-ficha-3det-utopia.firebaseapp.com",
+  projectId: "site-ficha-3det-utopia",
+  storageBucket: "site-ficha-3det-utopia.firebasestorage.app",
+  messagingSenderId: "77965862037",
+  appId: "1:77965862037:web:e31028b5264f868bfde79c"
 }
 
 const FIREBASE_CONFIGURED = !Object.values(FIREBASE_CONFIG).includes("COLE_AQUI")
