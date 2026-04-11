@@ -6,7 +6,7 @@ import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 import {
   inicializarFirebase, loginGoogle, logout, getUser,
-  onLogin, onLogout, salvarFichasFirestore, carregarFichasFirestore, estaConfigurado
+  onLogin, onLogout, salvarDadosFirestore, carregarDadosFirestore, estaConfigurado
 } from "./firebase.js"
 import { toastSucesso, toastInfo, toastErro } from "./ui/uiToast.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
@@ -62,7 +62,8 @@ function salvar(modo) {
   Storage.salvarFichas(m.fichas, modo)
   Storage.salvarPastas(m.pastas, modo)
   if (getUser() && estaConfigurado()) {
-    salvarFichasFirestore(m.fichas, m.firestoreKey)
+    // Salva fichas E pastas juntas no Firestore
+    salvarDadosFirestore(m.fichas, m.pastas, m.firestoreKey)
   }
 }
 
@@ -396,12 +397,27 @@ onLogin(async (user) => {
   _atualizarUILogin()
   toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
   if (estaConfigurado()) {
-    const cloud = await carregarFichasFirestore()
-    if (cloud !== null) {
-      MODOS.player.fichas = cloud
-      Storage.salvarFichas(cloud, "player")
+    // Carrega dados do player (fichas + pastas)
+    const cloudPlayer = await carregarDadosFirestore("fichas")
+    if (cloudPlayer !== null) {
+      MODOS.player.fichas = cloudPlayer.fichas
+      MODOS.player.pastas = cloudPlayer.pastas
+      MODOS.player.pastasAbertas = new Set(cloudPlayer.pastas.map(p => p.id))
+      Storage.salvarFichas(cloudPlayer.fichas, "player")
+      Storage.salvarPastas(cloudPlayer.pastas, "player")
       renderizar("player")
-      toastInfo(cloud.length > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada.")
+      const qtd = cloudPlayer.fichas.length
+      toastInfo(qtd > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada.")
+    }
+    // Carrega dados do mestre também (silencioso)
+    const cloudMestre = await carregarDadosFirestore("fichas_mestre")
+    if (cloudMestre !== null) {
+      MODOS.mestre.fichas = cloudMestre.fichas
+      MODOS.mestre.pastas = cloudMestre.pastas
+      MODOS.mestre.pastasAbertas = new Set(cloudMestre.pastas.map(p => p.id))
+      Storage.salvarFichas(cloudMestre.fichas, "mestre")
+      Storage.salvarPastas(cloudMestre.pastas, "mestre")
+      renderizar("mestre")
     }
   }
 })

@@ -94,15 +94,15 @@ export async function logout() {
   await _firebaseFns.signOut(_auth)
 }
 
-// ── Fichas no Firestore ────────────────────────────────────
+// ── Fichas + Pastas no Firestore ──────────────────────────
 
-export async function salvarFichasFirestore(fichas) {
+export async function salvarDadosFirestore(fichas, pastas, chave = "fichas") {
   if (!_db || !_user || !_firebaseFns) return false
   try {
     const { doc, setDoc } = _firebaseFns
     await setDoc(
-      doc(_db, "users", _user.uid, "dados", "fichas"),
-      { fichas, updatedAt: new Date().toISOString() }
+      doc(_db, "users", _user.uid, "dados", chave),
+      { fichas, pastas, updatedAt: new Date().toISOString() }
     )
     return true
   } catch (e) {
@@ -111,14 +111,32 @@ export async function salvarFichasFirestore(fichas) {
   }
 }
 
-export async function carregarFichasFirestore() {
+export async function carregarDadosFirestore(chave = "fichas") {
   if (!_db || !_user || !_firebaseFns) return null
   try {
     const { doc, getDoc } = _firebaseFns
-    const snap = await getDoc(doc(_db, "users", _user.uid, "dados", "fichas"))
-    return snap.exists() ? snap.data().fichas : []
+    const snap = await getDoc(doc(_db, "users", _user.uid, "dados", chave))
+    if (!snap.exists()) return { fichas: [], pastas: [] }
+    const data = snap.data()
+    return {
+      fichas: data.fichas ?? [],
+      pastas: data.pastas ?? [],
+    }
   } catch (e) {
     console.error("[Firestore] Erro ao carregar:", e)
     return null
   }
+}
+
+// Mantém compatibilidade com código legado que chama salvarFichasFirestore
+export async function salvarFichasFirestore(fichas, chave = "fichas") {
+  // Lê as pastas atuais para não perdê-las ao salvar só fichas
+  const atual = await carregarDadosFirestore(chave)
+  const pastas = atual?.pastas ?? []
+  return salvarDadosFirestore(fichas, pastas, chave)
+}
+
+export async function carregarFichasFirestore(chave = "fichas") {
+  const dados = await carregarDadosFirestore(chave)
+  return dados ? dados.fichas : null
 }
