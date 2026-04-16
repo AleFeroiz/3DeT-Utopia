@@ -205,3 +205,51 @@ export async function salvarIndiceFichasFirestore(fichas, chave = "fichas") {
     return false
   }
 }
+
+// ── Fichas públicas (acessíveis sem autenticação) ─────────
+// Caminho: public_fichas/{fichaId}
+// Firebase Rules devem permitir:
+//   read: if resource.data.isPublic == true
+//   write: if resource.data.isPublic == true && resource.data.editPublic == true
+
+export async function salvarFichaPublicaFirestore(fichaObj) {
+  if (!_db || !_firebaseFns || !fichaObj?.id) return false
+  try {
+    const { doc, setDoc } = _firebaseFns
+    await setDoc(
+      doc(_db, "public_fichas", fichaObj.id),
+      { ...fichaObj, _updatedAt: new Date().toISOString() }
+    )
+    return true
+  } catch (e) {
+    console.error("[Firestore] Erro ao salvar ficha pública:", e)
+    return false
+  }
+}
+
+export async function carregarFichaPublicaFirestore(fichaId) {
+  if (!_db || !_firebaseFns) return null
+  try {
+    const { doc, getDoc } = _firebaseFns
+    const snap = await getDoc(doc(_db, "public_fichas", fichaId))
+    if (!snap.exists()) return null
+    const data = snap.data()
+    // Só retorna se a ficha estiver marcada como pública
+    return data.isPublic ? data : null
+  } catch (e) {
+    console.error("[Firestore] Erro ao carregar ficha pública:", e)
+    return null
+  }
+}
+
+export async function removerFichaPublicaFirestore(fichaId) {
+  if (!_db || !_firebaseFns) return false
+  try {
+    const { doc, deleteDoc } = _firebaseFns
+    await deleteDoc(doc(_db, "public_fichas", fichaId))
+    return true
+  } catch (e) {
+    console.error("[Firestore] Erro ao remover ficha pública:", e)
+    return false
+  }
+}

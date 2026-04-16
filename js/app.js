@@ -28,15 +28,19 @@ import { toastErro, toastSucesso, toastAviso, toastInfo } from "./ui/uiToast.js"
 import { inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
          salvarFichasFirestore, carregarFichasFirestore,
          salvarFichaFirestore, carregarFichaFirestore,
+         salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
          salvarPastasFirestore, carregarPastasFirestore, estaConfigurado } from "./firebase.js"
 
 // ─────────────────────────────────────────────────────────
 let ficha = null
-let _fichaId  = null   // UUID da ficha aberta
-let _fichaModo = "player"  // modo (player/mestre)
+let _fichaId    = null       // UUID da ficha aberta
+let _fichaModo  = "player"   // modo (player/mestre)
+let _fichaOwner = true       // true = dono da ficha, false = terceiro acessando
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
+
+  await inicializarFirebase()
 
   // ── Detectar qual ficha abrir ───────────────────────────
   const params  = new URLSearchParams(window.location.search)
@@ -44,35 +48,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   const urlModo = params.get("modo") ?? "player"
 
   if (urlId) {
-    // Novo sistema: carrega pelo id da URL
     _fichaId   = urlId
     _fichaModo = urlModo
+
+    // 1. Tenta localStorage primeiro (dono no mesmo device)
     const found = Storage.carregarFichaPorId(urlId)
     if (found) {
-      ficha = Ficha.fromJSON(found.ficha)
-      _fichaModo = found.modo
-    } else {
-      // Não achou localmente — tenta Firestore (outro dispositivo)
-      await inicializarFirebase()
-      if (getUser() && estaConfigurado()) {
-        const remoto = await carregarFichaFirestore(urlId)
-        if (remoto) {
-          ficha = Ficha.fromJSON(remoto)
-          Storage.salvarFichaPorId(ficha.toJSON(), _fichaModo)
+      ficha       = Ficha.fromJSON(found.ficha)
+      _fichaModo  = found.modo
+      _fichaOwner = true
+    } else if (estaConfigurado()) {
+      // 2. Tenta ficha pública (terceiro ou dono em outro device)
+      const publica = await carregarFichaPublicaFirestore(urlId)
+      if (publica) {
+        ficha = Ficha.fromJSON(publica)
+        // Verifica se é o dono (uid na ficha) ou terceiro
+        const user = getUser()
+        _fichaOwner = !!(user && publica._ownerUid === user.uid)
+      } else {
+        // 3. Tenta ficha privada do próprio usuário (outro device)
+        const user = getUser()
+        if (user) {
+          const remoto = await carregarFichaFirestore(urlId)
+          if (remoto) {
+            ficha       = Ficha.fromJSON(remoto)
+            _fichaOwner = true
+            Storage.salvarFichaPorId(ficha.toJSON(), _fichaModo)
+          }
         }
       }
       if (!ficha) {
-        // Ficha não encontrada — abre nova
-        ficha = Ficha.nova()
-        _fichaId = ficha.id
+        ficha       = Ficha.nova()
+        _fichaId    = ficha.id
+        _fichaOwner = true
       }
+    } else {
+      // Sem Firebase configurado: localhost/teste
+      ficha       = Ficha.nova()
+      _fichaId    = ficha.id
+      _fichaOwner = true
     }
   } else {
-    // Legado: carrega pelo índice (fichas sem id ainda)
+    // Legado: carrega pelo índice
     const dados = Storage.carregarFichaAtual()
-    ficha = dados ? Ficha.fromJSON(dados.ficha) : Ficha.nova()
-    _fichaId   = ficha.id
-    _fichaModo = dados?.modo ?? "player"
+    ficha       = dados ? Ficha.fromJSON(dados.ficha) : Ficha.nova()
+    _fichaId    = ficha.id
+    _fichaModo  = dados?.modo ?? "player"
+    _fichaOwner = true
   }
   ficha.calcularStatus()
   ficha.calcularPontos()
@@ -163,10 +185,43 @@ function _renderVisibilidade() {
   if (hintPub)  hintPub.textContent  = isPub  ? "Visível para todos" : "Apenas você"
   if (hintEdit) hintEdit.textContent = isEdit ? "Todos podem editar" : "Só visualizar"
 
-  // Edição pública só faz sentido se ficha for pública
   if (rowEdit) {
-    rowEdit.style.opacity         = isPub ? "1" : "0.4"
-    rowEdit.style.pointerEvents   = isPub ? "auto" : "none"
+    rowEdit.style.opacity       = isPub ? "1" : "0.4"
+    rowEdit.style.pointerEvents = isPub ? "auto" : "none"
+  }
+
+  // Banner de somente-leitura para terceiros
+  _aplicarModoLeitura()
+}
+
+// Bloqueia/desbloqueia toda a ficha conforme _fichaOwner e editPublic
+function _aplicarModoLeitura() {
+  const somenteLeitura = !_fichaOwner && !ficha.editPublic
+  const container = document.querySelector(".ficha-container")
+  if (!container) return
+
+  let banner = document.getElementById("bannerLeitura")
+
+  if (somenteLeitura) {
+    // Desabilita todos os inputs, buttons e textareas exceto login
+    container.querySelectorAll("input, textarea, button, select").forEach(el => {
+      if (el.closest(".login-area")) return
+      el.disabled = true
+    })
+    // Mostra banner
+    if (!banner) {
+      banner = document.createElement("div")
+      banner.id = "bannerLeitura"
+      banner.className = "banner-leitura"
+      banner.innerHTML = `👁️ Modo visualização — esta ficha está somente para leitura`
+      document.querySelector(".ficha-container").prepend(banner)
+    }
+  } else {
+    // Reabilita tudo
+    container.querySelectorAll("input, textarea, button, select").forEach(el => {
+      el.disabled = false
+    })
+    banner?.remove()
   }
 }
 
@@ -376,21 +431,38 @@ function _renderNivel() {
 //  PERSISTÊNCIA
 // ─────────────────────────────────────────────────────────
 function salvar() {
+  // Terceiros sem permissão de edição não podem salvar
+  if (!_fichaOwner && !ficha.editPublic) return
+
   const fichaJson = ficha.toJSON()
 
   // localStorage SEMPRE (funciona sem Firebase, inclusive em testes locais)
-  if (_fichaId) {
-    Storage.salvarFichaPorId(fichaJson, _fichaModo)
-  } else {
-    Storage.salvarFichaAtual(fichaJson)
+  if (_fichaOwner) {
+    if (_fichaId) {
+      Storage.salvarFichaPorId(fichaJson, _fichaModo)
+    } else {
+      Storage.salvarFichaAtual(fichaJson)
+    }
   }
 
-  // Firebase só se estiver configurado E logado
-  if (getUser() && estaConfigurado()) {
+  // Firebase só se estiver configurado
+  if (estaConfigurado()) {
+    const user = getUser()
+
+    // Salva ficha privada do dono
+    if (_fichaOwner && user && _fichaId) {
+      salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid })
+    }
+
+    // Espelha em public_fichas se pública
     if (_fichaId) {
-      salvarFichaFirestore(fichaJson)
-    } else {
-      salvarFichasFirestore(Storage.carregarFichas(_fichaModo))
+      if (fichaJson.isPublic) {
+        const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
+        salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
+      } else if (_fichaOwner) {
+        // Ficou privada — remove do público
+        removerFichaPublicaFirestore(_fichaId)
+      }
     }
   }
 }
