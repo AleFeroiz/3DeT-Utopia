@@ -5,6 +5,7 @@
 import { BANCO_ELEMENTOS              } from "../dados/banco.js"
 import { toastErro, toastSucesso, toastAviso } from "./uiToast.js" 
 import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js"
+import { resumoEscolhas as _resumoEscolhas } from "./uiResumoEscolhas.js"
 import { computarVarianteAba, abasDisponiveis } from "../dados/amplificacao.js"
 import { ElementoFicha                } from "../modelos/Elemento.js"
 import { FonteDePoder, PC_POR_ESCALA  } from "../modelos/Fonte.js"
@@ -36,54 +37,7 @@ function _escolhasIniciais() {
   return result
 }
 
-// ── Resumo legível das escolhas ──────────────────────────
-function _resumoEscolhas(escolhas) {
-  if (!escolhas) return {}
-  const LABELS = {
-    potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
-    alcance: 'Alcance', duracao: 'Duração', area: 'Área',
-    alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
-  }
-  // Bases padrão a exibir quando nenhuma escolha extra foi feita
-  const BASES_PADRAO = {
-    execucao: 'Padrão',
-    alcance:  'Pessoal',
-    duracao:  'Instantânea',
-    area:     '1 alvo',
-    alvos:    '1 alvo'
-  }
-  const result = {}
-
-  // Reúne todas as chaves possíveis (escolhas + bases)
-  const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
-
-  for (const chave of todasChaves) {
-    const lista = escolhas[chave] ?? []
-    const itensExtra = lista.filter(i => !i.gratuita)
-
-    if (itensExtra.length === 0) {
-      // Sem escolha extra — mostra base padrão se existir
-      if (BASES_PADRAO[chave]) {
-        result[LABELS[chave] ?? chave] = `<span style="opacity:0.45;font-style:italic">${BASES_PADRAO[chave]} (padrão)</span>`
-      }
-      continue
-    }
-
-    const contagem = {}
-    let total = 0
-    for (const item of itensExtra) {
-      const k = item.nome ?? `+${item.valor}`
-      contagem[k] = (contagem[k] ?? 0) + 1
-      if (item.valor !== undefined) total += item.valor * 1
-    }
-    const partes = Object.entries(contagem)
-      .map(([nome, qtd]) => qtd > 1 ? `${nome} ×${qtd}` : nome)
-      .join(', ')
-    const totalStr = total > 0 ? ` <span style="opacity:0.5">= ${total}</span>` : ''
-    result[LABELS[chave] ?? chave] = partes + totalStr
-  }
-  return result
-}
+// _resumoEscolhas agora importado de uiResumoEscolhas.js
 
 const TIPOS_DANO = [
   "Corte","Perfuração","Pancada","Veneno","Ácido",

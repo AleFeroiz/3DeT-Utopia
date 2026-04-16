@@ -8,6 +8,7 @@ import { RACAS   } from "./dados/racas.js"
 
 import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras, _atualizarTesteMorte } from "./ui/uiAtributos.js"
 import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
+import { resumoEscolhas } from "./ui/uiResumoEscolhas.js"
 import {
   registrarCallbacks, abrirListaLivro, abrirCriarElemento, confirmarCriacaoElemento,
   abrirCriarFonte, atualizarCustoFonte, atualizarSubtipoFonte, confirmarSalvarFonte,
@@ -430,39 +431,39 @@ function _renderNivel() {
 // ─────────────────────────────────────────────────────────
 //  PERSISTÊNCIA
 // ─────────────────────────────────────────────────────────
-function salvar() {
+async function salvar() {
   // Terceiros sem permissão de edição não podem salvar
   if (!_fichaOwner && !ficha.editPublic) return
 
   const fichaJson = ficha.toJSON()
 
-  // localStorage SEMPRE (funciona sem Firebase, inclusive em testes locais)
+  // localStorage SEMPRE — funciona sem Firebase, inclusive em testes locais
   if (_fichaOwner) {
+    // Novo sistema: identifica pelo id
+    // Legado (sem _fichaId) não é mais possível: toda ficha criada pós-migração tem id
     if (_fichaId) {
       Storage.salvarFichaPorId(fichaJson, _fichaModo)
-    } else {
-      Storage.salvarFichaAtual(fichaJson)
     }
+    // (caminho legado removido — fichas sem id são migradas no init)
   }
 
   // Firebase só se estiver configurado
-  if (estaConfigurado()) {
-    const user = getUser()
+  if (!estaConfigurado()) return
+  const user = getUser()
 
-    // Salva ficha privada do dono
-    if (_fichaOwner && user && _fichaId) {
-      salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid })
-    }
+  // Salva ficha privada do dono (com await para garantir que chegou antes de fechar)
+  if (_fichaOwner && user && _fichaId) {
+    await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid })
+  }
 
-    // Espelha em public_fichas se pública
-    if (_fichaId) {
-      if (fichaJson.isPublic) {
-        const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
-        salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
-      } else if (_fichaOwner) {
-        // Ficou privada — remove do público
-        removerFichaPublicaFirestore(_fichaId)
-      }
+  // Espelha em public_fichas se pública
+  if (_fichaId) {
+    if (fichaJson.isPublic) {
+      const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
+      await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
+    } else if (_fichaOwner) {
+      // Ficou privada — remove do público (não precisa de await)
+      removerFichaPublicaFirestore(_fichaId)
     }
   }
 }
@@ -570,11 +571,10 @@ function _bindStatusInputs() {
 // ─────────────────────────────────────────────────────────
 //  EXPANDIR FONTE
 // ─────────────────────────────────────────────────────────
-const _LABELS_ESCOLHAS = {
-  potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
-  alcance: 'Alcance', duracao: 'Duração', area: 'Área',
-  alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
-}
+// _resumoEscolhas removido — usar import de uiResumoEscolhas.js
+// Alias local para compatibilidade com usos existentes em _cardCaractExpandir
+const _resumoEscolhas = resumoEscolhas
+
 function _resumoEscolhas(escolhas) {
   if (!escolhas) return {}
   const BASES_PADRAO = {

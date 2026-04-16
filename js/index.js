@@ -6,7 +6,9 @@ import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 import {
   inicializarFirebase, loginGoogle, logout, getUser,
-  onLogin, onLogout, salvarFichasFirestore, carregarFichasFirestore, estaConfigurado
+  onLogin, onLogout, estaConfigurado,
+  salvarFichaFirestore, salvarIndiceFichasFirestore,
+  salvarPastasFirestore, carregarFichasFirestore, carregarPastasFirestore
 } from "./firebase.js"
 import { toastSucesso, toastInfo, toastErro } from "./ui/uiToast.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
@@ -59,11 +61,24 @@ _carregarModo("mestre")
 // ── Persistência ───────────────────────────────────────────
 function salvar(modo) {
   const m = MODOS[modo]
+
+  // localStorage sempre
   Storage.salvarFichas(m.fichas, modo)
   Storage.salvarPastas(m.pastas, modo)
-  if (getUser() && estaConfigurado()) {
-    salvarFichasFirestore(m.fichas, m.firestoreKey)
+
+  // Firebase só se configurado e logado
+  if (!getUser() || !estaConfigurado()) return
+
+  // Salva cada ficha individualmente pelo id (novo sistema)
+  for (const f of m.fichas) {
+    if (f.id) salvarFichaFirestore({ ...f, _modo: modo })
   }
+
+  // Salva índice leve (metadados) + pastas por modo
+  const chaveIndice = modo === "mestre" ? "fichas_mestre" : "fichas"
+  const chavePastas = modo === "mestre" ? "pastas_mestre" : "pastas_player"
+  salvarIndiceFichasFirestore(m.fichas, chaveIndice)
+  salvarPastasFirestore(m.pastas, chavePastas)
 }
 
 // ── Trocar modo ────────────────────────────────────────────
@@ -406,15 +421,44 @@ window.fazerLogout = () => logout()
 onLogin(async (user) => {
   _atualizarUILogin()
   toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
-  if (estaConfigurado()) {
-    const cloud = await carregarFichasFirestore()
-    if (cloud !== null) {
-      MODOS.player.fichas = cloud
-      Storage.salvarFichas(cloud, "player")
-      renderizar("player")
-      toastInfo(cloud.length > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada.")
+  if (!estaConfigurado()) return
+
+  let sincronizados = 0
+
+  for (const modo of ["player", "mestre"]) {
+    const m           = MODOS[modo]
+    const chaveIndice = modo === "mestre" ? "fichas_mestre" : "fichas"
+    const chavePastas = modo === "mestre" ? "pastas_mestre" : "pastas_player"
+
+    // Carrega índice (metadados) para saber quais fichas existem na nuvem
+    const indice = await carregarFichasFirestore(chaveIndice)
+
+    if (indice !== null && indice.length > 0) {
+      // Mescla: fichas locais + fichas da nuvem que não existem localmente
+      const locaisIds = new Set(m.fichas.map(f => f.id).filter(Boolean))
+      for (const meta of indice) {
+        if (meta.id && !locaisIds.has(meta.id)) {
+          // Ficha existe na nuvem mas não localmente: adiciona com metadados
+          // (será carregada completa ao abrir)
+          m.fichas.push(meta)
+        }
+      }
+      Storage.salvarFichas(m.fichas, modo)
+      sincronizados += indice.length
     }
+
+    // Carrega pastas
+    const pastasCloud = await carregarPastasFirestore(chavePastas)
+    if (pastasCloud !== null && pastasCloud.length > 0) {
+      m.pastas = pastasCloud
+      m.pastasAbertas = new Set(pastasCloud.map(p => p.id))
+      Storage.salvarPastas(pastasCloud, modo)
+    }
+
+    renderizar(modo)
   }
+
+  toastInfo(sincronizados > 0 ? `${sincronizados} ficha(s) sincronizadas.` : "Nuvem sincronizada.")
 })
 onLogout(() => _atualizarUILogin())
 
