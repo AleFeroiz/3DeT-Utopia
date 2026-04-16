@@ -6,7 +6,7 @@ import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 import {
   inicializarFirebase, loginGoogle, logout, getUser,
-  onLogin, onLogout, salvarDadosFirestore, carregarDadosFirestore, estaConfigurado
+  onLogin, onLogout, salvarFichasFirestore, carregarFichasFirestore, estaConfigurado
 } from "./firebase.js"
 import { toastSucesso, toastInfo, toastErro } from "./ui/uiToast.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
@@ -62,8 +62,7 @@ function salvar(modo) {
   Storage.salvarFichas(m.fichas, modo)
   Storage.salvarPastas(m.pastas, modo)
   if (getUser() && estaConfigurado()) {
-    // Salva fichas E pastas juntas no Firestore
-    salvarDadosFirestore(m.fichas, m.pastas, m.firestoreKey)
+    salvarFichasFirestore(m.fichas, m.firestoreKey)
   }
 }
 
@@ -270,6 +269,7 @@ function _bindDropZone(el, pastaId, modo) {
 function criarFicha(pastaId = null, modo = modoAtivo) {
   const m   = MODOS[modo]
   const nova = Ficha.nova().toJSON()
+  if (!nova.id) nova.id = crypto.randomUUID()
   if (pastaId) nova.pastaId = pastaId
   m.fichas.push(nova)
   if (pastaId) m.pastasAbertas.add(pastaId)
@@ -279,6 +279,7 @@ function criarFicha(pastaId = null, modo = modoAtivo) {
 function _duplicarFicha(index, modo) {
   const m      = MODOS[modo]
   const copia  = JSON.parse(JSON.stringify(m.fichas[index]))
+  copia.id     = crypto.randomUUID()  // cópia ganha id próprio
   copia.nome   = (m.fichas[index].nome || "Ficha") + " (cópia)"
   m.fichas.splice(index + 1, 0, copia)
   salvar(modo); renderizar(modo)
@@ -295,8 +296,17 @@ function _deletarFicha(index, modo) {
 }
 
 function _abrirFicha(index, modo) {
-  Storage.setIndiceFichaAtual(index, modo)
-  window.location.href = "ficha.html"
+  const m     = MODOS[modo]
+  const ficha = m.fichas[index]
+  if (!ficha) return
+  if (ficha.id) {
+    // Novo sistema: navega pela URL com id — cada aba mantém seu próprio estado
+    window.location.href = `ficha.html?id=${ficha.id}&modo=${modo}`
+  } else {
+    // Legado: sem id, usa índice
+    Storage.setIndiceFichaAtual(index, modo)
+    window.location.href = "ficha.html"
+  }
 }
 
 // ── Ações pastas ───────────────────────────────────────────
@@ -397,27 +407,12 @@ onLogin(async (user) => {
   _atualizarUILogin()
   toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
   if (estaConfigurado()) {
-    // Carrega dados do player (fichas + pastas)
-    const cloudPlayer = await carregarDadosFirestore("fichas")
-    if (cloudPlayer !== null) {
-      MODOS.player.fichas = cloudPlayer.fichas
-      MODOS.player.pastas = cloudPlayer.pastas
-      MODOS.player.pastasAbertas = new Set(cloudPlayer.pastas.map(p => p.id))
-      Storage.salvarFichas(cloudPlayer.fichas, "player")
-      Storage.salvarPastas(cloudPlayer.pastas, "player")
+    const cloud = await carregarFichasFirestore()
+    if (cloud !== null) {
+      MODOS.player.fichas = cloud
+      Storage.salvarFichas(cloud, "player")
       renderizar("player")
-      const qtd = cloudPlayer.fichas.length
-      toastInfo(qtd > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada.")
-    }
-    // Carrega dados do mestre também (silencioso)
-    const cloudMestre = await carregarDadosFirestore("fichas_mestre")
-    if (cloudMestre !== null) {
-      MODOS.mestre.fichas = cloudMestre.fichas
-      MODOS.mestre.pastas = cloudMestre.pastas
-      MODOS.mestre.pastasAbertas = new Set(cloudMestre.pastas.map(p => p.id))
-      Storage.salvarFichas(cloudMestre.fichas, "mestre")
-      Storage.salvarPastas(cloudMestre.pastas, "mestre")
-      renderizar("mestre")
+      toastInfo(cloud.length > 0 ? "Fichas sincronizadas da nuvem." : "Nuvem sincronizada.")
     }
   }
 })
@@ -428,6 +423,30 @@ document.getElementById("btnNova").addEventListener("click",           () => cri
 document.getElementById("btnNovaPasta").addEventListener("click",      () => _abrirModal(null, "player"))
 document.getElementById("btnNovaMestre").addEventListener("click",     () => criarFicha(null, "mestre"))
 document.getElementById("btnNovaPastaMestre").addEventListener("click",() => _abrirModal(null, "mestre"))
+
+// Botão de migração de dados
+document.getElementById("btnMigrar")?.addEventListener("click", () => {
+  const result = Storage.migrarTudo()
+  const total  = MODOS.player.fichas.length + MODOS.mestre.fichas.length
+  let migradas = 0
+  // Recarrega fichas migradas na memória
+  for (const modo of ["player", "mestre"]) {
+    const { fichas, changed } = result[modo]
+    if (changed) {
+      MODOS[modo].fichas = fichas
+      migradas += fichas.filter(f => f.id).length
+      renderizar(modo)
+    }
+  }
+  if (result.player.changed || result.mestre.changed) {
+    toastSucesso(`Migração concluída! ${total} ficha(s) agora com ID único.`)
+    // Oculta botão após migrar
+    document.getElementById("btnMigrar").style.display = "none"
+  } else {
+    toastInfo("Todas as fichas já estão atualizadas.")
+    document.getElementById("btnMigrar").style.display = "none"
+  }
+})
 
 // ── Sistema de Viagem ──────────────────────────────────────
 document.getElementById("btnGerarViagem").addEventListener("click", () => {
@@ -515,8 +534,17 @@ function _renderViagem(r) {
 }
 
 // ── Init ───────────────────────────────────────────────────
+// Migração silenciosa: garante que todas as fichas existentes têm id UUID
+Storage.migrarTudo()
+
 await inicializarFirebase()
 _atualizarUILogin()
 _aplicarTema(modoAtivo)
 renderizar("player")
 renderizar("mestre")
+
+// Mostra botão de migração só se existirem fichas antigas sem id
+const todasFichas = [...Storage.carregarFichas("player"), ...Storage.carregarFichas("mestre")]
+const precisaMigrar = todasFichas.some(f => !f.id)
+const btnMigrar = document.getElementById("btnMigrar")
+if (btnMigrar) btnMigrar.style.display = precisaMigrar ? "inline-flex" : "none"

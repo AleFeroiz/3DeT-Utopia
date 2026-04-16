@@ -446,8 +446,9 @@ hr {
 .card-info {
   background: #0f172a; border: 1px solid #334155; border-radius: 8px;
   padding: 10px 12px; margin-bottom: 6px; font-size: 13px;
+  word-break: break-word; overflow-wrap: break-word;
 }
-.card-info p { margin-top: 4px; opacity: 0.7; }
+.card-info p { margin-top: 4px; opacity: 0.7; word-break: break-word; overflow-wrap: break-word; }
 .card-info.desvantagem   { border-color: #7f1d1d; }
 .card-info.desbloqueado  { border-color: #14532d; }
 .card-info.bloqueado     { opacity: 0.45; }
@@ -1177,3 +1178,459 @@ hr {
 }
 .inv-item-acoes .btn-editar:hover  { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
 .inv-item-acoes .btn-remover:hover { background: #3f1515; border-color: #ef4444; color: #fca5a5; }
+
+/* ── MODAL ITEM: CATEGORIA ───────────────────────────────── */
+.item-cat-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  flex: 1;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.item-cat-opt:has(input:checked) {
+  border-color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+}
+.item-cat-opt input[type="radio"] { display: none; }
+
+/* ── INVENTÁRIO: BADGES ──────────────────────────────────── */
+.inv-item-equip {
+  border-color: #7c3aed55;
+}
+.inv-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.inv-badge-equip { background: #4c1d9530; color: #a78bfa; border: 1px solid #7c3aed55; }
+.inv-badge-atk   { background: #7f1d1d30; color: #fca5a5; border: 1px solid #ef444455; }
+.inv-badge-def   { background: #1e3a5f30; color: #93c5fd; border: 1px solid #3b82f655; }
+
+/* ── SIDEBAR: BLOCO DE COMBATE ───────────────────────────── */
+.combate-bloco {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.combate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.combate-toggle {
+  display: flex;
+  gap: 4px;
+}
+.toggle-atrib {
+  padding: 3px 8px;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toggle-atrib.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+.combate-secao-titulo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.5;
+  margin-bottom: 5px;
+}
+.combate-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: 13px;
+}
+.combate-linha:last-child { border-bottom: none; }
+.combate-label  { opacity: 0.65; }
+.combate-valor  {
+  font-weight: 700;
+  color: #e2e8f0;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── COMBATE: INPUT "OUTROS" ─────────────────────────────── */
+.combate-direita {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.combate-extra {
+  width: 38px;
+  padding: 2px 4px;
+  background: #0a1628;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  color: #fbbf24;
+  font-size: 11px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+  /* esconde setas padrão do number */
+  -moz-appearance: textfield;
+}
+.combate-extra::-webkit-outer-spin-button,
+.combate-extra::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.combate-extra:focus { border-color: #fbbf24; }
+.combate-extra[value="0"] { color: #475569; }
+
+/* ── MESTIÇO / MODIFICADO — MODAIS ───────────────────────── */
+.mestico-step-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.55;
+  margin: 0 0 6px;
+}
+.mestico-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+.mestico-select, .mestico-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: white;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.mestico-select-sm {
+  width: 100%;
+  padding: 5px 8px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: white;
+  font-size: 12px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.mestico-input-sm {
+  padding: 5px 8px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: center;
+}
+.mestico-textarea {
+  width: 100%;
+  min-height: 50px;
+  padding: 7px 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: white;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+.mestico-select:focus, .mestico-input:focus, .mestico-textarea:focus,
+.mestico-select-sm:focus, .mestico-input-sm:focus {
+  outline: none; border-color: #3b82f6;
+}
+.mestico-raca-bloco {
+  background: #080f1e;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.mestico-raca-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #93c5fd;
+}
+.mestico-grupo { margin-bottom: 10px; }
+.mestico-grupo:last-child { margin-bottom: 0; }
+.mestico-grupo-label {
+  font-size: 11px;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 5px;
+}
+/* ── MESTIÇO: OPÇÃO CARD ─────────────────────────────────── */
+.mopt-lista { display: flex; flex-direction: column; gap: 4px; }
+.mopt-card {
+  padding: 7px 10px;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.mopt-card:hover { background: #1e293b; border-color: #475569; }
+.mopt-card.mopt-sel {
+  border-color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+}
+.mopt-nome { font-weight: 600; display: block; }
+.mopt-desc {
+  font-size: 12px;
+  opacity: 0.6;
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+.mestico-evol-grid { display: flex; flex-direction: column; gap: 10px; }
+.mestico-evol-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mestico-evol-card.selecionada {
+  border-color: #3b82f6;
+  background: rgba(59,130,246,0.07);
+}
+.mestico-evol-card input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+.mestico-btn-add {
+  background: #1e293b;
+  border: 1px dashed #334155;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  width: 100%;
+  transition: background 0.15s;
+}
+.mestico-btn-add:hover { background: #263447; color: white; }
+.mod-evol-row {
+  background: #080f1e;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+/* ── DISPLAY NA ABA RAÇA ─────────────────────────────────── */
+.mestico-racas-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #080f1e;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+.mestico-x { opacity: 0.4; font-size: 13px; }
+.badge-raca-mini {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+.modificado-base-label {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: -4px 0 12px;
+}
+.tag-extra.mod-manual {
+  border-color: #7c3aed55;
+  color: #c4b5fd;
+}
+
+/* ── MESTIÇO: LAYOUT PAR LADO A LADO ────────────────────── */
+.mestico-par-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.mestico-par-card {
+  padding: 8px 10px;
+  position: relative;
+}
+.mestico-par-vazio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  background: transparent;
+}
+.mestico-par-raca {
+  font-size: 10px;
+  opacity: 0.55;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.mestico-banner-lado {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.mestico-racas-banner {
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+/* Grid lado a lado para passo 2 do mestiço */
+.mestico-step2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+@media (max-width: 560px) {
+  .mestico-step2-grid { grid-template-columns: 1fr; }
+}
+/* Garante que bloco de raça não transborde */
+.mestico-raca-bloco {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── MODAL SCROLL (mestiço / conteúdo longo) ─────────────── */
+.modal.modal-scroll {
+  align-items: flex-start;
+  padding: 20px 12px;
+  overflow-y: auto;
+}
+@media (min-height: 700px) {
+  .modal.modal-scroll { align-items: center; padding: 20px 12px; }
+}
+/* Garante que .grande dentro de modal-scroll não seja maior que a tela */
+.modal.modal-scroll .modal-content.grande {
+  max-height: none;
+  overflow-y: visible;
+  width: min(640px, 96vw);
+}
+
+/* ── MESTIÇO: EVOLUÇÕES EM LINHA ─────────────────────────── */
+.mopt-evol-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mopt-evol-linha:last-child { margin-bottom: 0; }
+
+.mopt-evol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+}
+.mopt-evol-header {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+.mopt-evol-check {
+  margin-left: auto;
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 14px;
+}
+.mopt-bloq {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.mopt-bloq-msg {
+  font-size: 11px;
+  color: #f59e0b;
+  margin: 2px 0 0;
+}
+.mopt-vazio {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── MODAL MESTIÇO: TAMANHO CONTROLADO ───────────────────── */
+.modal-content.modal-mestico {
+  width: min(580px, 96vw);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+/* Remove regras anteriores que podem conflitar */
+.modal.modal-scroll { display: flex; }
+
+/* ── VISIBILIDADE DA FICHA ───────────────────────────────── */
+.visib-bloco {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin-top: 2px;
+}
+.visib-titulo {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+.visib-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #1e293b;
+  transition: opacity 0.2s;
+}
+.visib-toggle:last-child { border-bottom: none; }
+.visib-label { flex: 1; }
+.visib-hint {
+  font-size: 11px;
+  opacity: 0.45;
+  white-space: nowrap;
+}
+.visib-toggle input[type="checkbox"] { accent-color: #3b82f6; }

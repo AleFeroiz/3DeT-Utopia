@@ -604,3 +604,14 @@ body[data-modo="mestre"] .viagem-divisor { border-color: #3f0000; }
   .btn-gerar-viagem { width: 100%; text-align: center; }
   .viagem-config { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── BOTÃO MIGRAÇÃO ──────────────────────────────────────── */
+.btn-migrar {
+  background: #1e293b;
+  border: 1px dashed #475569;
+  color: #64748b;
+  font-size: 12px;
+  padding: 6px 10px;
+  display: none;  /* oculto por padrão — aparece só se necessário */
+}
+.btn-migrar:hover { background: #334155; color: #94a3b8; border-color: #94a3b8; }

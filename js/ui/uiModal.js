@@ -111,7 +111,7 @@ export function abrirListaLivro(tipo) {
     const div = document.createElement("div")
     div.className = "item-lista"
     div.innerHTML = `<strong>${item.nome}</strong> <span style="opacity:0.6">(${item.custo > 0 ? "+" : ""}${item.custo} PT)</span><p>${item.descricao}</p>`
-    div.onclick = () => { _onSalvarElemento?.(new ElementoFicha(item)); fecharModal("modal") }
+    div.onclick = () => { _onSalvarElemento?.(new ElementoFicha({ ...item, id: crypto.randomUUID() })); fecharModal("modal") }
     lista.appendChild(div)
   }
   abrirModal("modal")
@@ -139,8 +139,12 @@ export function confirmarCriacaoElemento() {
     descricao: document.getElementById("novoDescricao").value,
     notas:     document.getElementById("novoNotas").value
   }
-  if (_elementoEditando) { Object.assign(_elementoEditando, dados); _onSalvarElemento?.(null) }
-  else { _onSalvarElemento?.(new ElementoFicha(dados)) }
+  if (_elementoEditando) {
+    // Passa dados com o id original — callback cuida de atualizar no array
+    _onSalvarElemento?.(new ElementoFicha({ ...dados, id: _elementoEditando.id }))
+  } else {
+    _onSalvarElemento?.(new ElementoFicha(dados))
+  }
   fecharModal("modalCriar")
 }
 
@@ -247,7 +251,8 @@ function _renderPassivosConfig() {
     const resHibrida  = (_fonteTemp.passivos?.zoan_res_hibrida  ?? []).join(", ")
     const resCompleta = (_fonteTemp.passivos?.zoan_res_completa ?? []).join(", ")
 
-    container.innerHTML = `
+    const zoanDiv = document.createElement("div")
+    zoanDiv.innerHTML = `
       <div class="passivo-bloco">
         <p>🐾 <strong>Zoan</strong> — Regras fixas do sistema:</p>
 
@@ -293,9 +298,11 @@ function _renderPassivosConfig() {
 
         <p style="font-size:11px;opacity:0.4;margin-top:8px">✦ Uma característica Escala 3 gratuita será concedida automaticamente.</p>
       </div>`
+    container.appendChild(zoanDiv)
   } else if (subtipo === "logia") {
     const elAtual = _fonteTemp.passivos?.elemento ?? ""
-    container.innerHTML = `
+    const logiaDiv = document.createElement("div")
+    logiaDiv.innerHTML = `
       <div class="passivo-bloco">
         <p>🌊 <strong>Logia</strong> — Elemento da sua fruta:</p>
         <input id="logiaElemento" placeholder="Ex: Fogo, Gelo, Eletricidade..."
@@ -303,6 +310,7 @@ function _renderPassivosConfig() {
           oninput="_salvarElementoLogia(this.value)">
         <p style="font-size:12px;opacity:0.6;margin-top:8px">→ Imune ao elemento escolhido<br>→ Imune a danos mundanos (exceto Haki)</p>
       </div>`
+    container.appendChild(logiaDiv)
   }
 }
 
@@ -594,11 +602,22 @@ export function renderTabelaCarac(chave) {
     // ── UNICO ─────────────────────────────────────────────
     else {
       tr.addEventListener("click", () => {
-        _caracTemp.escolhas[chave] = [{ ...item }]
+        const jaEstaSelected = tr.classList.contains("selecionado")
         tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
-        tr.classList.add("selecionado")
+        if (jaEstaSelected && !item.gratuita) {
+          // Clicar de novo na opção selecionada: reverte para a base gratuita
+          const base = config.dados.find(d => d.gratuita)
+          _caracTemp.escolhas[chave] = base ? [{ ...base }] : []
+          // Destaca o item base visualmente
+          const trBase = tbody.querySelector("tr[data-gratuita='true']")
+          if (trBase) trBase.classList.add("selecionado")
+        } else {
+          _caracTemp.escolhas[chave] = [{ ...item }]
+          tr.classList.add("selecionado")
+        }
         atualizarPreviewCarac()
       })
+      if (item.gratuita) tr.dataset.gratuita = "true"
     }
 
     tbody.appendChild(tr)

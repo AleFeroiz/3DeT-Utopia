@@ -1,175 +1,202 @@
 // ============================================================
-//  ui/uiRacaProfissao.js — Seleção e exibição de Raça/Profissão
+//  ui/uiRacaProfissao.js — Raça / Profissão (com Mestiço e Modificado)
 // ============================================================
 
 import { RACAS      } from "../dados/racas.js"
 import { PROFISSOES } from "../dados/profissoes.js"
 
 let _onSalvar = null
-
 export function registrarCallbackRacaProf(fn) { _onSalvar = fn }
 
-// ─────────────────────────────────────────────────────────
-//  SIDEBAR: botões de seleção rápida
-// ─────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────
+const racaPorId = (id) => RACAS.find(r => r.id === id)
 
+// ─────────────────────────────────────────────────────────
+//  SIDEBAR
+// ─────────────────────────────────────────────────────────
 export function renderSidebarRacaProf(ficha) {
   const racaBtn = document.getElementById("btnRaca")
   const profBtn = document.getElementById("btnProfissao")
   if (!racaBtn || !profBtn) return
-
-  const raca = RACAS.find(r => r.id === ficha.racaId)
+  const raca = racaPorId(ficha.racaId)
   const prof = PROFISSOES.find(p => p.id === ficha.profissaoId)
-
   racaBtn.textContent = raca ? `${raca.emoji} ${raca.nome}` : "🧬 Escolher Raça"
   profBtn.textContent = prof ? `${prof.emoji} ${prof.nome}` : "⚒️ Escolher Profissão"
 }
 
 // ─────────────────────────────────────────────────────────
-//  ABA RAÇA
+//  ABA RAÇA — dispatch por tipo
 // ─────────────────────────────────────────────────────────
-
 export function renderAbaRaca(ficha) {
   const container = document.getElementById("conteudoRaca")
   if (!container) return
-
   if (!ficha.racaId) {
-    container.innerHTML = `
-      <div class="aba-vazia">
-        <p>Nenhuma raça selecionada.</p>
-        <button onclick="abrirModalRaca()" class="btn-acao">🧬 Escolher Raça</button>
-      </div>`
+    container.innerHTML = `<div class="aba-vazia"><p>Nenhuma raça selecionada.</p>
+      <button onclick="abrirModalRaca()" class="btn-acao">🧬 Escolher Raça</button></div>`
     return
   }
+  if (ficha.racaId === "mestico")   { _renderAbaMestico(ficha, container);   return }
+  if (ficha.racaId === "modificado"){ _renderAbaModificado(ficha, container); return }
+  _renderAbaRacaNormal(ficha, container)
+}
 
-  const raca = RACAS.find(r => r.id === ficha.racaId)
+// ── Raça Normal ────────────────────────────────────────────
+function _renderAbaRacaNormal(ficha, container) {
+  const raca  = racaPorId(ficha.racaId)
   if (!raca) return
-
   const nivel = ficha.nivel
-  const evolsDesbloqueadas = raca.evolucoes.filter(e => e.nivel === null || e.nivel <= nivel)
-  const evolsBloqueadas    = raca.evolucoes.filter(e => e.nivel !== null && e.nivel > nivel)
-
+  const desbloq = raca.evolucoes.filter(e => e.nivel === null || e.nivel <= nivel)
+  const bloq    = raca.evolucoes.filter(e => e.nivel !== null && e.nivel > nivel)
   container.innerHTML = `
     <div class="raca-header">
       <span class="raca-emoji">${raca.emoji}</span>
-      <div>
-        <h2>${raca.nome}</h2>
-        ${raca.custo > 0 ? `<span class="badge-custo">${raca.custo} PT</span>` : ""}
-      </div>
+      <div><h2>${raca.nome}</h2>${raca.custo > 0 ? `<span class="badge-custo">${raca.custo} PT</span>` : ""}</div>
       <button onclick="abrirModalRaca()" class="btn-trocar">Trocar</button>
+    </div>
+    <div class="secao-info"><h3>✨ Extras</h3>
+      ${raca.extras.map(e => `<div class="tag-extra">${e}</div>`).join("")}</div>
+    <div class="secao-info"><h3>👍 Vantagens</h3>
+      ${raca.vantagens.map(v => `<div class="card-info"><strong>${v.nome}</strong><p>${v.desc}</p></div>`).join("")}</div>
+    <div class="secao-info"><h3>👎 Desvantagens</h3>
+      ${raca.desvantagens.map(d => `<div class="card-info desvantagem"><strong>${d.nome}</strong><p>${d.desc}</p></div>`).join("")}</div>
+    <div class="secao-info"><h3>⬆️ Evoluções</h3>
+      ${desbloq.map(e => `<div class="card-info desbloqueado">${e.nivel ? `<span class="badge-nivel">Nível ${e.nivel}</span>` : ""}<strong>${e.nome}</strong><p>${e.desc}</p></div>`).join("")}
+      ${bloq.map(e => `<div class="card-info bloqueado"><span class="badge-nivel bloqueado">Nível ${e.nivel} 🔒</span><strong>${e.nome}</strong><p>${e.desc}</p></div>`).join("")}
+    </div>`
+}
+
+// ── Mestiço — exibe dados salvos ───────────────────────────
+function _renderAbaMestico(ficha, container) {
+  const d = ficha.racaDados
+  if (!d?.racas?.length) {
+    container.innerHTML = `<div class="aba-vazia">
+      <p>🧬 Mestiço — configure as raças base.</p>
+      <button onclick="abrirModalMestico()" class="btn-acao">⚙️ Configurar Mestiço</button></div>`
+    return
+  }
+  const r1    = racaPorId(d.racas[0])
+  const r2    = racaPorId(d.racas[1])
+  const nivel = ficha.nivel
+
+  // Organiza dados por raça para exibição lado a lado
+  const extraR1  = d.extras?.find(e => e.racaId === d.racas[0])
+  const extraR2  = d.extras?.find(e => e.racaId === d.racas[1])
+  const vantR1   = d.vantagens?.find(v => v.racaId === d.racas[0])
+  const vantR2   = d.vantagens?.find(v => v.racaId === d.racas[1])
+  const desvR1   = d.desvantagens?.find(v => v.racaId === d.racas[0])
+  const desvR2   = d.desvantagens?.find(v => v.racaId === d.racas[1])
+
+  const renderEvolCard = (ev) => {
+    const desbloq = ev.nivel === null || ev.nivel <= nivel
+    const rEvol   = racaPorId(ev.racaId)
+    return `<div class="card-info ${desbloq ? "desbloqueado" : "bloqueado"}">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px">
+        ${ev.nivel ? `<span class="badge-nivel ${desbloq ? "" : "bloqueado"}">Nível ${ev.nivel}${desbloq ? "" : " 🔒"}</span>` : ""}
+        <span class="badge-raca-mini">${rEvol?.emoji ?? "?"} ${rEvol?.nome ?? ev.racaId}</span>
+        <strong>${ev.nome}</strong>
+      </div>
+      <p>${ev.desc}</p></div>`
+  }
+
+  const renderPar = (itemR1, itemR2, tipo) => {
+    const cor1 = '#1e3a5f'; const cor2 = '#1a2e1a'
+    const renderItem = (item, raca, cor) => item
+      ? `<div class="card-info mestico-par-card" style="border-color:${cor}55">
+          <div class="mestico-par-raca">${raca?.emoji ?? ""} ${raca?.nome ?? ""}</div>
+          <strong>${item.nome ?? item.texto ?? item}</strong>
+          ${item.desc ? `<p>${item.desc}</p>` : ""}
+        </div>`
+      : `<div class="card-info mestico-par-card mestico-par-vazio" style="border-color:${cor}33"><span style="opacity:0.3">—</span></div>`
+    return `<div class="mestico-par-grid">
+      ${renderItem(itemR1, r1, cor1)}
+      ${renderItem(itemR2, r2, cor2)}
+    </div>`
+  }
+
+  container.innerHTML = `
+    <div class="raca-header">
+      <span class="raca-emoji">🧬</span>
+      <div><h2>Mestiço</h2><span class="badge-custo">1 PT</span></div>
+      <button onclick="abrirModalMestico()" class="btn-trocar">Editar</button>
+    </div>
+
+    <div class="mestico-racas-banner">
+      <div class="mestico-banner-lado" style="color:#93c5fd">${r1?.emoji ?? "?"} ${r1?.nome ?? d.racas[0]}</div>
+      <span class="mestico-x">✚</span>
+      <div class="mestico-banner-lado" style="color:#86efac">${r2?.emoji ?? "?"} ${r2?.nome ?? d.racas[1]}</div>
     </div>
 
     <div class="secao-info">
       <h3>✨ Extras</h3>
-      ${raca.extras.map(e => `<div class="tag-extra">${e}</div>`).join("")}
+      ${renderPar(extraR1 ? { texto: extraR1.texto } : null, extraR2 ? { texto: extraR2.texto } : null)}
     </div>
 
     <div class="secao-info">
       <h3>👍 Vantagens</h3>
-      ${raca.vantagens.map(v => `
-        <div class="card-info">
-          <strong>${v.nome}</strong>
-          <p>${v.desc}</p>
-        </div>`).join("")}
+      ${renderPar(vantR1, vantR2)}
     </div>
 
     <div class="secao-info">
       <h3>👎 Desvantagens</h3>
-      ${raca.desvantagens.map(d => `
-        <div class="card-info desvantagem">
-          <strong>${d.nome}</strong>
-          <p>${d.desc}</p>
-        </div>`).join("")}
+      ${renderPar(desvR1, desvR2, true)}
     </div>
 
     <div class="secao-info">
-      <h3>⬆️ Evoluções</h3>
-      ${evolsDesbloqueadas.map(e => `
-        <div class="card-info desbloqueado">
-          ${e.nivel ? `<span class="badge-nivel">Nível ${e.nivel}</span>` : ""}
-          <strong>${e.nome}</strong>
-          <p>${e.desc}</p>
-        </div>`).join("")}
-      ${evolsBloqueadas.map(e => `
-        <div class="card-info bloqueado">
-          <span class="badge-nivel bloqueado">Nível ${e.nivel} 🔒</span>
-          <strong>${e.nome}</strong>
-          <p>${e.desc}</p>
-        </div>`).join("")}
-    </div>
-  `
+      <h3>⬆️ Evoluções <span style="font-size:12px;opacity:0.5;font-weight:400">(${(d.evolucoes ?? []).length}/3)</span></h3>
+      ${(d.evolucoes ?? []).length ? (d.evolucoes ?? []).map(renderEvolCard).join("") : "<p style='opacity:0.4'>Nenhuma.</p>"}
+    </div>`
 }
 
-// ─────────────────────────────────────────────────────────
-//  ABA PROFISSÃO
-// ─────────────────────────────────────────────────────────
-
-export function renderAbaProfissao(ficha) {
-  const container = document.getElementById("conteudoProfissao")
-  if (!container) return
-
-  if (!ficha.profissaoId) {
-    container.innerHTML = `
-      <div class="aba-vazia">
-        <p>Nenhuma profissão selecionada.</p>
-        <button onclick="abrirModalProfissao()" class="btn-acao">⚒️ Escolher Profissão</button>
-      </div>`
+// ── Modificado — exibe dados salvos ────────────────────────
+function _renderAbaModificado(ficha, container) {
+  const d = ficha.racaDados
+  if (!d?.racaBase) {
+    container.innerHTML = `<div class="aba-vazia">
+      <p>⚙️ Modificado — configure a raça base e modificações.</p>
+      <button onclick="abrirModalModificado()" class="btn-acao">⚙️ Configurar Modificado</button></div>`
     return
   }
+  const rBase = racaPorId(d.racaBase)
+  const nivel  = ficha.nivel
 
-  const prof = PROFISSOES.find(p => p.id === ficha.profissaoId)
-  if (!prof) return
-
-  // nivel da habilidade = nivel real da ficha (1, 5, 10, 15)
-  const nivelFicha = ficha.nivel ?? 1
-
-  const habilsDesbloq = prof.habilidades.filter(h => h.nivel <= nivelFicha)
-  const habilsBloc    = prof.habilidades.filter(h => h.nivel >  nivelFicha)
-
-  const renderHab = (h, desbloqueada) => `
-    <div class="card-info ${desbloqueada ? "desbloqueado" : "bloqueado"}">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-        <span class="badge-nivel ${desbloqueada ? "" : "bloqueado"}">
-          Nível de Prof. ${h.nivel}${desbloqueada ? "" : " 🔒"}
-        </span>
-        <strong>${h.nome}</strong>
-      </div>
-      <p>${h.desc}</p>
-    </div>`
+  const renderEvolCard = (ev) => {
+    const desbloq = !ev.nivel || ev.nivel <= nivel
+    return `<div class="card-info ${desbloq ? "desbloqueado" : "bloqueado"}">
+      ${ev.nivel ? `<span class="badge-nivel ${desbloq ? "" : "bloqueado"}">Nível ${ev.nivel}${desbloq ? "" : " 🔒"}</span>` : ""}
+      <strong>${ev.nome}</strong><p>${ev.desc}</p></div>`
+  }
 
   container.innerHTML = `
     <div class="raca-header">
-      <span class="raca-emoji">${prof.emoji}</span>
-      <div>
-        <h2>${prof.nome}</h2>
-        <span style="opacity:0.6;font-size:13px">Requisito: ${prof.requisito}</span>
-      </div>
-      <button onclick="abrirModalProfissao()" class="btn-trocar">Trocar</button>
+      <span class="raca-emoji">⚙️</span>
+      <div><h2>Modificado</h2><span class="badge-custo">1 PT</span></div>
+      <button onclick="abrirModalModificado()" class="btn-trocar">Editar</button>
     </div>
-
-    <div class="nivel-prof-badge">
-      Personagem nível <strong>${nivelFicha}</strong>
-      <span style="opacity:0.5;font-size:12px">— habilidades desbloqueadas: ${habilsDesbloq.length}/${prof.habilidades.length}</span>
+    <p class="modificado-base-label">Base: ${rBase?.emoji ?? "?"} <strong>${rBase?.nome ?? d.racaBase}</strong></p>
+    <div class="secao-info"><h3>✨ Extras</h3>
+      ${d.extraBase ? `<div class="tag-extra">${rBase?.emoji ?? ""} ${d.extraBase}</div>` : ""}
+      ${d.extraManual ? `<div class="tag-extra mod-manual">⚙️ ${d.extraManual}</div>` : ""}
     </div>
-
-    <div class="secao-info">
-      <h3>✅ Habilidades desbloqueadas (${habilsDesbloq.length})</h3>
-      ${habilsDesbloq.map(h => renderHab(h, true)).join("")}
-      ${habilsBloc.length ? `<h3 style="margin-top:12px;opacity:0.6">🔒 Próximas habilidades</h3>
-      ${habilsBloc.map(h => renderHab(h, false)).join("")}` : ""}
+    <div class="secao-info"><h3>👍 Vantagens</h3>
+      ${d.vantagemBase?.nome ? `<div class="card-info"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.vantagemBase.nome}</strong><p>${d.vantagemBase.desc}</p></div>` : ""}
+      ${d.vantagemManual?.nome ? `<div class="card-info mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.vantagemManual.nome}</strong><p>${d.vantagemManual.desc}</p></div>` : ""}
     </div>
-  `
+    <div class="secao-info"><h3>👎 Desvantagens</h3>
+      ${d.desvantagemBase?.nome ? `<div class="card-info desvantagem"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.desvantagemBase.nome}</strong><p>${d.desvantagemBase.desc}</p></div>` : ""}
+      ${d.desvantagemManual?.nome ? `<div class="card-info desvantagem mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.desvantagemManual.nome}</strong><p>${d.desvantagemManual.desc}</p></div>` : ""}
+    </div>
+    <div class="secao-info"><h3>⬆️ Evoluções</h3>
+      ${(d.evolucoes ?? []).length ? (d.evolucoes ?? []).map(renderEvolCard).join("") : "<p style='opacity:0.4'>Nenhuma definida.</p>"}
+    </div>`
 }
 
 // ─────────────────────────────────────────────────────────
-//  MODAL: ESCOLHER RAÇA
+//  MODAL ESCOLHER RAÇA
 // ─────────────────────────────────────────────────────────
-
 export function abrirModalRaca(ficha) {
   const modal = document.getElementById("modalEscolhaRaca")
   const lista = document.getElementById("listaRacas")
   if (!modal || !lista) return
-
   lista.innerHTML = ""
   RACAS.forEach(raca => {
     const div = document.createElement("div")
@@ -179,27 +206,25 @@ export function abrirModalRaca(ficha) {
         <strong>${raca.emoji} ${raca.nome}</strong>
         ${raca.custo > 0 ? `<span class="badge-custo">${raca.custo} PT</span>` : '<span style="opacity:0.5;font-size:12px">Grátis</span>'}
       </div>
-      <p style="font-size:12px;opacity:0.6;margin-top:4px">${raca.extras.join(" • ")}</p>
-    `
+      <p style="font-size:12px;opacity:0.6;margin-top:4px">${Array.isArray(raca.extras) ? raca.extras.join(" • ") : raca.extras}</p>`
     div.onclick = () => {
-      _onSalvar?.({ racaId: raca.id })
       document.getElementById("modalEscolhaRaca").classList.add("hidden")
+      if (raca.id === "mestico")    { window.abrirModalMestico?.();    return }
+      if (raca.id === "modificado") { window.abrirModalModificado?.(); return }
+      _onSalvar?.({ racaId: raca.id, racaDados: null })
     }
     lista.appendChild(div)
   })
-
   modal.classList.remove("hidden")
 }
 
 // ─────────────────────────────────────────────────────────
-//  MODAL: ESCOLHER PROFISSÃO
+//  MODAL PROFISSÃO (inalterado)
 // ─────────────────────────────────────────────────────────
-
 export function abrirModalProfissao(ficha) {
   const modal = document.getElementById("modalEscolhaProfissao")
   const lista = document.getElementById("listaProfissoes")
   if (!modal || !lista) return
-
   lista.innerHTML = ""
   PROFISSOES.forEach(prof => {
     const div = document.createElement("div")
@@ -208,14 +233,51 @@ export function abrirModalProfissao(ficha) {
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>${prof.emoji} ${prof.nome}</strong>
         <span style="opacity:0.5;font-size:12px">Req: ${prof.requisito}</span>
-      </div>
-    `
+      </div>`
     div.onclick = () => {
       _onSalvar?.({ profissaoId: prof.id })
       document.getElementById("modalEscolhaProfissao").classList.add("hidden")
     }
     lista.appendChild(div)
   })
-
   modal.classList.remove("hidden")
+}
+
+// ─────────────────────────────────────────────────────────
+//  ABA PROFISSÃO (inalterado)
+// ─────────────────────────────────────────────────────────
+export function renderAbaProfissao(ficha) {
+  const container = document.getElementById("conteudoProfissao")
+  if (!container) return
+  if (!ficha.profissaoId) {
+    container.innerHTML = `<div class="aba-vazia"><p>Nenhuma profissão selecionada.</p>
+      <button onclick="abrirModalProfissao()" class="btn-acao">⚒️ Escolher Profissão</button></div>`
+    return
+  }
+  const prof = PROFISSOES.find(p => p.id === ficha.profissaoId)
+  if (!prof) return
+  const nivelFicha   = ficha.nivel ?? 1
+  const habilsDesbloq = prof.habilidades.filter(h => h.nivel <= nivelFicha)
+  const habilsBloc    = prof.habilidades.filter(h => h.nivel >  nivelFicha)
+  const renderHab = (h, desbloqueada) => `
+    <div class="card-info ${desbloqueada ? "desbloqueado" : "bloqueado"}">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <span class="badge-nivel ${desbloqueada ? "" : "bloqueado"}">Nível de Prof. ${h.nivel}${desbloqueada ? "" : " 🔒"}</span>
+        <strong>${h.nome}</strong>
+      </div>
+      <p>${h.desc}</p>
+    </div>`
+  container.innerHTML = `
+    <div class="raca-header">
+      <span class="raca-emoji">${prof.emoji}</span>
+      <div><h2>${prof.nome}</h2><span style="opacity:0.6;font-size:13px">Requisito: ${prof.requisito}</span></div>
+      <button onclick="abrirModalProfissao()" class="btn-trocar">Trocar</button>
+    </div>
+    <div class="nivel-prof-badge">Personagem nível <strong>${nivelFicha}</strong>
+      <span style="opacity:0.5;font-size:12px"> — ${habilsDesbloq.length}/${prof.habilidades.length} habilidades</span>
+    </div>
+    <div class="secao-info"><h3>✅ Habilidades desbloqueadas</h3>
+      ${habilsDesbloq.map(h => renderHab(h, true)).join("")}
+      ${habilsBloc.length ? `<h3 style="margin-top:12px;opacity:0.6">🔒 Próximas</h3>${habilsBloc.map(h => renderHab(h, false)).join("")}` : ""}
+    </div>`
 }

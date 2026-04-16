@@ -140,8 +140,7 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
 
   for (const pericia of LISTA_PERICIAS) {
     const temPericia   = !!ficha.pericias[pericia.id]
-    const temMaestria  = !!ficha.maestrias[pericia.id]
-    const podeMaestria = temPericia && (temMaestria || ficha.totalMaestrias < ficha.maestraLimite)
+    const temMaestria = !!ficha.maestrias[pericia.id]
 
     const row = document.createElement("div")
     row.className = "pericia-row"
@@ -154,8 +153,7 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
       </label>
       ${temPericia ? `
         <button class="btn-maestria ${temMaestria ? "ativa" : ""}"
-                title="${temMaestria ? "Maestria já aplicada (permanente)" : "Aplicar maestria (custa 2 PT)"}"
-                ${(temMaestria || (!podeMaestria && !temMaestria)) ? "disabled" : ""}>
+                title="${temMaestria ? "Clique para remover maestria" : "Aplicar maestria (2 PT)"}">
           ⭐
         </button>` : '<div class="btn-maestria-placeholder"></div>'}
     `

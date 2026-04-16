@@ -261,11 +261,97 @@
 
     <hr style="border-color:#334155;margin:8px 0">
 
+    <!-- COMBATE: ATAQUE / DEFESA -->
+    <div class="combate-bloco">
+      <div class="combate-header">
+        ⚔️ Combate
+        <div class="combate-toggle">
+          <button id="togglePoder"     class="toggle-atrib active" onclick="setAtribCombate('poder')">POD</button>
+          <button id="toggleHabilidade" class="toggle-atrib"       onclick="setAtribCombate('habilidade')">HAB</button>
+        </div>
+      </div>
+
+      <div class="combate-secao">
+        <div class="combate-secao-titulo">⚔️ Ataque</div>
+        <div class="combate-linha">
+          <span class="combate-label">Seguro</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraAtkSeguro" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('atkSeguro',this.value)">
+            <span class="combate-valor" id="atkSeguro">—</span>
+          </div>
+        </div>
+        <div class="combate-linha">
+          <span class="combate-label">Arriscado</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraAtkArriscado" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('atkArriscado',this.value)">
+            <span class="combate-valor" id="atkArriscado">—</span>
+          </div>
+        </div>
+        <div class="combate-linha">
+          <span class="combate-label">Maluco</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraAtkMaluco" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('atkMaluco',this.value)">
+            <span class="combate-valor" id="atkMaluco">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="combate-secao" style="margin-top:8px">
+        <div class="combate-secao-titulo">🛡️ Defesa</div>
+        <div class="combate-linha">
+          <span class="combate-label">Bloqueio</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraDefBloqueio" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('defBloqueio',this.value)">
+            <span class="combate-valor" id="defBloqueio">—</span>
+          </div>
+        </div>
+        <div class="combate-linha">
+          <span class="combate-label">Esquiva</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraDefEsquiva" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('defEsquiva',this.value)">
+            <span class="combate-valor" id="defEsquiva">—</span>
+          </div>
+        </div>
+        <div class="combate-linha">
+          <span class="combate-label">Contra-ataque</span>
+          <div class="combate-direita">
+            <input class="combate-extra" id="extraDefContra" type="number" value="0"
+              title="Outros bônus" oninput="salvarCombateExtra('defContra',this.value)">
+            <span class="combate-valor" id="defContra">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border-color:#334155;margin:8px 0">
+
     <!-- LOGIN -->
     <div class="login-area">
       <span id="userInfo" class="user-info"></span>
       <button id="btnLogin"  onclick="fazerLogin()"  class="btn-login">🔑 Login Google</button>
       <button id="btnLogout" onclick="fazerLogout()" class="btn-logout" style="display:none">Sair</button>
+    </div>
+
+    <hr style="border-color:#1e293b;margin:10px 0">
+
+    <!-- VISIBILIDADE DA FICHA -->
+    <div class="visib-bloco">
+      <div class="visib-titulo">🔒 Visibilidade</div>
+      <label class="visib-toggle">
+        <input type="checkbox" id="togglePublico" onchange="toggleVisibilidade('isPublic', this.checked)">
+        <span class="visib-label">Ficha pública</span>
+        <span class="visib-hint" id="hintPublico">Apenas você</span>
+      </label>
+      <label class="visib-toggle" id="rowEditPublic" style="opacity:0.4;pointer-events:none">
+        <input type="checkbox" id="toggleEditPublic" onchange="toggleVisibilidade('editPublic', this.checked)">
+        <span class="visib-label">Edição pública</span>
+        <span class="visib-hint" id="hintEditPublic">Só visualizar</span>
+      </label>
     </div>
 
   </div><!-- /sidebar -->
@@ -471,6 +557,119 @@
 </div>
 
 
+
+<!-- ══ MODAL: MESTIÇO ════════════════════════════════════ -->
+<div id="modalMestico" class="modal hidden">
+  <div class="modal-content modal-mestico">
+    <h2>🧬 Configurar Mestiço</h2>
+
+    <!-- PASSO 1: Escolha das 2 raças -->
+    <div class="mestico-secao" id="mesticoStep1">
+      <p class="mestico-step-titulo">Passo 1 — Escolha as 2 raças base</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+        <div>
+          <label class="mestico-label">Raça 1</label>
+          <select id="mesticoRaca1" class="mestico-select" onchange="mesticoAtualizarOpcoes()">
+            <option value="">— escolha —</option>
+          </select>
+        </div>
+        <div>
+          <label class="mestico-label">Raça 2</label>
+          <select id="mesticoRaca2" class="mestico-select" onchange="mesticoAtualizarOpcoes()">
+            <option value="">— escolha —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSO 2: Escolhas de cada raça -->
+    <div id="mesticoStep2" style="display:none;margin-top:14px">
+      <p class="mestico-step-titulo">Passo 2 — Escolha 1 Extra, 1 Vantagem e 1 Desvantagem de cada raça</p>
+      <div class="mestico-step2-grid">
+        <div id="mesticoEscolhasR1"></div>
+        <div id="mesticoEscolhasR2"></div>
+      </div>
+    </div>
+
+    <!-- PASSO 3: Evoluções -->
+    <div id="mesticoStep3" style="display:none;margin-top:14px">
+      <p class="mestico-step-titulo" id="mesticoEvolTitulo">Passo 3 — Evoluções: 0/3 (mín. 1 de cada raça)</p>
+      <p style="font-size:12px;opacity:0.5;margin-bottom:8px">Selecione as evoluções desejadas. Máx. 3, mín. 1 de cada raça.</p>
+      <div id="mesticoEvolucoes" class="mestico-evol-grid"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button id="btnSalvarMestico" onclick="salvarMestico()" style="display:none">✅ Salvar</button>
+      <button onclick="fecharModal('modalMestico')" style="background:#475569">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: MODIFICADO ═════════════════════════════════ -->
+<div id="modalModificado" class="modal hidden">
+  <div class="modal-content" style="max-width:620px">
+    <h2>⚙️ Configurar Modificado</h2>
+
+    <!-- Raça base -->
+    <label class="mestico-label" style="margin-top:4px">Raça Base</label>
+    <select id="modRacaBase" class="mestico-select" onchange="modAtualizarOpcoes()">
+      <option value="">— escolha —</option>
+    </select>
+
+    <div id="modOpcoes" style="display:none;margin-top:14px">
+
+      <!-- Da raça base -->
+      <p class="mestico-step-titulo">Da raça base</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px">
+        <div>
+          <label class="mestico-label">Extra</label>
+          <select id="modExtraBase" class="mestico-select-sm"></select>
+        </div>
+        <div>
+          <label class="mestico-label">Vantagem</label>
+          <select id="modVantagemBase" class="mestico-select-sm"></select>
+        </div>
+        <div>
+          <label class="mestico-label">Desvantagem</label>
+          <select id="modDesvantagemBase" class="mestico-select-sm"></select>
+        </div>
+      </div>
+
+      <!-- Manuais -->
+      <p class="mestico-step-titulo" style="margin-top:14px">Da modificação (escrita livre)</p>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:6px">
+        <div>
+          <label class="mestico-label">Extra manual</label>
+          <input id="modExtraManual" class="mestico-input" placeholder="Ex: Visão noturna aprimorada...">
+        </div>
+        <div>
+          <label class="mestico-label">Vantagem manual — Nome</label>
+          <input id="modVantagemManualNome" class="mestico-input" placeholder="Nome da vantagem...">
+          <label class="mestico-label" style="margin-top:4px">Descrição</label>
+          <textarea id="modVantagemManualDesc" class="mestico-textarea" placeholder="Efeito desta vantagem..."></textarea>
+        </div>
+        <div>
+          <label class="mestico-label">Desvantagem manual — Nome</label>
+          <input id="modDesvantagemManualNome" class="mestico-input" placeholder="Nome da desvantagem...">
+          <label class="mestico-label" style="margin-top:4px">Descrição</label>
+          <textarea id="modDesvantagemManualDesc" class="mestico-textarea" placeholder="Efeito desta desvantagem..."></textarea>
+        </div>
+      </div>
+
+      <!-- Evoluções manuais -->
+      <p class="mestico-step-titulo" style="margin-top:14px">Evoluções <span style="font-size:11px;opacity:0.5;font-weight:400">(escritas com o mestre)</span></p>
+      <div id="modEvolucoes"></div>
+      <button onclick="modAdicionarEvolucao()" class="mestico-btn-add" style="margin-top:6px">＋ Adicionar Evolução</button>
+
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button onclick="salvarModificado()">✅ Salvar</button>
+      <button onclick="fecharModal('modalModificado')" style="background:#475569">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL: CARACTERÍSTICA ISOLADA ═══════════════════════ -->
 <div id="modalCaracIsolada" class="modal hidden">
   <div class="modal-content">
@@ -508,17 +707,70 @@
 <div id="modalItem" class="modal hidden">
   <div class="modal-content">
     <h2 id="modalItemTitulo">🎒 Adicionar Item</h2>
+
     <label>Nome</label>
     <input id="itemNome" placeholder="Ex: Espada de Aço, Mapa do Tesouro...">
-    <label>Peso</label>
-    <div class="num-stepper">
-      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,0,999)">‹</button>
-      <input type="number" id="itemPeso" value="0" min="0" max="999" style="display:none">
-      <span class="step-val" id="step_val_itemPeso">0</span>
-      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,0,999)">›</button>
+
+    <label>Categoria</label>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <label class="item-cat-opt" id="catItemLabel">
+        <input type="radio" name="itemCategoria" value="item" checked onchange="toggleCategoriaItem(this.value)">
+        <span>📦 Item</span>
+      </label>
+      <label class="item-cat-opt" id="catEquipLabel">
+        <input type="radio" name="itemCategoria" value="equipamento" onchange="toggleCategoriaItem(this.value)">
+        <span>⚔️ Equipamento</span>
+      </label>
     </div>
+
+    <!-- Campos extras só para equipamento -->
+    <div id="camposEquipamento" style="display:none;margin-top:10px;border-top:1px solid #334155;padding-top:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <input type="checkbox" id="itemUsadoAtaque" onchange="toggleBonusAtaque()">
+            <span>⚔️ Bônus de Ataque</span>
+          </label>
+          <div id="campoBonusAtaque" style="display:none">
+            <div class="num-stepper">
+              <button type="button" class="step-btn" onclick="stepperDec('itemBonusAtaque',1,-99,99)">‹</button>
+              <input type="number" id="itemBonusAtaque" value="0" min="-99" max="99" style="display:none">
+              <span class="step-val" id="step_val_itemBonusAtaque">0</span>
+              <button type="button" class="step-btn" onclick="stepperInc('itemBonusAtaque',1,-99,99)">›</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <input type="checkbox" id="itemUsadoDefesa" onchange="toggleBonusDefesa()">
+            <span>🛡️ Bônus de Defesa</span>
+          </label>
+          <div id="campoBonusDefesa" style="display:none">
+            <div class="num-stepper">
+              <button type="button" class="step-btn" onclick="stepperDec('itemBonusDefesa',1,-99,99)">‹</button>
+              <input type="number" id="itemBonusDefesa" value="0" min="-99" max="99" style="display:none">
+              <span class="step-val" id="step_val_itemBonusDefesa">0</span>
+              <button type="button" class="step-btn" onclick="stepperInc('itemBonusDefesa',1,-99,99)">›</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <label style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
+    <div class="num-stepper">
+      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">‹</button>
+      <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
+      <span class="step-val" id="step_val_itemPeso">0</span>
+      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">›</button>
+    </div>
+
     <label>Descrição</label>
     <textarea id="itemDescricao" placeholder="Detalhes, origem, efeitos especiais..." style="min-height:70px"></textarea>
+
     <div class="modal-actions">
       <button onclick="confirmarSalvarItem()">✅ Salvar</button>
       <button onclick="fecharModal('modalItem')" style="background:#475569">Cancelar</button>

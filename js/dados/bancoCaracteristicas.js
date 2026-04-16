@@ -130,11 +130,11 @@ export const TABELAS = {
     descricao: "Pré-requisitos para a técnica funcionar. Pode empilhar (sem repetir a mesma).",
     tipo: "empilhavel",
     dados: [
-      { nome: "Condição Fraca",          orcamento: 2, pm: -2 },
-      { nome: "Característica X Ativa",  orcamento: 3, pm: -4 },
-      { nome: "Condição Mediana",        orcamento: 3, pm: -4 },
-      { nome: "Perto da Derrota",        orcamento: 4, pm: -6 },
-      { nome: "Condição Forte",          orcamento: 4, pm: -6 }
+      { nome: "Condição Fraca",          orcamento: 2, pm: 2 },
+      { nome: "Característica X Ativa",  orcamento: 3, pm: 4 },
+      { nome: "Condição Mediana",        orcamento: 3, pm: 4 },
+      { nome: "Perto da Derrota",        orcamento: 4, pm: 6 },
+      { nome: "Condição Forte",          orcamento: 4, pm: 6 }
     ]
   },
 

@@ -8,8 +8,10 @@ import { getDadosNivel } from "../dados/niveis.js"
 
 export class Ficha {
   constructor({
+    id          = null,
     nome        = "Nova Ficha",
     racaId      = "",
+    racaDados   = null,
     profissaoId = "",
     nivel       = 1,
     maestrias   = {},
@@ -19,21 +21,28 @@ export class Ficha {
     status      = { pa: { atual: 0, max: 0 }, pm: { atual: 0, max: 0 }, pv: { atual: 0, max: 0 } },
     pontos      = { total: 10, gastos: 0, totalAuto: 10, offsetTotal: 0 },
     caracteristicasIsoladas = [],
+    isPublic    = false,
+    editPublic  = false,
     anotacoes = {
       objetivo:    "",
       historia:    "",
       personalidade: "",
       notas:       ""
     },
-    inventario = { itens: [], offsetPeso: 0 }
+    inventario = { itens: [], offsetPeso: 0 },
+    combateExtras = {}
   } = {}) {
+    this.id          = id ?? crypto.randomUUID()
     this.nome        = nome
     this.racaId      = racaId
+    this.racaDados   = racaDados ?? null
     this.profissaoId = profissaoId
     this.nivel       = Math.max(1, Math.min(20, nivel))
     this.maestrias   = { ...maestrias }
     this.atributos              = { ...atributos }
     this.caracteristicasIsoladas = [...(caracteristicasIsoladas ?? [])]
+    this.isPublic    = isPublic   ?? false
+    this.editPublic  = editPublic ?? false
     this.anotacoes = {
       objetivo:      anotacoes?.objetivo      ?? "",
       historia:      anotacoes?.historia      ?? "",
@@ -43,6 +52,14 @@ export class Ficha {
     this.inventario = {
       itens:      [...(inventario?.itens      ?? [])],
       offsetPeso: inventario?.offsetPeso ?? 0
+    }
+    this.combateExtras = {
+      atkSeguro:    combateExtras?.atkSeguro    ?? 0,
+      atkArriscado: combateExtras?.atkArriscado ?? 0,
+      atkMaluco:    combateExtras?.atkMaluco    ?? 0,
+      defBloqueio:  combateExtras?.defBloqueio  ?? 0,
+      defEsquiva:   combateExtras?.defEsquiva   ?? 0,
+      defContra:    combateExtras?.defContra     ?? 0,
     }
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
@@ -89,12 +106,7 @@ export class Ficha {
   }
 
   podeMaestria(pericia) {
-    if (!this.pericias[pericia])         return { ok: false, motivo: "Você precisa ter esta perícia primeiro." }
-    // (maestria é toggle — se já tem, o toggle remove)
-    if (this.maestraLimite === 0)        return { ok: false, motivo: "Maestria disponível apenas a partir do nível 3." }
-    if (this.totalMaestrias >= this.maestraLimite)
-      return { ok: false, motivo: `Limite de maestrias atingido (${this.maestraLimite}).` }
-    if (this.pontosRestantes < 2)        return { ok: false, motivo: "Pontos insuficientes (custo: 2 PT)." }
+    if (!this.pericias[pericia]) return { ok: false, motivo: "Você precisa ter esta perícia primeiro." }
     return { ok: true }
   }
 
@@ -183,7 +195,22 @@ export class Ficha {
   }
 
   get pesoAtualInventario() {
-    return (this.inventario.itens ?? []).reduce((s, item) => s + (Number(item.peso) || 0), 0)
+    const total = (this.inventario.itens ?? []).reduce((s, item) => s + (Number(item.peso) || 0), 0)
+    return Math.max(0, total)
+  }
+
+  // Soma bônus de ataque de todos os equipamentos marcados
+  get bonusAtaqueEquipamentos() {
+    return (this.inventario.itens ?? [])
+      .filter(i => i.categoria === 'equipamento' && i.usadoAtaque)
+      .reduce((s, i) => s + (Number(i.bonusAtaque) || 0), 0)
+  }
+
+  // Soma bônus de defesa de todos os equipamentos marcados
+  get bonusDefesaEquipamentos() {
+    return (this.inventario.itens ?? [])
+      .filter(i => i.categoria === 'equipamento' && i.usadoDefesa)
+      .reduce((s, i) => s + (Number(i.bonusDefesa) || 0), 0)
   }
 
   adicionarItem(item) {
@@ -214,13 +241,14 @@ export class Ficha {
   // ── Serialização ──────────────────────────────────────────
   toJSON() {
     return {
-      nome: this.nome, racaId: this.racaId, profissaoId: this.profissaoId,
+      id: this.id, nome: this.nome, isPublic: this.isPublic, editPublic: this.editPublic, racaId: this.racaId, racaDados: this.racaDados, profissaoId: this.profissaoId,
       nivel: this.nivel, maestrias: this.maestrias,
       atributos: this.atributos, pericias: this.pericias,
       elementos: this.elementos, status: this.status, pontos: this.pontos,
       caracteristicasIsoladas: this.caracteristicasIsoladas ?? [],
       anotacoes: this.anotacoes,
-      inventario: this.inventario
+      inventario: this.inventario,
+      combateExtras: this.combateExtras
     }
   }
 
