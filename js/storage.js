@@ -111,4 +111,16 @@ export const Storage = {
   salvarPastas(pastas, modo = "player") {
     localStorage.setItem(CHAVES.PASTAS(modo), JSON.stringify(pastas))
   },
+
+  // Bug #28: persiste quais pastas estão abertas/fechadas
+  carregarPastasAbertas(modo = "player") {
+    try {
+      const raw = localStorage.getItem(`rpg_pastas_abertas_${modo}`)
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  },
+
+  salvarPastasAbertas(ids, modo = "player") {
+    localStorage.setItem(`rpg_pastas_abertas_${modo}`, JSON.stringify(ids))
+  },
 }

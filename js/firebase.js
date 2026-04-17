@@ -1,20 +1,5 @@
 // ============================================================
-//  firebase.js — Firebase Auth (Google) + Firestore
-//  INSTRUÇÕES DE SETUP:
-//  1. Crie um projeto em https://console.firebase.google.com
-//  2. Ative Authentication > Google
-//  3. Ative Firestore Database
-//  4. Vá em Project Settings > Seus apps > Web > copie o firebaseConfig
-//  5. Substitua o objeto FIREBASE_CONFIG abaixo
-//  6. No Firestore, adicione esta regra de segurança:
-//     rules_version = '2';
-//     service cloud.firestore {
-//       match /databases/{database}/documents {
-//         match /users/{userId}/{document=**} {
-//           allow read, write: if request.auth.uid == userId;
-//         }
-//       }
-//     }
+//  firebase.js — Firebase Auth + Firestore  v2
 // ============================================================
 
 const FIREBASE_CONFIG = {
@@ -28,228 +13,172 @@ const FIREBASE_CONFIG = {
 
 const FIREBASE_CONFIGURED = !Object.values(FIREBASE_CONFIG).includes("COLE_AQUI")
 
-// ── Importações dinâmicas do Firebase SDK (CDN) ───────────
-let _auth = null
-let _db   = null
-let _user = null
+let _auth = null, _db = null, _user = null, _firebaseFns = null
+let _authReadyResolve
+// Bug #3: promise resolve quando onAuthStateChanged disparar pela primeira vez
+const _authReady = new Promise(r => { _authReadyResolve = r })
 
-// Callbacks registrados pela app
-const _onLoginCallbacks  = []
-const _onLogoutCallbacks = []
+const _loginCbs = [], _logoutCbs = []
 
-export function onLogin(fn)  { _onLoginCallbacks.push(fn)  }
-export function onLogout(fn) { _onLogoutCallbacks.push(fn) }
+export const onLogin  = (fn) => _loginCbs.push(fn)
+export const onLogout = (fn) => _logoutCbs.push(fn)
+export const getUser          = () => _user
+export const estaConfigurado  = () => FIREBASE_CONFIGURED
+export const aguardarAuth     = () => _authReady   // Bug #3: await antes de usar getUser()
 
-export function getUser() { return _user }
-export function estaConfigurado() { return FIREBASE_CONFIGURED }
-
-// ── Inicialização ─────────────────────────────────────────
 export async function inicializarFirebase() {
-  if (!FIREBASE_CONFIGURED) {
-    console.warn("[Firebase] Config não definido — usando localStorage.")
-    return false
-  }
-
+  if (_auth) return true  // Bug #6: idempotente
+  if (!FIREBASE_CONFIGURED) { _authReadyResolve(null); return false }
   try {
-    const { initializeApp }          = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
-    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
-      = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
-    const { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc }
-      = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
+    const { getFirestore, doc, setDoc, getDoc, deleteDoc } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
-    const app = initializeApp(FIREBASE_CONFIG)
-    _auth = getAuth(app)
-    _db   = getFirestore(app)
+    _auth = getAuth(initializeApp(FIREBASE_CONFIG))
+    _db   = getFirestore()
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, getDoc, deleteDoc }
 
-    // Monitora estado de autenticação
-    onAuthStateChanged(_auth, async (user) => {
+    onAuthStateChanged(_auth, (user) => {
       _user = user
-      if (user) {
-        _onLoginCallbacks.forEach(fn => fn(user))
-      } else {
-        _onLogoutCallbacks.forEach(fn => fn())
-      }
+      _authReadyResolve(user)  // resolve na primeira chamada
+      if (user) _loginCbs.forEach(fn => fn(user))
+      else      _logoutCbs.forEach(fn => fn())
     })
-
-    // Expõe funções internamente
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, getDoc, collection, getDocs, deleteDoc }
-
     return true
-  } catch (e) {
-    console.error("[Firebase] Erro ao inicializar:", e)
-    return false
-  }
+  } catch(e) { console.error("[Firebase]", e); _authReadyResolve(null); return false }
 }
 
-let _firebaseFns = null
-
-export async function loginGoogle() {
+export const loginGoogle = async () => {
   if (!_auth || !_firebaseFns) return
-  const provider = new _firebaseFns.GoogleAuthProvider()
-  await _firebaseFns.signInWithPopup(_auth, provider)
+  await _firebaseFns.signInWithPopup(_auth, new _firebaseFns.GoogleAuthProvider())
 }
+export const logout = async () => { if (_auth && _firebaseFns) await _firebaseFns.signOut(_auth) }
 
-export async function logout() {
-  if (!_auth || !_firebaseFns) return
-  await _firebaseFns.signOut(_auth)
-}
+// ─── helpers internos ────────────────────────────────────
+const _ok = () => _db && _user && _firebaseFns
+const _okPub = () => _db && _firebaseFns
+const _colFicha = (modo) => modo === "mestre" ? "fichas_mestre" : "fichas_player"  // Bug #10
+const _chaveIndice = (modo) => modo === "mestre" ? "indice_mestre" : "indice_player"
+const _chavePastas = (modo) => modo === "mestre" ? "pastas_mestre" : "pastas_player"
 
-// ── Fichas no Firestore ────────────────────────────────────
+// ─── Índice de fichas (metadados leves) ──────────────────
+// Bug #9: função renomeada e aceita modo, sem parâmetro ignorado
 
-export async function salvarFichasFirestore(fichas) {
-  if (!_db || !_user || !_firebaseFns) return false
+export async function carregarIndiceFichasFirestore(modo = "player") {
+  if (!_ok()) return null
   try {
-    const { doc, setDoc } = _firebaseFns
-    await setDoc(
-      doc(_db, "users", _user.uid, "dados", "fichas"),
-      { fichas, updatedAt: new Date().toISOString() }
+    const snap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo))
     )
-    return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao salvar:", e)
-    return false
-  }
+    return snap.exists() ? (snap.data().fichas ?? []) : []
+  } catch(e) { console.error("[Firestore] carregar índice:", e); return null }
 }
 
-export async function carregarFichasFirestore() {
-  if (!_db || !_user || !_firebaseFns) return null
+export async function salvarIndiceFichasFirestore(fichas, modo = "player") {
+  if (!_ok()) return false
   try {
-    const { doc, getDoc } = _firebaseFns
-    const snap = await getDoc(doc(_db, "users", _user.uid, "dados", "fichas"))
-    return snap.exists() ? snap.data().fichas : []
-  } catch (e) {
-    console.error("[Firestore] Erro ao carregar:", e)
-    return null
-  }
-}
-
-// ── Ficha individual por ID ────────────────────────────────
-
-export async function salvarFichaFirestore(fichaObj) {
-  if (!_db || !_user || !_firebaseFns || !fichaObj?.id) return false
-  try {
-    const { doc, setDoc } = _firebaseFns
-    await setDoc(
-      doc(_db, "users", _user.uid, "fichas", fichaObj.id),
-      { ...fichaObj, _updatedAt: new Date().toISOString() }
-    )
-    return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao salvar ficha:", e)
-    return false
-  }
-}
-
-export async function carregarFichaFirestore(fichaId) {
-  if (!_db || !_user || !_firebaseFns) return null
-  try {
-    const { doc, getDoc } = _firebaseFns
-    const snap = await getDoc(doc(_db, "users", _user.uid, "fichas", fichaId))
-    return snap.exists() ? snap.data() : null
-  } catch (e) {
-    console.error("[Firestore] Erro ao carregar ficha:", e)
-    return null
-  }
-}
-
-// ── Pastas por modo ────────────────────────────────────────
-
-export async function salvarPastasFirestore(pastas, chave = "pastas_player") {
-  if (!_db || !_user || !_firebaseFns) return false
-  try {
-    const { doc, setDoc } = _firebaseFns
-    await setDoc(
-      doc(_db, "users", _user.uid, "dados", chave),
-      { pastas, updatedAt: new Date().toISOString() }
-    )
-    return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao salvar pastas:", e)
-    return false
-  }
-}
-
-export async function carregarPastasFirestore(chave = "pastas_player") {
-  if (!_db || !_user || !_firebaseFns) return null
-  try {
-    const { doc, getDoc } = _firebaseFns
-    const snap = await getDoc(doc(_db, "users", _user.uid, "dados", chave))
-    return snap.exists() ? (snap.data().pastas ?? []) : []
-  } catch (e) {
-    console.error("[Firestore] Erro ao carregar pastas:", e)
-    return null
-  }
-}
-
-// ── Índice de fichas (lista de ids) ───────────────────────
-// Salva apenas metadados leves no índice; a ficha completa fica no doc próprio
-
-export async function salvarIndiceFichasFirestore(fichas, chave = "fichas") {
-  if (!_db || !_user || !_firebaseFns) return false
-  try {
-    const { doc, setDoc } = _firebaseFns
-    // Salva apenas id, nome, pastaId, nivel para o índice
     const indice = fichas.map(f => ({
-      id:        f.id,
-      nome:      f.nome,
-      pastaId:   f.pastaId ?? null,
-      nivel:     f.nivel ?? 1,
+      id: f.id, nome: f.nome ?? "Sem Nome",
+      pastaId: f.pastaId ?? null, nivel: f.nivel ?? 1,
+      racaId: f.racaId ?? "", profissaoId: f.profissaoId ?? "",
     }))
-    await setDoc(
-      doc(_db, "users", _user.uid, "dados", chave),
+    await _firebaseFns.setDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo)),
       { fichas: indice, updatedAt: new Date().toISOString() }
     )
     return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao salvar índice:", e)
-    return false
-  }
+  } catch(e) { console.error("[Firestore] salvar índice:", e); return false }
 }
 
-// ── Fichas públicas (acessíveis sem autenticação) ─────────
-// Caminho: public_fichas/{fichaId}
-// Firebase Rules devem permitir:
-//   read: if resource.data.isPublic == true
-//   write: if resource.data.isPublic == true && resource.data.editPublic == true
-
-export async function salvarFichaPublicaFirestore(fichaObj) {
-  if (!_db || !_firebaseFns || !fichaObj?.id) return false
+// ─── Ficha individual ─────────────────────────────────────
+export async function salvarFichaFirestore(fichaObj, modo = "player") {
+  if (!_ok() || !fichaObj?.id) return false
   try {
-    const { doc, setDoc } = _firebaseFns
-    await setDoc(
-      doc(_db, "public_fichas", fichaObj.id),
+    await _firebaseFns.setDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, _colFicha(modo), fichaObj.id),
+      { ...fichaObj, _ownerUid: _user.uid, _updatedAt: new Date().toISOString() }
+    )
+    return true
+  } catch(e) { console.error("[Firestore] salvar ficha:", e); return false }
+}
+
+export async function carregarFichaFirestore(fichaId, modo = "player") {
+  if (!_ok()) return null
+  try {
+    const snap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, _colFicha(modo), fichaId)
+    )
+    return snap.exists() ? snap.data() : null
+  } catch(e) { console.error("[Firestore] carregar ficha:", e); return null }
+}
+
+// Bug #21: deletar doc individual do Firestore
+export async function removerFichaFirestore(fichaId, modo = "player") {
+  if (!_ok()) return false
+  try {
+    await _firebaseFns.deleteDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, _colFicha(modo), fichaId)
+    )
+    return true
+  } catch(e) { console.error("[Firestore] remover ficha:", e); return false }
+}
+
+// ─── Pastas ───────────────────────────────────────────────
+export async function salvarPastasFirestore(pastas, modo = "player") {
+  if (!_ok()) return false
+  try {
+    await _firebaseFns.setDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, "dados", _chavePastas(modo)),
+      { pastas, updatedAt: new Date().toISOString() }
+    )
+    return true
+  } catch(e) { console.error("[Firestore] salvar pastas:", e); return false }
+}
+
+export async function carregarPastasFirestore(modo = "player") {
+  if (!_ok()) return null
+  try {
+    const snap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "users", _user.uid, "dados", _chavePastas(modo))
+    )
+    return snap.exists() ? (snap.data().pastas ?? []) : []
+  } catch(e) { console.error("[Firestore] carregar pastas:", e); return null }
+}
+
+// ─── Fichas públicas ──────────────────────────────────────
+export async function salvarFichaPublicaFirestore(fichaObj) {
+  if (!_okPub() || !fichaObj?.id) return false
+  try {
+    await _firebaseFns.setDoc(
+      _firebaseFns.doc(_db, "public_fichas", fichaObj.id),
       { ...fichaObj, _updatedAt: new Date().toISOString() }
     )
     return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao salvar ficha pública:", e)
-    return false
-  }
+  } catch(e) { console.error("[Firestore] salvar pública:", e); return false }
 }
 
 export async function carregarFichaPublicaFirestore(fichaId) {
-  if (!_db || !_firebaseFns) return null
+  if (!_okPub()) return null
   try {
-    const { doc, getDoc } = _firebaseFns
-    const snap = await getDoc(doc(_db, "public_fichas", fichaId))
+    const snap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "public_fichas", fichaId)
+    )
     if (!snap.exists()) return null
     const data = snap.data()
-    // Só retorna se a ficha estiver marcada como pública
     return data.isPublic ? data : null
-  } catch (e) {
-    console.error("[Firestore] Erro ao carregar ficha pública:", e)
-    return null
-  }
+  } catch(e) { console.error("[Firestore] carregar pública:", e); return null }
 }
 
 export async function removerFichaPublicaFirestore(fichaId) {
-  if (!_db || !_firebaseFns) return false
+  if (!_okPub()) return false
   try {
-    const { doc, deleteDoc } = _firebaseFns
-    await deleteDoc(doc(_db, "public_fichas", fichaId))
+    await _firebaseFns.deleteDoc(_firebaseFns.doc(_db, "public_fichas", fichaId))
     return true
-  } catch (e) {
-    console.error("[Firestore] Erro ao remover ficha pública:", e)
-    return false
-  }
+  } catch(e) { console.error("[Firestore] remover pública:", e); return false }
 }
+
+// ─── Legado (não remover — outros arquivos ainda importam) ─
+export const carregarFichasFirestore = () => carregarIndiceFichasFirestore("player")
+export const salvarFichasFirestore   = (f) => salvarIndiceFichasFirestore(f, "player")

@@ -23,6 +23,7 @@ export class Ficha {
     caracteristicasIsoladas = [],
     isPublic    = false,
     editPublic  = false,
+    maestrasCfg = null,
     anotacoes = {
       objetivo:    "",
       historia:    "",
@@ -43,6 +44,7 @@ export class Ficha {
     this.caracteristicasIsoladas = [...(caracteristicasIsoladas ?? [])]
     this.isPublic    = isPublic   ?? false
     this.editPublic  = editPublic ?? false
+    this.maestrasCfg = maestrasCfg ?? null
     this.anotacoes = {
       objetivo:      anotacoes?.objetivo      ?? "",
       historia:      anotacoes?.historia      ?? "",
@@ -80,7 +82,7 @@ export class Ficha {
     this.pontos.totalAuto = d.ptTotal
     this.pontos.total     = d.ptTotal + offsetTotal
     this.escalaMax           = d.escalaMax
-    const offsetLimite = this.maestras?.offsetLimite ?? 0
+    const offsetLimite = this.maestrasCfg?.offsetLimite ?? 0
     this.maestraLimite = d.maestriaLimite + offsetLimite
     this.profissaoNivelAtual = d.profissaoNivelAtual
   }
@@ -127,8 +129,8 @@ export class Ficha {
   // Editar limite de maestrias manualmente (offset)
   setMaestraLimiteManual(novoValor) {
     const autoLimite = this.dadosNivel.maestriaLimite
-    this.maestras = this.maestras ?? {}
-    this.maestras.offsetLimite = novoValor - autoLimite
+    if (!this.maestrasCfg) this.maestrasCfg = {}
+    this.maestrasCfg.offsetLimite = novoValor - autoLimite
     this.maestraLimite = novoValor
   }
 
@@ -241,7 +243,7 @@ export class Ficha {
   // ── Serialização ──────────────────────────────────────────
   toJSON() {
     return {
-      id: this.id, nome: this.nome, isPublic: this.isPublic, editPublic: this.editPublic, racaId: this.racaId, racaDados: this.racaDados, profissaoId: this.profissaoId,
+      id: this.id, nome: this.nome, isPublic: this.isPublic, editPublic: this.editPublic, maestrasCfg: this.maestrasCfg, racaId: this.racaId, racaDados: this.racaDados, profissaoId: this.profissaoId,
       nivel: this.nivel, maestrias: this.maestrias,
       atributos: this.atributos, pericias: this.pericias,
       elementos: this.elementos, status: this.status, pontos: this.pontos,

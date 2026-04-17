@@ -38,9 +38,10 @@ export function renderStatus(ficha) {
   const pmAtual = document.getElementById("pmAtual")
   const pvAtual = document.getElementById("pvAtual")
 
-  if (!paAtual.value) paAtual.value = ficha.status.pa.atual
-  if (!pmAtual.value) pmAtual.value = ficha.status.pm.atual
-  if (!pvAtual.value) pvAtual.value = ficha.status.pv.atual
+  // Bug #15: sempre atualiza exceto se o campo estiver em foco (usuário digitando)
+  if (document.activeElement !== paAtual) paAtual.value = ficha.status.pa.atual
+  if (document.activeElement !== pmAtual) pmAtual.value = ficha.status.pm.atual
+  if (document.activeElement !== pvAtual) pvAtual.value = ficha.status.pv.atual
 
   atualizarBarras(ficha)
 }

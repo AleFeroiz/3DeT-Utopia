@@ -1,84 +1,105 @@
 // ============================================================
-//  js/index.js — Lógica da página inicial (Player + Mestre)
+//  js/index.js  v2 — Player + Mestre
+//  Doutrina: não-logado = localStorage; logado = Firebase only
 // ============================================================
 
 import { Storage } from "./storage.js"
 import { Ficha   } from "./modelos/Ficha.js"
 import {
   inicializarFirebase, loginGoogle, logout, getUser,
-  onLogin, onLogout, estaConfigurado,
-  salvarFichaFirestore, salvarIndiceFichasFirestore,
-  salvarPastasFirestore, carregarFichasFirestore, carregarPastasFirestore
+  onLogin, onLogout, estaConfigurado, aguardarAuth,
+  salvarFichaFirestore, salvarIndiceFichasFirestore, salvarPastasFirestore,
+  carregarIndiceFichasFirestore, carregarFichaFirestore, carregarPastasFirestore,
+  removerFichaFirestore
 } from "./firebase.js"
-import { toastSucesso, toastInfo, toastErro } from "./ui/uiToast.js"
+import { toastSucesso, toastInfo, toastErro, toastAviso } from "./ui/uiToast.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
 
-// ── Estado por modo ────────────────────────────────────────
+// ── Estado ─────────────────────────────────────────────────
 const MODOS = {
   player: {
-    fichas:       [],
-    pastas:       [],
-    pastasAbertas: new Set(),
+    fichas: [], pastas: [], pastasAbertas: new Set(),
     ids: {
-      areaSemPasta: "areaSemPasta",
-      listaPastas:  "listaPastas",
-      btnNova:      "btnNova",
-      btnNovaPasta: "btnNovaPasta",
+      areaSemPasta: "areaSemPasta", listaPastas: "listaPastas",
+      btnNova: "btnNova", btnNovaPasta: "btnNovaPasta",
     },
-    storageKey: "player",
-    firestoreKey: "fichas",           // chave atual compatível com código existente
-    label: "player",
   },
   mestre: {
-    fichas:       [],
-    pastas:       [],
-    pastasAbertas: new Set(),
+    fichas: [], pastas: [], pastasAbertas: new Set(),
     ids: {
-      areaSemPasta: "areaSemPastaMestre",
-      listaPastas:  "listaPastasMestre",
-      btnNova:      "btnNovaMestre",
-      btnNovaPasta: "btnNovaPastaMestre",
+      areaSemPasta: "areaSemPastaMestre", listaPastas: "listaPastasMestre",
+      btnNova: "btnNovaMestre", btnNovaPasta: "btnNovaPastaMestre",
     },
-    storageKey: "mestre",
-    firestoreKey: "fichas_mestre",
-    label: "mestre",
   },
 }
 
-let modoAtivo = localStorage.getItem("modoIndex") ?? "player"
+let modoAtivo  = localStorage.getItem("modoIndex") ?? "player"
+let _logado    = false   // Bug #1/#7: flag que controla fonte de dados
 
-// ── Carregar estado de cada modo ───────────────────────────
-function _carregarModo(modo) {
+// ── Fonte de dados ─────────────────────────────────────────
+// Bug #1: clara separação. Logado = Firebase. Não logado = localStorage.
+function _carregarDoCache(modo) {
   const m = MODOS[modo]
   m.fichas = Storage.carregarFichas(modo)
   m.pastas = Storage.carregarPastas(modo)
-  m.pastasAbertas = new Set(m.pastas.map(p => p.id))
+  // Bug #28: não abrir todas as pastas automaticamente — preserva estado local
+  const abertas = Storage.carregarPastasAbertas(modo)
+  m.pastasAbertas = abertas ? new Set(abertas) : new Set()
 }
 
-_carregarModo("player")
-_carregarModo("mestre")
+function _limparModo(modo) {
+  // Bug #7: ao fazer logout, limpa memória — não exibe dados da nuvem
+  MODOS[modo].fichas = []
+  MODOS[modo].pastas = []
+  MODOS[modo].pastasAbertas = new Set()
+}
 
 // ── Persistência ───────────────────────────────────────────
-function salvar(modo) {
+// Bug #8/#17: async + try/catch em todas as chamadas Firebase
+// Bug #26: pastas-only salva só pastas; fichas-only salva só fichas
+async function _salvarFirebase(modo, opcoes = { fichas: true, pastas: true }) {
+  if (!_logado || !estaConfigurado()) return
   const m = MODOS[modo]
+  try {
+    if (opcoes.fichas) {
+      // Salva índice leve (não re-salva dados completos por operação de pasta)
+      await salvarIndiceFichasFirestore(m.fichas, modo)
+    }
+    if (opcoes.pastas) {
+      await salvarPastasFirestore(m.pastas, modo)
+    }
+  } catch(e) {
+    console.error("[salvar]", e)
+    toastErro("Erro ao sincronizar com a nuvem.")
+  }
+}
 
-  // localStorage sempre
+// Salvar ficha individual (chamado só quando uma ficha muda de conteúdo)
+async function _salvarFichaIndividual(fichaObj, modo) {
+  Storage.salvarFichaPorId(fichaObj, modo)
+  if (!_logado || !estaConfigurado()) return
+  try {
+    await salvarFichaFirestore(fichaObj, modo)
+  } catch(e) {
+    console.error("[salvar ficha]", e)
+    toastErro("Erro ao salvar ficha na nuvem.")
+  }
+}
+
+// Salvar tudo de um modo (para operações que afetam fichas e pastas)
+async function salvar(modo) {
+  const m = MODOS[modo]
+  // localStorage sempre (cache offline)
   Storage.salvarFichas(m.fichas, modo)
   Storage.salvarPastas(m.pastas, modo)
+  await _salvarFirebase(modo, { fichas: true, pastas: true })
+}
 
-  // Firebase só se configurado e logado
-  if (!getUser() || !estaConfigurado()) return
-
-  // Salva cada ficha individualmente pelo id (novo sistema)
-  for (const f of m.fichas) {
-    if (f.id) salvarFichaFirestore({ ...f, _modo: modo })
-  }
-
-  // Salva índice leve (metadados) + pastas por modo
-  const chaveIndice = modo === "mestre" ? "fichas_mestre" : "fichas"
-  const chavePastas = modo === "mestre" ? "pastas_mestre" : "pastas_player"
-  salvarIndiceFichasFirestore(m.fichas, chaveIndice)
-  salvarPastasFirestore(m.pastas, chavePastas)
+// Salvar só pastas (criar/renomear/excluir pasta não re-salva todas as fichas)
+// Bug #26
+async function _salvarSoPastas(modo) {
+  Storage.salvarPastas(MODOS[modo].pastas, modo)
+  await _salvarFirebase(modo, { fichas: false, pastas: true })
 }
 
 // ── Trocar modo ────────────────────────────────────────────
@@ -93,17 +114,11 @@ window.setModo = function(modo) {
 function _aplicarTema(modo) {
   const isMestre = modo === "mestre"
   document.body.setAttribute("data-modo", modo)
-
-  // Painel visibilidade
   document.getElementById("painelPlayer").classList.toggle("hidden",  isMestre)
   document.getElementById("painelMestre").classList.toggle("hidden", !isMestre)
-
-  // Botões do toggle
   document.getElementById("btnModoPlayer").classList.toggle("active", !isMestre)
   document.getElementById("btnModoMestre").classList.toggle("active",  isMestre)
-
-  // Textos do header
-  document.getElementById("tituloSite").textContent   = isMestre ? "📖 Mesa do Mestre" : "⚓ 3DeT One Piece"
+  document.getElementById("tituloSite").textContent    = isMestre ? "📖 Mesa do Mestre" : "⚓ 3DeT One Piece"
   document.getElementById("subtituloSite").textContent = isMestre ? "Gerencie as fichas da sua campanha" : "Gerencie suas fichas de personagem"
 }
 
@@ -119,14 +134,13 @@ function _renderSemPasta(modo) {
   if (!area) return
   area.innerHTML = ""
 
-  const semPasta = m.fichas.map((f, i) => ({ f, i })).filter(({ f }) => !f.pastaId)
+  // Bug #24: usa ficha.id para operações em vez de índice posicional
+  const semPasta = m.fichas.filter(f => !f.pastaId)
 
   if (!m.fichas.length) {
-    area.innerHTML = `
-      <div class="lista-vazia">
-        <p>Nenhuma ficha criada ainda.</p>
-        <p>Clique em <strong>+ Nova Ficha</strong> para começar!</p>
-      </div>`
+    area.innerHTML = `<div class="lista-vazia">
+      <p>Nenhuma ficha criada ainda.</p>
+      <p>Clique em <strong>+ Nova Ficha</strong> para começar!</p></div>`
     _bindDropZone(area, null, modo)
     return
   }
@@ -138,7 +152,7 @@ function _renderSemPasta(modo) {
       label.textContent = "Sem pasta"
       area.appendChild(label)
     }
-    semPasta.forEach(({ f, i }) => area.appendChild(_criarCard(f, i, modo)))
+    semPasta.forEach(f => area.appendChild(_criarCard(f, modo)))
   }
 
   _bindDropZone(area, null, modo)
@@ -151,15 +165,16 @@ function _renderPastas(modo) {
   container.innerHTML = ""
 
   m.pastas.forEach((pasta, pi) => {
-    const fichasDaPasta = m.fichas.map((f, i) => ({ f, i })).filter(({ f }) => f.pastaId === pasta.id)
-    const aberta = m.pastasAbertas.has(pasta.id)
+    // Bug #24: filtra por pastaId, não por index
+    const fichasDaPasta = m.fichas.filter(f => f.pastaId === pasta.id)
+    const aberta        = m.pastasAbertas.has(pasta.id)
 
     const bloco = document.createElement("div")
     bloco.className = "pasta-bloco"
     bloco.innerHTML = `
       <div class="pasta-header">
         <span class="pasta-toggle ${aberta ? "" : "fechada"}">▼</span>
-        <span class="pasta-nome" title="Duplo clique para renomear">${pasta.nome}</span>
+        <span class="pasta-nome" title="Duplo clique para renomear">${_esc(pasta.nome)}</span>
         <span class="pasta-count">${fichasDaPasta.length} ficha${fichasDaPasta.length !== 1 ? "s" : ""}</span>
         <div class="pasta-acoes">
           <button class="btn-nova-pasta">+ Ficha</button>
@@ -167,67 +182,63 @@ function _renderPastas(modo) {
           <button class="btn-del-pasta">🗑️</button>
         </div>
       </div>
-      <div class="pasta-conteudo drop-zone ${aberta ? "" : "fechada"}"></div>
-    `
+      <div class="pasta-conteudo drop-zone ${aberta ? "" : "fechada"}"></div>`
 
-    const header   = bloco.querySelector(".pasta-header")
     const conteudo = bloco.querySelector(".pasta-conteudo")
     const nomeEl   = bloco.querySelector(".pasta-nome")
 
-    if (fichasDaPasta.length === 0) {
+    if (!fichasDaPasta.length) {
       const vazia = document.createElement("div")
       vazia.className = "pasta-vazia"
       vazia.textContent = "Arraste fichas para cá ou use '+ Ficha'"
       conteudo.appendChild(vazia)
     } else {
-      fichasDaPasta.forEach(({ f, i }) => conteudo.appendChild(_criarCard(f, i, modo)))
+      fichasDaPasta.forEach(f => conteudo.appendChild(_criarCard(f, modo)))
     }
 
-    header.addEventListener("click", (e) => {
+    bloco.querySelector(".pasta-header").addEventListener("click", (e) => {
       if (e.target.closest(".pasta-acoes")) return
       if (m.pastasAbertas.has(pasta.id)) m.pastasAbertas.delete(pasta.id)
       else m.pastasAbertas.add(pasta.id)
+      // Persiste estado aberto/fechado
+      Storage.salvarPastasAbertas([...m.pastasAbertas], modo)
       renderizar(modo)
     })
 
-    nomeEl.addEventListener("dblclick", (e) => {
-      e.stopPropagation()
-      _renomearInline(nomeEl, pi, modo)
-    })
-
-    bloco.querySelector(".btn-nova-pasta").addEventListener("click", (e) => {
-      e.stopPropagation(); criarFicha(pasta.id, modo)
-    })
-    bloco.querySelector(".btn-ren-pasta").addEventListener("click", (e) => {
-      e.stopPropagation(); _abrirModal(pi, modo)
-    })
-    bloco.querySelector(".btn-del-pasta").addEventListener("click", (e) => {
-      e.stopPropagation(); _excluirPasta(pi, pasta.id, modo)
-    })
+    nomeEl.addEventListener("dblclick", (e) => { e.stopPropagation(); _renomearInline(nomeEl, pi, modo) })
+    bloco.querySelector(".btn-nova-pasta").addEventListener("click", (e) => { e.stopPropagation(); criarFicha(pasta.id, modo) })
+    bloco.querySelector(".btn-ren-pasta").addEventListener("click",  (e) => { e.stopPropagation(); _abrirModal(pi, modo) })
+    bloco.querySelector(".btn-del-pasta").addEventListener("click",  (e) => { e.stopPropagation(); _excluirPasta(pi, pasta.id, modo) })
 
     _bindDropZone(conteudo, pasta.id, modo)
     container.appendChild(bloco)
   })
 }
 
+// Bug #25: escapa HTML para evitar XSS
+function _esc(str) {
+  return String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+}
+
 // ── Card ───────────────────────────────────────────────────
-function _criarCard(f, index, modo) {
+function _criarCard(f, modo) {
+  // Bug #24: opera por ficha.id, não por índice
   const div = document.createElement("div")
   div.className = "ficha-card"
   div.draggable = true
-  div.dataset.index = index
 
   const nivel  = f.nivel ?? 1
   const gastos = f.pontos?.gastos ?? 0
   const total  = f.pontos?.total  ?? 10
 
+  // Bug #25: escapa dados do usuário antes de inserir no HTML
   div.innerHTML = `
     <div class="ficha-info">
-      <strong class="ficha-nome">${f.nome || "Sem Nome"}</strong>
+      <strong class="ficha-nome">${_esc(f.nome) || "Sem Nome"}</strong>
       <div class="ficha-meta">
         <span>⚔️ Nível ${nivel}</span>
-        ${f.racaId      ? `<span>🧬 ${f.racaId}</span>`      : ""}
-        ${f.profissaoId ? `<span>⚒️ ${f.profissaoId}</span>` : ""}
+        ${f.racaId      ? `<span>🧬 ${_esc(f.racaId)}</span>`      : ""}
+        ${f.profissaoId ? `<span>⚒️ ${_esc(f.profissaoId)}</span>` : ""}
         <span>🎯 ${gastos}/${total} PT</span>
       </div>
     </div>
@@ -235,17 +246,17 @@ function _criarCard(f, index, modo) {
       <button class="btn btn-abrir"   title="Abrir ficha">Abrir</button>
       <button class="btn btn-dupl"    title="Duplicar ficha">⧉ Duplicar</button>
       <button class="btn btn-deletar" title="Excluir ficha">🗑️</button>
-    </div>
-  `
+    </div>`
 
-  div.querySelector(".btn-abrir").onclick   = (e) => { e.stopPropagation(); _abrirFicha(index, modo) }
-  div.querySelector(".btn-dupl").onclick    = (e) => { e.stopPropagation(); _duplicarFicha(index, modo) }
-  div.querySelector(".btn-deletar").onclick = (e) => { e.stopPropagation(); _deletarFicha(index, modo) }
+  // Bug #24: closures capturam f.id, não índice posicional
+  div.querySelector(".btn-abrir").onclick   = (e) => { e.stopPropagation(); _abrirFicha(f.id, modo) }
+  div.querySelector(".btn-dupl").onclick    = (e) => { e.stopPropagation(); _duplicarFicha(f.id, modo) }
+  div.querySelector(".btn-deletar").onclick = (e) => { e.stopPropagation(); _deletarFicha(f.id, modo) }
 
   div.addEventListener("dragstart", (e) => {
     div.classList.add("dragging")
     e.dataTransfer.effectAllowed = "move"
-    e.dataTransfer.setData("text/plain", String(index))
+    e.dataTransfer.setData("fichaId", f.id)
     e.dataTransfer.setData("modo", modo)
   })
   div.addEventListener("dragend", () => {
@@ -258,25 +269,23 @@ function _criarCard(f, index, modo) {
 
 // ── Drop zones ─────────────────────────────────────────────
 function _bindDropZone(el, pastaId, modo) {
-  el.addEventListener("dragover", (e) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-    el.classList.add("dragover")
-  })
-  el.addEventListener("dragleave", (e) => {
-    if (!el.contains(e.relatedTarget)) el.classList.remove("dragover")
-  })
+  el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("dragover") })
+  el.addEventListener("dragleave", (e) => { if (!el.contains(e.relatedTarget)) el.classList.remove("dragover") })
   el.addEventListener("drop", (e) => {
     e.preventDefault()
     el.classList.remove("dragover")
-    const idx = parseInt(e.dataTransfer.getData("text/plain"), 10)
-    const m   = MODOS[modo]
-    if (isNaN(idx) || !m.fichas[idx]) return
-    const jaEstaNaPasta = (m.fichas[idx].pastaId ?? null) === pastaId
-    if (jaEstaNaPasta) return
-    if (pastaId) m.fichas[idx].pastaId = pastaId
-    else delete m.fichas[idx].pastaId
-    salvar(modo); renderizar(modo)
+    const fichaId   = e.dataTransfer.getData("fichaId")
+    const fichaModo = e.dataTransfer.getData("modo")
+    if (!fichaId || fichaModo !== modo) return
+    const m    = MODOS[modo]
+    const ficha = m.fichas.find(f => f.id === fichaId)
+    if (!ficha) return
+    if ((ficha.pastaId ?? null) === pastaId) return
+    if (pastaId) ficha.pastaId = pastaId
+    else delete ficha.pastaId
+    // Bug #26: mover ficha de pasta = salva apenas as fichas (índice), não pastas
+    salvar(modo)
+    renderizar(modo)
   })
 }
 
@@ -288,70 +297,78 @@ function criarFicha(pastaId = null, modo = modoAtivo) {
   if (pastaId) nova.pastaId = pastaId
   m.fichas.push(nova)
   if (pastaId) m.pastasAbertas.add(pastaId)
-  salvar(modo); renderizar(modo)
+  // Nova ficha: salva ficha individual + índice, não as pastas
+  _salvarFichaIndividual(nova, modo)
+  salvar(modo)
+  renderizar(modo)
 }
 
-function _duplicarFicha(index, modo) {
-  const m      = MODOS[modo]
-  const copia  = JSON.parse(JSON.stringify(m.fichas[index]))
-  copia.id     = crypto.randomUUID()  // cópia ganha id próprio
-  copia.nome   = (m.fichas[index].nome || "Ficha") + " (cópia)"
-  m.fichas.splice(index + 1, 0, copia)
-  salvar(modo); renderizar(modo)
+// Bug #24: opera por id
+function _duplicarFicha(fichaId, modo) {
+  const m       = MODOS[modo]
+  const original = m.fichas.find(f => f.id === fichaId)
+  if (!original) return
+  const copia  = JSON.parse(JSON.stringify(original))
+  copia.id     = crypto.randomUUID()
+  copia.nome   = (original.nome || "Ficha") + " (cópia)"
+  const idx    = m.fichas.indexOf(original)
+  m.fichas.splice(idx + 1, 0, copia)
+  _salvarFichaIndividual(copia, modo)
+  salvar(modo)
+  renderizar(modo)
   toastSucesso(`"${copia.nome}" criada!`)
 }
 
-function _deletarFicha(index, modo) {
-  const m    = MODOS[modo]
-  const nome = m.fichas[index]?.nome || "esta ficha"
-  if (confirm(`Excluir "${nome}"?\nEsta ação não pode ser desfeita.`)) {
-    m.fichas.splice(index, 1)
-    salvar(modo); renderizar(modo)
+// Bug #21/#24: deleta do Firestore também
+async function _deletarFicha(fichaId, modo) {
+  const m     = MODOS[modo]
+  const ficha = m.fichas.find(f => f.id === fichaId)
+  if (!ficha) return
+  if (!confirm(`Excluir "${_esc(ficha.nome)}"?\nEsta ação não pode ser desfeita.`)) return
+
+  m.fichas = m.fichas.filter(f => f.id !== fichaId)
+  Storage.salvarFichas(m.fichas, modo)
+  renderizar(modo)
+
+  // Remove o documento individual do Firestore
+  if (_logado && estaConfigurado()) {
+    try {
+      await removerFichaFirestore(fichaId, modo)
+      await salvarIndiceFichasFirestore(m.fichas, modo)
+    } catch(e) {
+      console.error("[deletar ficha]", e)
+      toastErro("Erro ao remover ficha da nuvem.")
+    }
   }
 }
 
-function _abrirFicha(index, modo) {
-  const m     = MODOS[modo]
-  const ficha = m.fichas[index]
-  if (!ficha) return
-  if (ficha.id) {
-    // Novo sistema: navega pela URL com id — cada aba mantém seu próprio estado
-    window.location.href = `ficha.html?id=${ficha.id}&modo=${modo}`
-  } else {
-    // Legado: sem id, usa índice
-    Storage.setIndiceFichaAtual(index, modo)
-    window.location.href = "ficha.html"
-  }
+function _abrirFicha(fichaId, modo) {
+  if (!fichaId) return
+  window.location.href = `ficha.html?id=${fichaId}&modo=${modo}`
 }
 
 // ── Ações pastas ───────────────────────────────────────────
-let _modalEditIdx  = null
-let _modalEditModo = "player"
+let _modalEditIdx = null, _modalEditModo = "player"
 
 function _abrirModal(editIdx = null, modo = modoAtivo) {
-  _modalEditIdx  = editIdx
-  _modalEditModo = modo
+  _modalEditIdx = editIdx; _modalEditModo = modo
   const titulo = document.getElementById("modalPastaTitulo")
   const input  = document.getElementById("inputNomePasta")
   const btnOk  = document.getElementById("btnConfirmarPasta")
-
   if (editIdx !== null) {
     titulo.textContent = "✏️ Renomear Pasta"
-    input.value        = MODOS[modo].pastas[editIdx].nome
-    btnOk.textContent  = "Salvar"
+    input.value = MODOS[modo].pastas[editIdx].nome
+    btnOk.textContent = "Salvar"
   } else {
     titulo.textContent = "📁 Nova Pasta"
-    input.value        = ""
-    btnOk.textContent  = "Criar"
+    input.value = ""
+    btnOk.textContent = "Criar"
   }
-
   document.getElementById("modalPasta").classList.remove("hidden")
   setTimeout(() => input.focus(), 40)
 }
 
-window.fecharModalPasta = () => {
-  document.getElementById("modalPasta").classList.add("hidden")
-}
+window.fecharModalPasta = () => document.getElementById("modalPasta").classList.add("hidden")
 
 document.getElementById("btnConfirmarPasta").addEventListener("click", () => {
   const nome = document.getElementById("inputNomePasta").value.trim()
@@ -360,11 +377,13 @@ document.getElementById("btnConfirmarPasta").addEventListener("click", () => {
   if (_modalEditIdx !== null) {
     m.pastas[_modalEditIdx].nome = nome
   } else {
-    const id = "p_" + Date.now()
-    m.pastas.push({ id, nome })
-    m.pastasAbertas.add(id)
+    m.pastas.push({ id: "p_" + Date.now(), nome })
+    m.pastasAbertas.add(m.pastas[m.pastas.length - 1].id)
   }
-  salvar(_modalEditModo); renderizar(_modalEditModo); fecharModalPasta()
+  // Bug #26: renomear/criar pasta não salva fichas
+  _salvarSoPastas(_modalEditModo)
+  renderizar(_modalEditModo)
+  fecharModalPasta()
 })
 
 document.getElementById("inputNomePasta").addEventListener("keydown", (e) => {
@@ -373,41 +392,40 @@ document.getElementById("inputNomePasta").addEventListener("keydown", (e) => {
 })
 
 function _excluirPasta(idx, pastaId, modo) {
-  const m    = MODOS[modo]
+  const m   = MODOS[modo]
   const nome = m.pastas[idx]?.nome || "esta pasta"
   const qtd  = m.fichas.filter(f => f.pastaId === pastaId).length
   const msg  = qtd > 0
     ? `Excluir a pasta "${nome}"?\nAs ${qtd} ficha(s) dentro dela ficarão sem pasta.`
     : `Excluir a pasta "${nome}"?`
-
-  if (confirm(msg)) {
-    m.fichas.forEach(f => { if (f.pastaId === pastaId) delete f.pastaId })
-    m.pastas.splice(idx, 1)
-    m.pastasAbertas.delete(pastaId)
-    salvar(modo); renderizar(modo)
-  }
+  if (!confirm(msg)) return
+  m.fichas.forEach(f => { if (f.pastaId === pastaId) delete f.pastaId })
+  m.pastas.splice(idx, 1)
+  m.pastasAbertas.delete(pastaId)
+  // Bug #26: só salva pastas
+  _salvarSoPastas(modo)
+  renderizar(modo)
 }
 
 function _renomearInline(el, idx, modo) {
   const input = document.createElement("input")
   input.className = "pasta-nome-input"
-  input.value     = MODOS[modo].pastas[idx].nome
+  input.value = MODOS[modo].pastas[idx].nome
   el.replaceWith(input)
   input.focus(); input.select()
-
   const commit = () => {
     const novo = input.value.trim()
-    if (novo) { MODOS[modo].pastas[idx].nome = novo; salvar(modo) }
+    if (novo) { MODOS[modo].pastas[idx].nome = novo; _salvarSoPastas(modo) }
     renderizar(modo)
   }
-  input.addEventListener("blur",    commit)
+  input.addEventListener("blur", commit)
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter")  { e.preventDefault(); commit() }
+    if (e.key === "Enter") { e.preventDefault(); commit() }
     if (e.key === "Escape") renderizar(modo)
   })
 }
 
-// ── Login ──────────────────────────────────────────────────
+// ── Login / Logout ─────────────────────────────────────────
 function _atualizarUILogin() {
   const user = getUser()
   document.getElementById("btnLoginIndex").style.display  = user ? "none"        : "inline-flex"
@@ -418,49 +436,73 @@ function _atualizarUILogin() {
 window.fazerLogin  = () => loginGoogle().catch(() => toastErro("Erro ao fazer login."))
 window.fazerLogout = () => logout()
 
+// Bug #1/#5/#7/#22: ao logar, descarta cache e carrega EXCLUSIVAMENTE do Firebase
 onLogin(async (user) => {
+  _logado = true
   _atualizarUILogin()
-  toastSucesso(`Bem-vindo, ${user.displayName || "jogador"}!`)
-  if (!estaConfigurado()) return
 
-  let sincronizados = 0
+  if (!estaConfigurado()) {
+    toastAviso("Firebase não configurado — usando dados locais.")
+    _carregarDoCache("player")
+    _carregarDoCache("mestre")
+    renderizar("player"); renderizar("mestre")
+    return
+  }
+
+  toastInfo("Sincronizando com a nuvem...")
+
+  let totalFichas = 0
 
   for (const modo of ["player", "mestre"]) {
-    const m           = MODOS[modo]
-    const chaveIndice = modo === "mestre" ? "fichas_mestre" : "fichas"
-    const chavePastas = modo === "mestre" ? "pastas_mestre" : "pastas_player"
+    const m = MODOS[modo]
 
-    // Carrega índice (metadados) para saber quais fichas existem na nuvem
-    const indice = await carregarFichasFirestore(chaveIndice)
+    // Bug #1/#22: limpa TUDO — não mescla com cache
+    _limparModo(modo)
 
-    if (indice !== null && indice.length > 0) {
-      // Mescla: fichas locais + fichas da nuvem que não existem localmente
-      const locaisIds = new Set(m.fichas.map(f => f.id).filter(Boolean))
-      for (const meta of indice) {
-        if (meta.id && !locaisIds.has(meta.id)) {
-          // Ficha existe na nuvem mas não localmente: adiciona com metadados
-          // (será carregada completa ao abrir)
-          m.fichas.push(meta)
-        }
-      }
-      Storage.salvarFichas(m.fichas, modo)
-      sincronizados += indice.length
+    // Carrega índice (metadados) — apenas para montar a lista de cards
+    const indice = await carregarIndiceFichasFirestore(modo)
+    if (indice !== null) {
+      // Bug #5/#22: armazena como metadados explicitamente marcados
+      // Os dados completos só são carregados ao abrir a ficha
+      m.fichas = indice.map(meta => ({
+        _soMetadados: true,  // flag que indica que não tem dados completos
+        id: meta.id, nome: meta.nome ?? "Sem Nome",
+        pastaId: meta.pastaId ?? null, nivel: meta.nivel ?? 1,
+        racaId: meta.racaId ?? "", profissaoId: meta.profissaoId ?? "",
+        pontos: { gastos: 0, total: 10 }
+      }))
+      totalFichas += m.fichas.length
     }
 
     // Carrega pastas
-    const pastasCloud = await carregarPastasFirestore(chavePastas)
-    if (pastasCloud !== null && pastasCloud.length > 0) {
-      m.pastas = pastasCloud
-      m.pastasAbertas = new Set(pastasCloud.map(p => p.id))
-      Storage.salvarPastas(pastasCloud, modo)
+    const pastas = await carregarPastasFirestore(modo)
+    if (pastas !== null) {
+      m.pastas = pastas
+      // Bug #28: abre apenas pastas que estavam abertas na última sessão
+      const abertas = Storage.carregarPastasAbertas(modo)
+      m.pastasAbertas = abertas ? new Set(abertas) : new Set(pastas.map(p => p.id))
     }
 
     renderizar(modo)
   }
 
-  toastInfo(sincronizados > 0 ? `${sincronizados} ficha(s) sincronizadas.` : "Nuvem sincronizada.")
+  toastSucesso(`${user.displayName || "Jogador"} conectado! ${totalFichas} ficha(s) encontradas.`)
 })
-onLogout(() => _atualizarUILogin())
+
+// Bug #7: ao deslogar, limpa tela e volta ao cache local
+onLogout(() => {
+  _logado = false
+  _atualizarUILogin()
+  // Limpa dados da nuvem da tela
+  _limparModo("player")
+  _limparModo("mestre")
+  // Recarrega do cache local
+  _carregarDoCache("player")
+  _carregarDoCache("mestre")
+  renderizar("player")
+  renderizar("mestre")
+  toastInfo("Desconectado. Exibindo dados locais.")
+})
 
 // ── Botões ─────────────────────────────────────────────────
 document.getElementById("btnNova").addEventListener("click",           () => criarFicha(null, "player"))
@@ -468,28 +510,19 @@ document.getElementById("btnNovaPasta").addEventListener("click",      () => _ab
 document.getElementById("btnNovaMestre").addEventListener("click",     () => criarFicha(null, "mestre"))
 document.getElementById("btnNovaPastaMestre").addEventListener("click",() => _abrirModal(null, "mestre"))
 
-// Botão de migração de dados
 document.getElementById("btnMigrar")?.addEventListener("click", () => {
   const result = Storage.migrarTudo()
-  const total  = MODOS.player.fichas.length + MODOS.mestre.fichas.length
-  let migradas = 0
-  // Recarrega fichas migradas na memória
-  for (const modo of ["player", "mestre"]) {
-    const { fichas, changed } = result[modo]
-    if (changed) {
-      MODOS[modo].fichas = fichas
-      migradas += fichas.filter(f => f.id).length
-      renderizar(modo)
-    }
-  }
   if (result.player.changed || result.mestre.changed) {
-    toastSucesso(`Migração concluída! ${total} ficha(s) agora com ID único.`)
-    // Oculta botão após migrar
-    document.getElementById("btnMigrar").style.display = "none"
+    for (const modo of ["player", "mestre"]) {
+      if (result[modo].changed) {
+        if (!_logado) { MODOS[modo].fichas = result[modo].fichas; renderizar(modo) }
+      }
+    }
+    toastSucesso("Migração concluída! Todas as fichas agora têm ID único.")
   } else {
     toastInfo("Todas as fichas já estão atualizadas.")
-    document.getElementById("btnMigrar").style.display = "none"
   }
+  document.getElementById("btnMigrar").style.display = "none"
 })
 
 // ── Sistema de Viagem ──────────────────────────────────────
@@ -498,96 +531,67 @@ document.getElementById("btnGerarViagem").addEventListener("click", () => {
   const ritmoIdx    = +document.getElementById("viagemRitmo").value
   const porteIdx    = +document.getElementById("viagemPorte").value
   const estadoIdx   = +document.getElementById("viagemEstado").value
-
-  const opts = {
-    ritmo:  RITMOS[ritmoIdx],
-    porte:  PORTES[porteIdx],
-    estado: ESTADOS_VEICULO[estadoIdx],
-  }
+  const opts = { ritmo: RITMOS[ritmoIdx], porte: PORTES[porteIdx], estado: ESTADOS_VEICULO[estadoIdx] }
   if (ambienteIdx !== "aleatorio") opts.ambiente = AMBIENTES[+ambienteIdx]
-
-  const resultado = gerarViagem(opts)
-  _renderViagem(resultado)
+  _renderViagem(gerarViagem(opts))
 })
 
-function _nrCor(nr) {
-  if (nr <= 1)  return "#22c55e"
-  if (nr <= 3)  return "#f59e0b"
-  if (nr <= 5)  return "#fb923c"
-  return "#ef4444"
-}
-
-function _nrStr(nr) { return nr >= 0 ? `+${nr}` : String(nr) }
+function _nrCor(nr) { return nr<=1?"#22c55e":nr<=3?"#f59e0b":nr<=5?"#fb923c":"#ef4444" }
+function _nrStr(nr) { return nr>=0?`+${nr}`:String(nr) }
 
 function _renderViagem(r) {
   const el = document.getElementById("viagemResultado")
   el.classList.remove("hidden")
-
-  // Ambiente
   const ambCor = r.ambiente.cor
-  const ambHTML = `
+  el.innerHTML = `<div class="viagem-resultado-inner">
     <div class="viagem-bloco viagem-ambiente" style="border-color:${ambCor}40;background:${ambCor}10">
-      <div class="viagem-bloco-header">
-        <span class="viagem-bloco-icon">${r.ambiente.icon}</span>
-        <div>
-          <strong>Ambiente: ${r.ambiente.nome}</strong>
-          <span class="viagem-nr" style="color:${ambCor}">${_nrStr(r.ambiente.nr)} NR</span>
-        </div>
-      </div>
-      <p class="viagem-bloco-desc">${r.ambiente.desc}</p>
-    </div>`
-
-  // Config resumida
-  const configHTML = `
+      <div class="viagem-bloco-header"><span class="viagem-bloco-icon">${r.ambiente.icon}</span>
+        <div><strong>Ambiente: ${r.ambiente.nome}</strong>
+        <span class="viagem-nr" style="color:${ambCor}">${_nrStr(r.ambiente.nr)} NR</span></div></div>
+      <p class="viagem-bloco-desc">${r.ambiente.desc}</p></div>
     <div class="viagem-config-resumo">
       <span>🚢 ${r.porte.nome} (${_nrStr(r.porte.nr)})</span>
       <span>🔧 ${r.estado.nome} (${_nrStr(r.estado.nr)})</span>
       <span>💨 Ritmo ${r.ritmo.nome} (${_nrStr(r.ritmo.nr)})</span>
-      <span>📊 NR Base: <strong style="color:${_nrCor(r.nrBase)}">${_nrStr(r.nrBase)}</strong></span>
-    </div>`
-
-  // Rotas
-  const rotasHTML = r.eventos.map((ev, i) => {
-    const rotaCor = _nrCor(ev.nrTotal)
-    return `
-      <div class="viagem-rota" style="border-color:${rotaCor}60">
+      <span>📊 NR Base: <strong style="color:${_nrCor(r.nrBase)}">${_nrStr(r.nrBase)}</strong></span></div>
+    <div class="viagem-rotas-titulo">🗺️ As 3 Rotas Possíveis</div>
+    <div class="viagem-rotas">${r.eventos.map((ev,i)=>{
+      const c=_nrCor(ev.nrTotal)
+      return `<div class="viagem-rota" style="border-color:${c}60">
         <div class="viagem-rota-header">
-          <span class="viagem-rota-num">Rota ${i + 1}</span>
+          <span class="viagem-rota-num">Rota ${i+1}</span>
           <span class="viagem-rota-tipo">${ev.rota.icon} ${ev.rota.nome}</span>
-          <span class="viagem-nr-pill" style="background:${rotaCor}22;color:${rotaCor};border:1px solid ${rotaCor}55">
-            NR ${_nrStr(ev.nrTotal)}
-          </span>
-        </div>
+          <span class="viagem-nr-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">NR ${_nrStr(ev.nrTotal)}</span></div>
         <p class="viagem-rota-desc">${ev.rota.desc}</p>
         <div class="viagem-evento" style="border-left:3px solid ${ev.cor}">
           <span style="color:${ev.cor};font-weight:600">${ev.icon} Evento ${ev.tipo}</span>
           <span class="viagem-dado">🎲 D6: ${ev.dado}</span>
-          <p>${ev.evento}</p>
-        </div>
-      </div>`
-  }).join("")
-
-  el.innerHTML = `
-    <div class="viagem-resultado-inner">
-      ${ambHTML}
-      ${configHTML}
-      <div class="viagem-rotas-titulo">🗺️ As 3 Rotas Possíveis</div>
-      <div class="viagem-rotas">${rotasHTML}</div>
-      <p class="viagem-nota">💡 Revele apenas o <em>tipo</em> da rota aos jogadores. O NR e o evento são informações do Mestre.</p>
-    </div>`
+          <p>${ev.evento}</p></div></div>`
+    }).join("")}</div>
+    <p class="viagem-nota">💡 Revele apenas o <em>tipo</em> da rota aos jogadores. O NR e o evento são informações do Mestre.</p>
+  </div>`
 }
 
 // ── Init ───────────────────────────────────────────────────
-// Migração silenciosa: garante que todas as fichas existentes têm id UUID
 Storage.migrarTudo()
 
+// Bug #3: aguarda Firebase resolver o estado de auth antes de renderizar
 await inicializarFirebase()
+await aguardarAuth()   // <- key fix: não renderiza com getUser()=null prematuro
+
 _atualizarUILogin()
 _aplicarTema(modoAtivo)
+
+// Bug #1: só carrega cache se NÃO estiver logado
+if (!getUser()) {
+  _carregarDoCache("player")
+  _carregarDoCache("mestre")
+}
+// Se logado, onLogin já foi disparado e carregou do Firebase
+
 renderizar("player")
 renderizar("mestre")
 
-// Mostra botão de migração só se existirem fichas antigas sem id
 const todasFichas = [...Storage.carregarFichas("player"), ...Storage.carregarFichas("mestre")]
 const precisaMigrar = todasFichas.some(f => !f.id)
 const btnMigrar = document.getElementById("btnMigrar")

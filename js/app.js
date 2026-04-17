@@ -27,12 +27,19 @@ import {
 } from "./ui/uiRacaProfissao.js"
 import { toastErro, toastSucesso, toastAviso, toastInfo } from "./ui/uiToast.js"
 import { inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
-         salvarFichasFirestore, carregarFichasFirestore,
          salvarFichaFirestore, carregarFichaFirestore,
+         salvarIndiceFichasFirestore,
          salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
-         salvarPastasFirestore, carregarPastasFirestore, estaConfigurado } from "./firebase.js"
+         aguardarAuth, estaConfigurado } from "./firebase.js"
 
 // ─────────────────────────────────────────────────────────
+// ── Debounce utility (Bug #11/#16) ───────────────────────
+function _debounce(fn, ms) {
+  let timer
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms) }
+}
+const _salvarDebounced = _debounce(() => salvar(), 800)
+
 let ficha = null
 let _fichaId    = null       // UUID da ficha aberta
 let _fichaModo  = "player"   // modo (player/mestre)
@@ -42,11 +49,13 @@ let _fichaOwner = true       // true = dono da ficha, false = terceiro acessando
 document.addEventListener("DOMContentLoaded", async () => {
 
   await inicializarFirebase()
+  await aguardarAuth()  // Bug #3: aguarda estado de auth antes de usar getUser()
 
   // ── Detectar qual ficha abrir ───────────────────────────
   const params  = new URLSearchParams(window.location.search)
   const urlId   = params.get("id")
-  const urlModo = params.get("modo") ?? "player"
+  const rawModo = params.get("modo")
+  const urlModo = (rawModo === "mestre" || rawModo === "player") ? rawModo : "player"  // Bug #18
 
   if (urlId) {
     _fichaId   = urlId
@@ -148,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   _bindNomeEditavel()
 
   // Firebase
-  await inicializarFirebase()
+  // inicializarFirebase já chamado no DOMContentLoaded (Bug #6 fix)
   _renderAnotacoes()
   _renderCombate()
   _renderVisibilidade()
@@ -453,7 +462,10 @@ async function salvar() {
 
   // Salva ficha privada do dono (com await para garantir que chegou antes de fechar)
   if (_fichaOwner && user && _fichaId) {
-    await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid })
+    await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
+    // Bug #4: atualiza o índice para refletir nome/nível atualizados
+    const fichasList = Storage.carregarFichas(_fichaModo)
+    salvarIndiceFichasFirestore(fichasList, _fichaModo)  // fire-and-forget OK para índice
   }
 
   // Espelha em public_fichas se pública
@@ -727,7 +739,25 @@ function _atualizarUILogin() {
   if (userInfo)  userInfo.textContent    = user ? user.displayName || user.email : ""
 }
 
-onLogin(() => { _atualizarUILogin(); toastSucesso("Login realizado!") })
+onLogin(async (user) => {
+  _atualizarUILogin()
+  toastSucesso("Login realizado!")
+  // Bug #19: se a ficha foi carregada do localStorage antes do login,
+  // recarrega do Firebase para garantir versão mais recente
+  if (_fichaId && estaConfigurado()) {
+    const remoto = await carregarFichaFirestore(_fichaId, _fichaModo)
+    if (remoto) {
+      const fichaRemota = Ficha.fromJSON(remoto)
+      // Só atualiza se a versão remota é mais recente
+      if (remoto._updatedAt > (ficha.toJSON()._updatedAt ?? "")) {
+        ficha = fichaRemota
+        _fichaOwner = true
+        renderTudo()
+        toastInfo("Ficha atualizada da nuvem.")
+      }
+    }
+  }
+})
 onLogout(() => { _atualizarUILogin(); toastInfo("Você saiu.") })
 
 // ─────────────────────────────────────────────────────────
@@ -823,7 +853,7 @@ function expor() {
   window.salvarAnotacao = (campo, valor) => {
     if (!ficha.anotacoes) ficha.anotacoes = {}
     ficha.anotacoes[campo] = valor
-    salvar()
+    _salvarDebounced()  // Bug #16: debounce para campos de texto livre
   }
 
   // Inventário
