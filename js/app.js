@@ -546,14 +546,17 @@ function _iniciarEscutaRealtime() {
     _fichaOwnerModo ?? _fichaModo,
     _fichaOwnerUid,
     (dadosRemotos) => {
-      // Ignora se o usuário editou localmente nos últimos 3s
+      // Dono: ignora updates remotos se editou localmente nos últimos 3s
       // (evita sobrescrever o que ele está digitando)
-      if (Date.now() - _ultimaEdicaoLocal < 3000) return
+      // Editor externo: SEMPRE aplica — o snapshot é a confirmação do próprio save
+      if (_fichaOwner && Date.now() - _ultimaEdicaoLocal < 3000) return
 
-      // Ignora se os dados são os mesmos que já temos (evita loop)
-      const localJson = JSON.stringify(ficha.toJSON())
-      const remotoJson = JSON.stringify(dadosRemotos)
-      if (localJson === remotoJson) return
+      // Ignora se os dados são idênticos (evita re-render desnecessário)
+      try {
+        const localJson  = JSON.stringify(ficha.toJSON())
+        const remotoJson = JSON.stringify(dadosRemotos)
+        if (localJson === remotoJson) return
+      } catch(_) {}
 
       // Aplica a versão remota e re-renderiza silenciosamente
       ficha = Ficha.fromJSON(dadosRemotos)

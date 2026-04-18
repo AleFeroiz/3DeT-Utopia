@@ -33,12 +33,12 @@ export async function inicializarFirebase() {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
     const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
-    const { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot } =
+    const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, getDoc, deleteDoc, onSnapshot }
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
     onAuthStateChanged(_auth, (user) => {
       _user = user
@@ -205,10 +205,15 @@ export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player")
   if (!_okPub() || !fichaObj?.id || !ownerUid) return false
   try {
     const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
-    await _firebaseFns.setDoc(
-      _firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id),
-      { ...fichaObj, _ownerUid: ownerUid, _updatedAt: new Date().toISOString() }
-    )
+    const ref = _firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id)
+    // Usa updateDoc (não cria — só edita documento existente)
+    // Casa com a regra "allow update" do Firestore para editores externos
+    // Remove campos internos que o editor não deve sobrescrever
+    const { _ownerUid: _o, isPublic, editPublic, ...dadosEditaveis } = fichaObj
+    await _firebaseFns.updateDoc(ref, {
+      ...dadosEditaveis,
+      _updatedAt: new Date().toISOString()
+    })
     return true
   } catch(e) { console.error("[Firestore] salvar como editor:", e); return false }
 }
