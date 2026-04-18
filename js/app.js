@@ -70,6 +70,7 @@ let ficha       = null
 let _fichaId    = null
 let _fichaModo  = "player"
 let _fichaOwner = true
+let _loginFoiManual = false  // ← ADICIONAR esta linha
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -478,8 +479,10 @@ function _atualizarUILogin() {
 
 // Fase 2 (escopo): logar/deslogar na ficha redireciona para index.html
 // Não há ambiguidade sobre qual versão da ficha está sendo editada
+// DEPOIS — só redireciona se foi login/logout manual:
 onLogin(() => {
-  window.location.href = "index.html"
+  if (_loginFoiManual) window.location.href = "index.html"
+  _loginFoiManual = false
 })
 onLogout(() => {
   window.location.href = "index.html"
@@ -1151,7 +1154,10 @@ function expor() {
   window.fecharModalProfissao      = () => fecharModal("modalEscolhaProfissao")
 
   // Firebase
-  window.fazerLogin  = () => loginGoogle().catch(e => toastErro("Erro ao fazer login."))
+  window.fazerLogin  = () => {
+  _loginFoiManual = true
+  loginGoogle().catch(e => { _loginFoiManual = false; toastErro("Erro ao fazer login.") })
+}
   window.fazerLogout = () => logout()
 }
 
