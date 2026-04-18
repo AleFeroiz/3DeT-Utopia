@@ -180,5 +180,4 @@ export async function removerFichaPublicaFirestore(fichaId) {
 }
 
 // ─── Legado (não remover — outros arquivos ainda importam) ─
-export const carregarFichasFirestore = () => carregarIndiceFichasFirestore("player")
-export const salvarFichasFirestore   = (f) => salvarIndiceFichasFirestore(f, "player")
+

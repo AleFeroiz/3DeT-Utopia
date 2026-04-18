@@ -1,11 +1,10 @@
 // ============================================================
-//  app.js — Ponto de entrada da ficha.html
+//  app.js — Fase 1: carregamento limpo, salvar único, sem duplicatas
 // ============================================================
 
-import { Storage } from "./storage.js"
-import { Ficha   } from "./modelos/Ficha.js"
-import { RACAS   } from "./dados/racas.js"
-
+import { Storage }  from "./storage.js"
+import { Ficha }    from "./modelos/Ficha.js"
+import { RACAS }    from "./dados/racas.js"
 import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras, _atualizarTesteMorte } from "./ui/uiAtributos.js"
 import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
 import { resumoEscolhas } from "./ui/uiResumoEscolhas.js"
@@ -26,147 +25,108 @@ import {
   abrirModalRaca, abrirModalProfissao
 } from "./ui/uiRacaProfissao.js"
 import { toastErro, toastSucesso, toastAviso, toastInfo } from "./ui/uiToast.js"
-import { inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
-         salvarFichaFirestore, carregarFichaFirestore,
-         salvarIndiceFichasFirestore,
-         salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
-         aguardarAuth, estaConfigurado } from "./firebase.js"
+import {
+  inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
+  salvarFichaFirestore, carregarFichaFirestore,
+  salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
+  salvarIndiceFichasFirestore, aguardarAuth, estaConfigurado
+} from "./firebase.js"
 
-// ─────────────────────────────────────────────────────────
-// ── Debounce utility (Bug #11/#16) ───────────────────────
+// ── Debounce ──────────────────────────────────────────────
 function _debounce(fn, ms) {
   let timer
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms) }
 }
 const _salvarDebounced = _debounce(() => salvar(), 800)
 
-let ficha = null
-let _fichaId    = null       // UUID da ficha aberta
-let _fichaModo  = "player"   // modo (player/mestre)
-let _fichaOwner = true       // true = dono da ficha, false = terceiro acessando
+// ── Estado da ficha aberta ────────────────────────────────
+let ficha       = null
+let _fichaId    = null
+let _fichaModo  = "player"
+let _fichaOwner = true
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
 
   await inicializarFirebase()
-  await aguardarAuth()  // Bug #3: aguarda estado de auth antes de usar getUser()
+  await aguardarAuth()
 
-  // ── Detectar qual ficha abrir ───────────────────────────
+  // ── Fluxo de carregamento (conforme escopo Fase 2) ─────
   const params  = new URLSearchParams(window.location.search)
   const urlId   = params.get("id")
   const rawModo = params.get("modo")
-  const urlModo = (rawModo === "mestre" || rawModo === "player") ? rawModo : "player"  // Bug #18
+  const urlModo = (rawModo === "mestre" || rawModo === "player") ? rawModo : "player"
 
   if (urlId) {
     _fichaId   = urlId
     _fichaModo = urlModo
+    const user = getUser()
 
-    // 1. Tenta localStorage primeiro (dono no mesmo device)
-    const found = Storage.carregarFichaPorId(urlId)
-    if (found) {
-      ficha       = Ficha.fromJSON(found.ficha)
-      _fichaModo  = found.modo
-      _fichaOwner = true
-    } else if (estaConfigurado()) {
-      // 2. Tenta ficha pública (terceiro ou dono em outro device)
-      const publica = await carregarFichaPublicaFirestore(urlId)
-      if (publica) {
-        ficha = Ficha.fromJSON(publica)
-        // Verifica se é o dono (uid na ficha) ou terceiro
-        const user = getUser()
-        _fichaOwner = !!(user && publica._ownerUid === user.uid)
-      } else {
-        // 3. Tenta ficha privada do próprio usuário (outro device)
-        const user = getUser()
-        if (user) {
-          const remoto = await carregarFichaFirestore(urlId)
-          if (remoto) {
-            ficha       = Ficha.fromJSON(remoto)
-            _fichaOwner = true
-            Storage.salvarFichaPorId(ficha.toJSON(), _fichaModo)
-          }
-        }
+    if (user && estaConfigurado()) {
+      // Logado: fonte primária = Firestore
+      const remoto = await carregarFichaFirestore(urlId, urlModo)
+      if (remoto && !remoto._soMetadados) {
+        ficha       = Ficha.fromJSON(remoto)
+        _fichaOwner = true
+        Storage.salvarFichaPorId(ficha.toJSON(), _fichaModo)
       }
-      if (!ficha) {
-        ficha       = Ficha.nova()
-        _fichaId    = ficha.id
+    }
+
+    if (!ficha) {
+      // Não logado OU ficha não encontrada no Firestore: tenta localStorage
+      const found = Storage.carregarFichaPorId(urlId)
+      if (found && !found.ficha._soMetadados) {
+        ficha       = Ficha.fromJSON(found.ficha)
+        _fichaModo  = found.modo
         _fichaOwner = true
       }
-    } else {
-      // Sem Firebase configurado: localhost/teste
+    }
+
+    if (!ficha && estaConfigurado()) {
+      // Último recurso: ficha pública de terceiro
+      const publica = await carregarFichaPublicaFirestore(urlId)
+      if (publica) {
+        ficha       = Ficha.fromJSON(publica)
+        const user  = getUser()
+        _fichaOwner = !!(user && publica._ownerUid === user.uid)
+      }
+    }
+
+    if (!ficha) {
       ficha       = Ficha.nova()
       _fichaId    = ficha.id
       _fichaOwner = true
     }
+
   } else {
-    // Legado: carrega pelo índice
-    const dados = Storage.carregarFichaAtual()
-    ficha       = dados ? Ficha.fromJSON(dados.ficha) : Ficha.nova()
+    // Sem ?id= na URL: cria ficha nova (rota de emergência)
+    ficha       = Ficha.nova()
     _fichaId    = ficha.id
-    _fichaModo  = dados?.modo ?? "player"
+    _fichaModo  = urlModo
     _fichaOwner = true
   }
+
   ficha.calcularStatus()
   ficha.calcularPontos()
 
-  registrarCallbacks({
-    onSalvarElemento: (elemento) => {
-      if (!elemento) return
-      // Se já existe elemento com esse id → é edição (substitui)
-      const idx = ficha.elementos.findIndex(e => e.id === elemento.id)
-      if (idx !== -1) {
-        ficha.elementos[idx] = elemento
-        ficha.calcularPontos()
-      } else {
-        ficha.adicionarElemento(elemento)
-      }
-      renderTudo(); salvar()
-    },
-    onSalvarFonte: (fonte, editandoId) => {
-      if (editandoId) {
-        const idx = ficha.elementos.findIndex(e => e.id === editandoId)
-        if (idx !== -1) ficha.elementos[idx] = fonte
-        ficha.calcularPontos()
-      } else {
-        ficha.adicionarElemento(fonte)
-      }
-      renderTudo(); salvar()
-      toastSucesso(editandoId ? "Fonte atualizada!" : "Fonte criada!")
-    },
-    getFicha: () => ficha
-  })
+    _fichaModo  = dados?.modo ?? "player"
+    _fichaOwner = true
+  }
 
-  registrarCallbackIsolada((carac, editIndex) => {
-    if (!ficha.caracteristicasIsoladas) ficha.caracteristicasIsoladas = []
-    if (editIndex !== null && editIndex !== undefined) {
-      ficha.caracteristicasIsoladas[editIndex] = carac
-    } else {
-      ficha.caracteristicasIsoladas.push(carac)
-    }
-    renderTudo(); salvar()
-  })
+  ficha.calcularStatus()
+  ficha.calcularPontos()
 
-  registrarCallbackRacaProf((dados) => {
-    Object.assign(ficha, dados)
-    renderTudo(); salvar()
-  })
 
-  expor()
+
+  // ── Render inicial ───────────────────────────────────
   renderTudo()
-  _bindStatusInputs()
   _bindNomeEditavel()
-
-  // Firebase
-  // inicializarFirebase já chamado no DOMContentLoaded (Bug #6 fix)
-  _renderAnotacoes()
-  _renderCombate()
-  _renderVisibilidade()
+  _bindStatusInputs()
+  expor()
   _atualizarUILogin()
-})
 
-// ─────────────────────────────────────────────────────────
-//  RENDER CENTRAL
-// ─────────────────────────────────────────────────────────
+}) // fim DOMContentLoaded
+
 function _renderPericias() {
   renderPericias(ficha,
     (id) => { ficha.togglePericia(id); _renderPericias(); renderPontos(ficha); salvar() },
@@ -424,7 +384,7 @@ function _renderNivel() {
   const mLimite = document.getElementById("maestriaLimite")
   if (mAtual  && document.activeElement !== mAtual)  mAtual.innerText  = ficha.totalMaestrias
   if (mLimite && document.activeElement !== mLimite) {
-    const offset = ficha.maestras?.offsetLimite ?? 0
+    const offset = ficha.maestrasCfg?.offsetLimite ?? 0
     mLimite.innerText  = ficha.maestraLimite
     mLimite.style.color = offset !== 0 ? "#fbbf24" : ""
   }
@@ -441,87 +401,32 @@ function _renderNivel() {
 //  PERSISTÊNCIA
 // ─────────────────────────────────────────────────────────
 async function salvar() {
-  // Terceiros sem permissão de edição não podem salvar
   if (!_fichaOwner && !ficha.editPublic) return
 
   const fichaJson = ficha.toJSON()
 
-  // localStorage SEMPRE — funciona sem Firebase, inclusive em testes locais
-  if (_fichaOwner) {
-    // Novo sistema: identifica pelo id
-    // Legado (sem _fichaId) não é mais possível: toda ficha criada pós-migração tem id
-    if (_fichaId) {
-      Storage.salvarFichaPorId(fichaJson, _fichaModo)
-    }
-    // (caminho legado removido — fichas sem id são migradas no init)
-  }
+  // localStorage sempre (cache offline e testes locais)
+  if (_fichaId) Storage.salvarFichaPorId(fichaJson, _fichaModo)
 
-  // Firebase só se estiver configurado
   if (!estaConfigurado()) return
   const user = getUser()
 
-  // Salva ficha privada do dono (com await para garantir que chegou antes de fechar)
   if (_fichaOwner && user && _fichaId) {
     await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
-    // Bug #4: atualiza o índice para refletir nome/nível atualizados
-    const fichasList = Storage.carregarFichas(_fichaModo)
-    salvarIndiceFichasFirestore(fichasList, _fichaModo)  // fire-and-forget OK para índice
+    // Atualiza índice (nome/nível no card da index.html)
+    salvarIndiceFichasFirestore(Storage.carregarFichas(_fichaModo), _fichaModo)
   }
 
-  // Espelha em public_fichas se pública
   if (_fichaId) {
     if (fichaJson.isPublic) {
       const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
       await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
     } else if (_fichaOwner) {
-      // Ficou privada — remove do público (não precisa de await)
       removerFichaPublicaFirestore(_fichaId)
     }
   }
 }
 
-// ─────────────────────────────────────────────────────────
-//  NOME EDITÁVEL
-// ─────────────────────────────────────────────────────────
-function _bindNomeEditavel() {
-  const el = document.getElementById("nomeFicha")
-  if (!el) return
-  el.textContent = ficha.nome
-  el.addEventListener("blur", () => {
-    ficha.nome = el.textContent.trim() || "Nova Ficha"
-    el.textContent = ficha.nome
-    salvar()
-  })
-  el.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); el.blur() }
-  })
-}
-
-// ─────────────────────────────────────────────────────────
-//  STATUS INPUTS
-// ─────────────────────────────────────────────────────────
-function _bindStatusInputs() {
-  // Bind atual inputs
-  const bindAtual = (id, chave) => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.oninput = () => {
-      ficha.status[chave].atual = +el.value || 0
-      atualizarBarras(ficha); salvar()
-    }
-  }
-  bindAtual("paAtual", "pa"); bindAtual("pmAtual", "pm"); bindAtual("pvAtual", "pv")
-
-  // Bind max editable spans — sistema de OFFSET: finalMax = auto + offset
-  const bindMax = (id, chave) => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.addEventListener("blur", () => {
-      const val = parseInt(el.innerText.trim(), 10)
-      if (!isNaN(val) && val >= 0) {
-        ficha.setMaxManual(chave, val)   // calcula e guarda o offset
-        atualizarBarras(ficha); salvar()
-      } else {
         el.innerText = ficha.status[chave].max  // reverte se inválido
       }
     })
@@ -530,201 +435,9 @@ function _bindStatusInputs() {
   }
   bindMax("paMax", "pa"); bindMax("pmMax", "pm"); bindMax("pvMax", "pv")
 
-  // Bind "usado" (pontos gastos) — editável com offset
-  const usadoEl = document.getElementById("usado")
-  if (usadoEl) {
-    usadoEl.addEventListener("blur", () => {
-      const val = parseInt(usadoEl.innerText.trim(), 10)
-      if (!isNaN(val) && val >= 0) {
-        ficha.setGastosManual(val)
-        renderPontos(ficha); salvar()
-      } else {
-        usadoEl.innerText = ficha.pontos.gastos
-      }
-    })
-    usadoEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); usadoEl.blur() } })
-    usadoEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
-  }
-
-  // Bind maestria atual (readonly display — não é editável diretamente, calculado)
-  // Bind maestria LIMITE — offset sobre o automático do nível
-  const mLimiteEl = document.getElementById("maestriaLimite")
-  if (mLimiteEl) {
-    mLimiteEl.addEventListener("blur", () => {
-      const val = parseInt(mLimiteEl.innerText.trim(), 10)
-      if (!isNaN(val) && val >= 0) {
-        ficha.setMaestraLimiteManual(val)
-        _renderNivel(); salvar()
-      } else {
-        mLimiteEl.innerText = ficha.maestraLimite
-      }
-    })
-    mLimiteEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mLimiteEl.blur() } })
-    mLimiteEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
-  }
-
-  // Bind pontos total — sistema de OFFSET: total = ptTotal(nível) + offsetTotal
-  const totalEl = document.getElementById("total")
-  if (totalEl) {
-    totalEl.addEventListener("blur", () => {
-      const val = parseInt(totalEl.innerText.trim(), 10)
-      if (!isNaN(val) && val >= 0) {
-        ficha.setTotalManual(val)   // calcula e guarda offsetTotal
-        renderPontos(ficha); salvar()
-      } else {
-        totalEl.innerText = ficha.pontos.total
-      }
-    })
-    totalEl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); totalEl.blur() } })
-    totalEl.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-//  EXPANDIR FONTE
-// ─────────────────────────────────────────────────────────
-// _resumoEscolhas removido — usar import de uiResumoEscolhas.js
-// Alias local para compatibilidade com usos existentes em _cardCaractExpandir
+// Alias: _resumoEscolhas → importado de uiResumoEscolhas.js
 const _resumoEscolhas = resumoEscolhas
 
-function _resumoEscolhas(escolhas) {
-  if (!escolhas) return {}
-  const BASES_PADRAO = {
-    execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea',
-    area: '1 alvo', alvos: '1 alvo'
-  }
-  const result = {}
-  const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
-  for (const chave of todasChaves) {
-    const lista = escolhas[chave] ?? []
-    const itens = lista.filter(i => !i.gratuita)
-    if (itens.length === 0) {
-      if (BASES_PADRAO[chave]) result[_LABELS_ESCOLHAS[chave] ?? chave] = '<span style="opacity:0.45;font-style:italic">' + BASES_PADRAO[chave] + ' (padrão)</span>'
-      continue
-    }
-    const cnt = {}
-    let total = 0
-    for (const item of itens) {
-      const k = item.nome ?? (item.valor !== undefined ? ('+' + item.valor) : '?')
-      cnt[k] = (cnt[k] ?? 0) + 1
-      if (item.valor !== undefined) total += item.valor * 1
-    }
-    const partes = Object.entries(cnt).map(([n, q]) => q > 1 ? (n + ' ×' + q) : n).join(', ')
-    const totalStr = total > 0 ? ' <span style="opacity:0.45">= ' + total + '</span>' : ''
-    result[_LABELS_ESCOLHAS[chave] ?? chave] = partes + totalStr
-  }
-  return result
-}
-function _htmlVariantesExpandir(c) {
-  const renderV = (v, tipo) => {
-    if (!v) return ''
-    const amp   = tipo === 'amplificada'
-    const icone = amp ? '⬆️' : '⬇️'
-    const label = amp ? 'Amplificada' : 'Reduzida'
-    const cor   = amp ? '#f59e0b' : '#60a5fa'
-    const linhas = v.detalhes.map(d => {
-      const dc = d.destaque === 'amp' ? '#fbbf24' : d.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.45)'
-      return '<span style="color:' + dc + ';font-size:11px">' + d.label + ': <strong>' + d.valor + '</strong></span>'
-    }).join(' · ')
-    return '<div style="border:1px solid ' + cor + '55;border-radius:6px;padding:5px 8px;margin-top:5px;background:' + (amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)') + '">' +
-      '<span style="font-size:11px;font-weight:600;color:' + cor + '">' + icone + ' ' + label + ' — ' + v.custoPM + ' PM</span>' +
-      '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">' + linhas + '</div>' +
-    '</div>'
-  }
-  const ha = renderV(c.amplificada, 'amplificada')
-  const hr = renderV(c.reduzida,    'reduzida')
-  return (ha || hr) ? '<div style="margin-top:4px">' + ha + hr + '</div>' : ''
-}
-
-function _cardCaractExpandir(c) {
-  const PC_POR_ESCALA = {1:1,2:2,3:3,4:4,5:5,6:6}
-  const resumo = _resumoEscolhas(c.escolhas)
-  const rows = Object.entries(resumo)
-    .map(([l,v]) => '<div class="carac-resumo-row"><span class="carac-resumo-label">' + l + ':</span> <span>' + v + '</span></div>')
-    .join('')
-  const pc = c.gratuita ? '0 PC' : ((PC_POR_ESCALA[c.escala] ?? c.escala) + ' PC')
-  const gratuitaBadge = c.gratuita
-    ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px">GRÁTIS em PCs</span>'
-    : ''
-  return '<div class="card-info desbloqueado" style="margin-bottom:10px' + (c.gratuita ? ';border-color:#22c55e' : '') + '">' +
-    '<div class="carac-header-row">' +
-      '<strong>⚡ ' + c.nome + gratuitaBadge + '</strong>' +
-      '<div class="carac-badges">' +
-        '<span>Escala ' + c.escala + '</span>' +
-        '<span>' + pc + '</span>' +
-        (c.gratuita ? '' : '<span>Orç. ' + c.custo + '</span>') +
-        '<span>' + c.custoPM + ' PM</span>' +
-      '</div>' +
-    '</div>' +
-    (rows ? '<div class="carac-resumo">' + rows + '</div>' : '') +
-    _htmlVariantesExpandir(c) +
-    (c.descricao ? '<p class="carac-descricao">' + c.descricao + '</p>' : '') +
-  '</div>'
-}
-function _abrirExpandirFonte(fonte) {
-  const modal   = document.getElementById("modalExpandirFonte")
-  const content = document.getElementById("expandirFonteContent")
-  if (!modal || !content) return
-
-  const PC_POR_ESCALA = { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6 }
-
-  let passivosHTML = ""
-  if (fonte.subtipo === "zoan") {
-    const resH = fonte.passivos?.zoan_res_hibrida
-    const resC = fonte.passivos?.zoan_res_completa
-
-    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
-      <strong>⚙️ Regra de Transformação</strong>
-      <p style="font-size:12px;opacity:0.7;margin-top:3px">Mudar de forma custa uma <strong>Ação Completa</strong>. Durante a transição você é considerado <strong>Indefeso</strong>.</p>
-    </div>`
-
-    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
-      <strong>🧍 Forma Humana</strong> — <span style="color:#94a3b8">Custo: Nenhum</span>
-      <p style="font-size:12px;opacity:0.7;margin-top:3px">Apenas características de Escala 1 da fruta.</p>
-    </div>`
-
-    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
-      <strong>🐺 Forma Híbrida</strong> — <span style="color:#fbbf24">3 PM</span>
-      ${resH?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resH.join(", ")}</span>` : ""}
-      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Mista: (5×Resistência) + (5×Habilidade) em PV/PM temporários. Escalas 1 e 2 + ficha normal liberadas.</p>
-    </div>`
-
-    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
-      <strong>🦖 Forma Zoan (Animal)</strong> — <span style="color:#f87171">6 PM</span>
-      ${resC?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resC.join(", ")}</span>` : ""}
-      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Animalesca: (10×Resistência) + (10×Habilidade) em PV/PM temporários. Todas as escalas liberadas, mas ficha normal indisponível.</p>
-    </div>`
-  }
-  if (fonte.subtipo === "logia" && fonte.passivos?.elemento) {
-    passivosHTML += `<div class="passivo-tag">🌊 Elemento: <strong>${fonte.passivos.elemento}</strong></div>`
-    passivosHTML += `<div class="passivo-tag">✨ Imune a danos mundanos (exceto Haki)</div>`
-  }
-
-  const caracts = fonte.caracteristicas.length
-    ? fonte.caracteristicas.map(c => _cardCaractExpandir(c)).join("")
-    : "<p style='opacity:0.4'>Nenhuma característica criada.</p>"
-
-  content.innerHTML = `
-    <div class="raca-header">
-      <span class="raca-emoji">🍎</span>
-      <div>
-        <h2>${fonte.nome}</h2>
-        <span class="badge-subtipo">${fonte.subtipo}</span>
-        ${fonte.tema ? `<p style="font-size:13px;opacity:0.6;margin-top:4px"><i>${fonte.tema}</i></p>` : ""}
-      </div>
-    </div>
-    <div class="pcs-display" style="margin:12px 0">
-      <span>PCs totais: <strong>${fonte.pcs}</strong></span>
-      <span>Gastos: <strong>${fonte.pcsGastos ?? 0}</strong></span>
-      <span>Restantes: <strong style="color:#22c55e">${fonte.pcsDisponiveis ?? fonte.pcs}</strong></span>
-    </div>
-    ${passivosHTML ? `<div style="margin-bottom:12px">${passivosHTML}</div>` : ""}
-    <h3 style="margin-bottom:8px">⚡ Características</h3>
-    ${caracts}
-  `
-
-  modal.classList.remove("hidden")
-}
 
 // ─────────────────────────────────────────────────────────
 //  FIREBASE UI
@@ -739,267 +452,33 @@ function _atualizarUILogin() {
   if (userInfo)  userInfo.textContent    = user ? user.displayName || user.email : ""
 }
 
-onLogin(async (user) => {
-  _atualizarUILogin()
-  toastSucesso("Login realizado!")
-  // Bug #19: se a ficha foi carregada do localStorage antes do login,
-  // recarrega do Firebase para garantir versão mais recente
-  if (_fichaId && estaConfigurado()) {
-    const remoto = await carregarFichaFirestore(_fichaId, _fichaModo)
-    if (remoto) {
-      const fichaRemota = Ficha.fromJSON(remoto)
-      // Só atualiza se a versão remota é mais recente
-      if (remoto._updatedAt > (ficha.toJSON()._updatedAt ?? "")) {
-        ficha = fichaRemota
-        _fichaOwner = true
-        renderTudo()
-        toastInfo("Ficha atualizada da nuvem.")
-      }
-    }
-  }
+// Fase 2 (escopo): logar/deslogar na ficha redireciona para index.html
+// Não há ambiguidade sobre qual versão da ficha está sendo editada
+onLogin(() => {
+  window.location.href = "index.html"
 })
-onLogout(() => { _atualizarUILogin(); toastInfo("Você saiu.") })
+onLogout(() => {
+  window.location.href = "index.html"
+})
 
-// ─────────────────────────────────────────────────────────
-//  EXPOSIÇÃO PARA HTML (type="module" tem escopo fechado)
-// ─────────────────────────────────────────────────────────
-function expor() {
-  // Abas
-  window.trocarAba = (i) => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
-    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"))
-    document.querySelectorAll(".tab")[i]?.classList.add("active")
-    document.querySelectorAll(".section")[i]?.classList.add("active")
-  }
-
-  // Atributos
-  window.atualizar = () => {
-    sincronizarAtributosParaFicha(ficha)
-    ficha.calcularStatus(); ficha.calcularPontos()
-    renderStatus(ficha); renderPontos(ficha)
-    _renderInventario()
-    salvar()
-  }
-
-  // Nível
-  window.mudarNivel = (delta) => {
-    ficha.setNivel(ficha.nivel + delta)
-    renderTudo(); salvar()
-    toastInfo(`Nível ${ficha.nivel} — ${ficha.dadosNivel.recompensa || "sem recompensa especial"}`)
-  }
-
-  // Elementos
-  window.abrirLista    = (tipo) => abrirListaLivro(tipo)
-  window.criarElemento = (tipo) => abrirCriarElemento(tipo)
-  window.confirmarCriacao = () => { confirmarCriacaoElemento(); renderTudo(); salvar() }
-
-  // Fontes
-  window.criarFonte                     = () => abrirCriarFonte(null)
-  window.criarCaracteristicaIsolada     = () => abrirCriarCaracteristicaIsolada(null, null)
-  window.confirmarCaracIsolada          = confirmarCaracIsolada
-  window.atualizarEscalaIsolada         = atualizarEscalaIsolada
-  window.abrirLojinhaIsolada            = () => abrirLojinhaIsoladaModal()
-  window.confirmarIsoladaLojinha        = confirmarIsoladaLojinha
-  window.fecharIsoladaLojinha           = () => fecharModal("modalIsoladaLojinha")
-  window.trocarAbaIso                   = trocarAbaIso
-  window.selecionarAbaVarianteIso       = selecionarAbaVarianteIso
-  window.toggleVarianteIso              = toggleVarianteIso
-  window.salvarFonte              = confirmarSalvarFonte
-  window.atualizarCustoFonte      = atualizarCustoFonte
-  window.atualizarSubtipoFonte    = atualizarSubtipoFonte
-  window.abrirModalCaracteristica = () => abrirCriarCaracteristica(null)
-  window.adicionarCaracteristica  = confirmarCriarCaracteristica
-  window.atualizarEscala          = atualizarEscala
-  window.atualizarLimiteEscala    = atualizarLimiteEscala
-
-  // Abas característica
-  window.trocarAbaCarac        = trocarAbaCarac
-  window.toggleVariante        = toggleVariante
-  window.selecionarAbaVariante = selecionarAbaVariante
-
-  // Raça / Profissão
-  window.abrirModalRaca      = () => abrirModalRaca(ficha)
-  window.abrirModalProfissao = () => abrirModalProfissao(ficha)
-  window.abrirModalMestico   = () => _abrirModalMestico(ficha)
-  window.abrirModalModificado= () => _abrirModalModificado(ficha)
-  window.mesticoAtualizarOpcoes = _mesticoAtualizarOpcoes
-  window.salvarMestico          = () => _salvarMestico(ficha)
-  window.modAtualizarOpcoes     = _modAtualizarOpcoes
-  window.modAdicionarEvolucao   = _modAdicionarEvolucao
-  window.modRemoverEvolucao     = _modRemoverEvolucao
-  window.salvarModificado       = () => _salvarModificado(ficha)
-
-  // Status arrows
-  window.ajustarStatus = (chave, delta) => {
-    const inputId = chave + 'Atual'
-    const el = document.getElementById(inputId)
-    if (!el) return
-    const novo = Math.max(0, (ficha.status[chave].atual || 0) + delta)
-    ficha.status[chave].atual = novo
-    el.value = novo
-    atualizarBarras(ficha)
-    salvar()
-  }
-
-  window.marcarTesteMorte = (idx) => {
-    if (!ficha.status.pv.testeMorte) ficha.status.pv.testeMorte = [false, false, false]
-    ficha.status.pv.testeMorte[idx] = !ficha.status.pv.testeMorte[idx]
-    const pvAtual = +document.getElementById("pvAtual").value || 0
-    _atualizarTesteMorte(pvAtual, ficha)
-    salvar()
-  }
-
-  // Anotações
-  window.salvarAnotacao = (campo, valor) => {
-    if (!ficha.anotacoes) ficha.anotacoes = {}
-    ficha.anotacoes[campo] = valor
-    _salvarDebounced()  // Bug #16: debounce para campos de texto livre
-  }
-
-  // Inventário
-  let _itemEditandoId = null
-
-  window.abrirModalItem = () => {
-    _itemEditandoId = null
-    document.getElementById("modalItemTitulo").innerText = "🎒 Adicionar Item"
-    document.getElementById("itemNome").value      = ""
-    document.getElementById("itemDescricao").value = ""
-    document.getElementById("itemPeso").value      = "0"
-    window.syncStepper?.("itemPeso")
-    // Reset categoria
-    document.querySelector('input[name="itemCategoria"][value="item"]').checked = true
-    document.getElementById("camposEquipamento").style.display   = "none"
-    document.getElementById("itemUsadoAtaque").checked           = false
-    document.getElementById("itemUsadoDefesa").checked           = false
-    document.getElementById("campoBonusAtaque").style.display    = "none"
-    document.getElementById("campoBonusDefesa").style.display    = "none"
-    document.getElementById("itemBonusAtaque").value             = "0"
-    document.getElementById("itemBonusDefesa").value             = "0"
-    window.syncStepper?.("itemBonusAtaque")
-    window.syncStepper?.("itemBonusDefesa")
-    fecharModal("modalItem")
-    document.getElementById("modalItem").classList.remove("hidden")
-  }
-
-  window.abrirEditarItem = (id) => {
-    const item = ficha.inventario.itens.find(i => i.id === id)
-    if (!item) return
-    _itemEditandoId = id
-    document.getElementById("modalItemTitulo").innerText = "✏️ Editar Item"
-    document.getElementById("itemNome").value      = item.nome ?? ""
-    document.getElementById("itemDescricao").value = item.descricao ?? ""
-    document.getElementById("itemPeso").value      = item.peso ?? 0
-    window.syncStepper?.("itemPeso")
-    // Restaurar categoria
-    const cat = item.categoria ?? "item"
-    document.querySelector(`input[name="itemCategoria"][value="${cat}"]`).checked = true
-    document.getElementById("camposEquipamento").style.display = cat === "equipamento" ? "block" : "none"
-    // Ataque
-    const usaAtk = !!item.usadoAtaque
-    document.getElementById("itemUsadoAtaque").checked        = usaAtk
-    document.getElementById("campoBonusAtaque").style.display = usaAtk ? "block" : "none"
-    document.getElementById("itemBonusAtaque").value          = item.bonusAtaque ?? 0
-    window.syncStepper?.("itemBonusAtaque")
-    // Defesa
-    const usaDef = !!item.usadoDefesa
-    document.getElementById("itemUsadoDefesa").checked        = usaDef
-    document.getElementById("campoBonusDefesa").style.display = usaDef ? "block" : "none"
-    document.getElementById("itemBonusDefesa").value          = item.bonusDefesa ?? 0
-    window.syncStepper?.("itemBonusDefesa")
-    document.getElementById("modalItem").classList.remove("hidden")
-  }
-
-  window.confirmarSalvarItem = () => {
-    const nome = document.getElementById("itemNome").value.trim()
-    if (!nome) { toastErro("Digite um nome para o item."); return }
-    const cat     = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? "item"
-    const usaAtk  = cat === "equipamento" && document.getElementById("itemUsadoAtaque").checked
-    const usaDef  = cat === "equipamento" && document.getElementById("itemUsadoDefesa").checked
-    const item = {
-      nome,
-      descricao:   document.getElementById("itemDescricao").value.trim(),
-      peso:        +document.getElementById("itemPeso").value || 0,
-      categoria:   cat,
-      usadoAtaque: usaAtk,
-      usadoDefesa: usaDef,
-      bonusAtaque: usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
-      bonusDefesa: usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
-    }
-    if (_itemEditandoId) {
-      ficha.editarItem(_itemEditandoId, item)
-      toastSucesso("Item atualizado!")
-    } else {
-      ficha.adicionarItem(item)
-      toastSucesso("Item adicionado!")
-    }
-    fecharModal("modalItem")
-    _renderInventario()
-    salvar()
-  }
-
-  window.removerItem = (id) => {
-    ficha.removerItem(id)
-    _renderInventario()
-    salvar()
-    toastAviso("Item removido.")
-  }
-
-  window.editarPesoMaxInventario = (val) => {
-    const novo = parseInt(val) || 0
-    const auto = (ficha.atributos.resistencia ?? 0) * 5
-    ficha.inventario.offsetPeso = novo - auto
-    _renderInventario()
-    salvar()
-  }
-
-  // Combate toggle e extras
-  window.setAtribCombate = (atrib) => {
-    _atribCombate = atrib
-    _renderCombate()
-  }
-  window.salvarCombateExtra = (campo, val) => {
-    if (!ficha.combateExtras) ficha.combateExtras = {}
-    ficha.combateExtras[campo] = parseInt(val) || 0
-    _renderCombate()
-    salvar()
-  }
-
-  // Modal de item — toggles de categoria e checkboxes
-  window.toggleCategoriaItem = (val) => {
-    document.getElementById('camposEquipamento').style.display = val === 'equipamento' ? 'block' : 'none'
-  }
-  window.toggleBonusAtaque = () => {
-    const chk = document.getElementById('itemUsadoAtaque')
-    document.getElementById('campoBonusAtaque').style.display = chk.checked ? 'block' : 'none'
-  }
-  window.toggleBonusDefesa = () => {
-    const chk = document.getElementById('itemUsadoDefesa')
-    document.getElementById('campoBonusDefesa').style.display = chk.checked ? 'block' : 'none'
-  }
-
-  // Visibilidade
-  window.toggleVisibilidade = (campo, valor) => {
-    ficha[campo] = valor
-    _renderVisibilidade()
-    salvar()
-  }
-
-  // Fechar modais
-  window.fecharModal               = (id) => fecharModal(id)
-  window.fecharModalCriar          = () => fecharModal("modalCriar")
-  window.fecharModalFonte          = () => fecharModal("modalFonte")
-  window.fecharModalCaracteristica  = () => fecharModal("modalCaracteristica")
-  window.fecharModalCaracIsolada    = () => fecharModal("modalCaracIsolada")
-  window.fecharExpandirFonte       = () => fecharModal("modalExpandirFonte")
-  window.fecharModalRaca           = () => fecharModal("modalEscolhaRaca")
-  window.fecharModalProfissao      = () => fecharModal("modalEscolhaProfissao")
-
-  // Firebase
-  window.fazerLogin  = () => loginGoogle().catch(e => toastErro("Erro ao fazer login."))
-  window.fazerLogout = () => logout()
+  const btnLogin  = document.getElementById("btnLogin")
+  const btnLogout = document.getElementById("btnLogout")
+  const userInfo  = document.getElementById("userInfo")
+  if (btnLogin)  btnLogin.style.display  = user ? "none" : "flex"
+  if (btnLogout) btnLogout.style.display = user ? "flex" : "none"
+  if (userInfo)  userInfo.textContent    = user ? user.displayName || user.email : ""
 }
 
-// ═══════════════════════════════════════════════════════════
+// Fase 2 (escopo): logar/deslogar na ficha redireciona para index.html
+// Não há ambiguidade sobre qual versão da ficha está sendo editada
+onLogin(() => {
+  window.location.href = "index.html"
+})
+onLogout(() => {
+  window.location.href = "index.html"
+})
+
+
 //  MESTIÇO — Modal e lógica
 // ═══════════════════════════════════════════════════════════
 
@@ -1432,3 +911,240 @@ function _salvarModificado(ficha) {
   fecharModal('modalModificado')
   toastSucesso('Modificado configurado!')
 }
+function expor() {
+  // Abas
+  window.trocarAba = (i) => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"))
+    document.querySelectorAll(".tab")[i]?.classList.add("active")
+    document.querySelectorAll(".section")[i]?.classList.add("active")
+  }
+
+  // Atributos
+  window.atualizar = () => {
+    sincronizarAtributosParaFicha(ficha)
+    ficha.calcularStatus(); ficha.calcularPontos()
+    renderStatus(ficha); renderPontos(ficha)
+    _renderInventario()
+    salvar()
+  }
+
+  // Nível
+  window.mudarNivel = (delta) => {
+    ficha.setNivel(ficha.nivel + delta)
+    renderTudo(); salvar()
+    toastInfo(`Nível ${ficha.nivel} — ${ficha.dadosNivel.recompensa || "sem recompensa especial"}`)
+  }
+
+  // Elementos
+  window.abrirLista    = (tipo) => abrirListaLivro(tipo)
+  window.criarElemento = (tipo) => abrirCriarElemento(tipo)
+  window.confirmarCriacao = () => { confirmarCriacaoElemento(); renderTudo(); salvar() }
+
+  // Fontes
+  window.criarFonte                     = () => abrirCriarFonte(null)
+  window.criarCaracteristicaIsolada     = () => abrirCriarCaracteristicaIsolada(null, null)
+  window.confirmarCaracIsolada          = confirmarCaracIsolada
+  window.atualizarEscalaIsolada         = atualizarEscalaIsolada
+  window.abrirLojinhaIsolada            = () => abrirLojinhaIsoladaModal()
+  window.confirmarIsoladaLojinha        = confirmarIsoladaLojinha
+  window.fecharIsoladaLojinha           = () => fecharModal("modalIsoladaLojinha")
+  window.trocarAbaIso                   = trocarAbaIso
+  window.selecionarAbaVarianteIso       = selecionarAbaVarianteIso
+  window.toggleVarianteIso              = toggleVarianteIso
+  window.salvarFonte              = confirmarSalvarFonte
+  window.atualizarCustoFonte      = atualizarCustoFonte
+  window.atualizarSubtipoFonte    = atualizarSubtipoFonte
+  window.abrirModalCaracteristica = () => abrirCriarCaracteristica(null)
+  window.adicionarCaracteristica  = confirmarCriarCaracteristica
+  window.atualizarEscala          = atualizarEscala
+  window.atualizarLimiteEscala    = atualizarLimiteEscala
+
+  // Abas característica
+  window.trocarAbaCarac        = trocarAbaCarac
+  window.toggleVariante        = toggleVariante
+  window.selecionarAbaVariante = selecionarAbaVariante
+
+  // Raça / Profissão
+  window.abrirModalRaca      = () => abrirModalRaca(ficha)
+  window.abrirModalProfissao = () => abrirModalProfissao(ficha)
+  window.abrirModalMestico   = () => _abrirModalMestico(ficha)
+  window.abrirModalModificado= () => _abrirModalModificado(ficha)
+  window.mesticoAtualizarOpcoes = _mesticoAtualizarOpcoes
+  window.salvarMestico          = () => _salvarMestico(ficha)
+  window.modAtualizarOpcoes     = _modAtualizarOpcoes
+  window.modAdicionarEvolucao   = _modAdicionarEvolucao
+  window.modRemoverEvolucao     = _modRemoverEvolucao
+  window.salvarModificado       = () => _salvarModificado(ficha)
+
+  // Status arrows
+  window.ajustarStatus = (chave, delta) => {
+    const inputId = chave + 'Atual'
+    const el = document.getElementById(inputId)
+    if (!el) return
+    const novo = Math.max(0, (ficha.status[chave].atual || 0) + delta)
+    ficha.status[chave].atual = novo
+    el.value = novo
+    atualizarBarras(ficha)
+    salvar()
+  }
+
+  window.marcarTesteMorte = (idx) => {
+    if (!ficha.status.pv.testeMorte) ficha.status.pv.testeMorte = [false, false, false]
+    ficha.status.pv.testeMorte[idx] = !ficha.status.pv.testeMorte[idx]
+    const pvAtual = +document.getElementById("pvAtual").value || 0
+    _atualizarTesteMorte(pvAtual, ficha)
+    salvar()
+  }
+
+  // Anotações
+  window.salvarAnotacao = (campo, valor) => {
+    if (!ficha.anotacoes) ficha.anotacoes = {}
+    ficha.anotacoes[campo] = valor
+    _salvarDebounced()  // Bug #16: debounce para campos de texto livre
+  }
+
+  // Inventário
+  let _itemEditandoId = null
+
+  window.abrirModalItem = () => {
+    _itemEditandoId = null
+    document.getElementById("modalItemTitulo").innerText = "🎒 Adicionar Item"
+    document.getElementById("itemNome").value      = ""
+    document.getElementById("itemDescricao").value = ""
+    document.getElementById("itemPeso").value      = "0"
+    window.syncStepper?.("itemPeso")
+    // Reset categoria
+    document.querySelector('input[name="itemCategoria"][value="item"]').checked = true
+    document.getElementById("camposEquipamento").style.display   = "none"
+    document.getElementById("itemUsadoAtaque").checked           = false
+    document.getElementById("itemUsadoDefesa").checked           = false
+    document.getElementById("campoBonusAtaque").style.display    = "none"
+    document.getElementById("campoBonusDefesa").style.display    = "none"
+    document.getElementById("itemBonusAtaque").value             = "0"
+    document.getElementById("itemBonusDefesa").value             = "0"
+    window.syncStepper?.("itemBonusAtaque")
+    window.syncStepper?.("itemBonusDefesa")
+    fecharModal("modalItem")
+    document.getElementById("modalItem").classList.remove("hidden")
+  }
+
+  window.abrirEditarItem = (id) => {
+    const item = ficha.inventario.itens.find(i => i.id === id)
+    if (!item) return
+    _itemEditandoId = id
+    document.getElementById("modalItemTitulo").innerText = "✏️ Editar Item"
+    document.getElementById("itemNome").value      = item.nome ?? ""
+    document.getElementById("itemDescricao").value = item.descricao ?? ""
+    document.getElementById("itemPeso").value      = item.peso ?? 0
+    window.syncStepper?.("itemPeso")
+    // Restaurar categoria
+    const cat = item.categoria ?? "item"
+    document.querySelector(`input[name="itemCategoria"][value="${cat}"]`).checked = true
+    document.getElementById("camposEquipamento").style.display = cat === "equipamento" ? "block" : "none"
+    // Ataque
+    const usaAtk = !!item.usadoAtaque
+    document.getElementById("itemUsadoAtaque").checked        = usaAtk
+    document.getElementById("campoBonusAtaque").style.display = usaAtk ? "block" : "none"
+    document.getElementById("itemBonusAtaque").value          = item.bonusAtaque ?? 0
+    window.syncStepper?.("itemBonusAtaque")
+    // Defesa
+    const usaDef = !!item.usadoDefesa
+    document.getElementById("itemUsadoDefesa").checked        = usaDef
+    document.getElementById("campoBonusDefesa").style.display = usaDef ? "block" : "none"
+    document.getElementById("itemBonusDefesa").value          = item.bonusDefesa ?? 0
+    window.syncStepper?.("itemBonusDefesa")
+    document.getElementById("modalItem").classList.remove("hidden")
+  }
+
+  window.confirmarSalvarItem = () => {
+    const nome = document.getElementById("itemNome").value.trim()
+    if (!nome) { toastErro("Digite um nome para o item."); return }
+    const cat     = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? "item"
+    const usaAtk  = cat === "equipamento" && document.getElementById("itemUsadoAtaque").checked
+    const usaDef  = cat === "equipamento" && document.getElementById("itemUsadoDefesa").checked
+    const item = {
+      nome,
+      descricao:   document.getElementById("itemDescricao").value.trim(),
+      peso:        +document.getElementById("itemPeso").value || 0,
+      categoria:   cat,
+      usadoAtaque: usaAtk,
+      usadoDefesa: usaDef,
+      bonusAtaque: usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
+      bonusDefesa: usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
+    }
+    if (_itemEditandoId) {
+      ficha.editarItem(_itemEditandoId, item)
+      toastSucesso("Item atualizado!")
+    } else {
+      ficha.adicionarItem(item)
+      toastSucesso("Item adicionado!")
+    }
+    fecharModal("modalItem")
+    _renderInventario()
+    salvar()
+  }
+
+  window.removerItem = (id) => {
+    ficha.removerItem(id)
+    _renderInventario()
+    salvar()
+    toastAviso("Item removido.")
+  }
+
+  window.editarPesoMaxInventario = (val) => {
+    const novo = parseInt(val) || 0
+    const auto = (ficha.atributos.resistencia ?? 0) * 5
+    ficha.inventario.offsetPeso = novo - auto
+    _renderInventario()
+    salvar()
+  }
+
+  // Combate toggle e extras
+  window.setAtribCombate = (atrib) => {
+    _atribCombate = atrib
+    _renderCombate()
+  }
+  window.salvarCombateExtra = (campo, val) => {
+    if (!ficha.combateExtras) ficha.combateExtras = {}
+    ficha.combateExtras[campo] = parseInt(val) || 0
+    _renderCombate()
+    salvar()
+  }
+
+  // Modal de item — toggles de categoria e checkboxes
+  window.toggleCategoriaItem = (val) => {
+    document.getElementById('camposEquipamento').style.display = val === 'equipamento' ? 'block' : 'none'
+  }
+  window.toggleBonusAtaque = () => {
+    const chk = document.getElementById('itemUsadoAtaque')
+    document.getElementById('campoBonusAtaque').style.display = chk.checked ? 'block' : 'none'
+  }
+  window.toggleBonusDefesa = () => {
+    const chk = document.getElementById('itemUsadoDefesa')
+    document.getElementById('campoBonusDefesa').style.display = chk.checked ? 'block' : 'none'
+  }
+
+  // Visibilidade
+  window.toggleVisibilidade = (campo, valor) => {
+    ficha[campo] = valor
+    _renderVisibilidade()
+    salvar()
+  }
+
+  // Fechar modais
+  window.fecharModal               = (id) => fecharModal(id)
+  window.fecharModalCriar          = () => fecharModal("modalCriar")
+  window.fecharModalFonte          = () => fecharModal("modalFonte")
+  window.fecharModalCaracteristica  = () => fecharModal("modalCaracteristica")
+  window.fecharModalCaracIsolada    = () => fecharModal("modalCaracIsolada")
+  window.fecharExpandirFonte       = () => fecharModal("modalExpandirFonte")
+  window.fecharModalRaca           = () => fecharModal("modalEscolhaRaca")
+  window.fecharModalProfissao      = () => fecharModal("modalEscolhaProfissao")
+
+  // Firebase
+  window.fazerLogin  = () => loginGoogle().catch(e => toastErro("Erro ao fazer login."))
+  window.fazerLogout = () => logout()
+}
+
+// ═══════════════════════════════════════════════════════════

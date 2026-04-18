@@ -8,9 +8,7 @@
 const CHAVES = {
   FICHAS:      (modo) => modo === "mestre" ? "rpg_fichas_mestre"  : "rpg_fichas",
   PASTAS:      (modo) => modo === "mestre" ? "rpg_pastas_mestre"  : "rpg_pastas",
-  // Legado (sistema antigo — mantido para migração)
-  FICHA_ATUAL: "rpg_fichaAtual",
-  MODO_FICHA:  "rpg_fichaAtualModo",
+  // (chaves legadas removidas)
 }
 
 export const Storage = {
@@ -52,36 +50,10 @@ export const Storage = {
 
   // ── Acesso por índice (legado — para migração) ─────────────
 
-  getIndiceFichaAtual() {
-    const v = localStorage.getItem(CHAVES.FICHA_ATUAL)
-    return v !== null ? parseInt(v, 10) : null
-  },
 
-  setIndiceFichaAtual(index, modo = "player") {
-    localStorage.setItem(CHAVES.FICHA_ATUAL, String(index))
-    localStorage.setItem(CHAVES.MODO_FICHA,  modo)
-  },
 
-  getModoFichaAtual() {
-    return localStorage.getItem(CHAVES.MODO_FICHA) ?? "player"
-  },
 
-  carregarFichaAtual() {
-    const modo   = this.getModoFichaAtual()
-    const fichas = this.carregarFichas(modo)
-    const idx    = this.getIndiceFichaAtual()
-    if (idx === null || !fichas[idx]) return null
-    return { ficha: fichas[idx], index: idx, modo }
-  },
 
-  salvarFichaAtual(fichaObj) {
-    const modo   = this.getModoFichaAtual()
-    const fichas = this.carregarFichas(modo)
-    const idx    = this.getIndiceFichaAtual()
-    if (idx === null) return
-    fichas[idx] = fichaObj
-    this.salvarFichas(fichas, modo)
-  },
 
   // ── Migração: garante que todas as fichas têm id UUID ─────
 
