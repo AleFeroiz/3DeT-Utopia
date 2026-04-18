@@ -457,13 +457,7 @@ async function salvar() {
   }
 }
 
-        el.innerText = ficha.status[chave].max  // reverte se inválido
-      }
-    })
-    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el.blur() } })
-    el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
-  }
-  bindMax("paMax", "pa"); bindMax("pmMax", "pm"); bindMax("pvMax", "pv")
+
 
 // Alias: _resumoEscolhas → importado de uiResumoEscolhas.js
 const _resumoEscolhas = resumoEscolhas
@@ -491,22 +485,6 @@ onLogout(() => {
   window.location.href = "index.html"
 })
 
-  const btnLogin  = document.getElementById("btnLogin")
-  const btnLogout = document.getElementById("btnLogout")
-  const userInfo  = document.getElementById("userInfo")
-  if (btnLogin)  btnLogin.style.display  = user ? "none" : "flex"
-  if (btnLogout) btnLogout.style.display = user ? "flex" : "none"
-  if (userInfo)  userInfo.textContent    = user ? user.displayName || user.email : ""
-}
-
-// Fase 2 (escopo): logar/deslogar na ficha redireciona para index.html
-// Não há ambiguidade sobre qual versão da ficha está sendo editada
-onLogin(() => {
-  window.location.href = "index.html"
-})
-onLogout(() => {
-  window.location.href = "index.html"
-})
 
 
 //  MESTIÇO — Modal e lógica
