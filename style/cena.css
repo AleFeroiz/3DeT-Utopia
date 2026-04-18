@@ -1,6 +1,5 @@
 /* ============================================================
-   cena.css — Ferramenta CENA do Mestre
-   Estética: painel tático, denso, eficiente — "sala de guerra"
+   cena.css — Ferramenta CENA do Mestre  v2
    ============================================================ */
 
 /* ── LAYOUT RAIZ ─────────────────────────────────────────── */
@@ -16,7 +15,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.97);
   border-bottom: 1px solid #1e3a5f;
   position: sticky;
   top: 0;
@@ -28,8 +27,7 @@
   flex: 1;
   font-size: 18px;
   font-weight: 700;
-  color: #e2e8f0;
-  letter-spacing: 0.3px;
+  color: #f1f5f9;
 }
 
 .cena-topbar h1 .cena-subtitulo {
@@ -39,7 +37,7 @@
   margin-left: 8px;
 }
 
-/* ── ÁREA DE FICHAS (scroll horizontal) ──────────────────── */
+/* ── ÁREA DE FICHAS ──────────────────────────────────────── */
 .cena-fichas-area {
   display: flex;
   gap: 16px;
@@ -57,8 +55,8 @@
 
 /* ── ZONA DROP ───────────────────────────────────────────── */
 .cena-drop-zone {
-  min-width: 200px;
-  min-height: 300px;
+  min-width: 180px;
+  min-height: 280px;
   border: 2px dashed #1e3a5f;
   border-radius: 14px;
   display: flex;
@@ -70,7 +68,6 @@
   font-size: 13px;
   text-align: center;
   transition: border-color 0.2s, background 0.2s;
-  cursor: default;
   flex-shrink: 0;
   padding: 24px;
 }
@@ -83,26 +80,25 @@
 
 .cena-drop-zone-icon { font-size: 28px; opacity: 0.4; }
 
-/* ── CARD DE FICHA NA CENA ───────────────────────────────── */
+/* ── CARD DE FICHA ───────────────────────────────────────── */
 .cena-ficha-card {
-  background: #0f172a;
+  background: #0d1526;
   border: 1px solid #1e3a5f;
   border-radius: 14px;
-  width: 280px;
+  width: 290px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transition: border-color 0.2s;
-  position: relative;
 }
 
 .cena-ficha-card:hover { border-color: #2d5a8e; }
 
-/* ── CABEÇALHO DO CARD ───────────────────────────────────── */
+/* ── CABEÇALHO ───────────────────────────────────────────── */
 .cfc-header {
   padding: 12px 14px 10px;
-  background: linear-gradient(135deg, #111827, #0f172a);
+  background: linear-gradient(135deg, #111f3a, #0d1526);
   border-bottom: 1px solid #1e3a5f;
   display: flex;
   align-items: flex-start;
@@ -110,19 +106,19 @@
 }
 
 .cfc-nome {
-  flex: 1;
   font-size: 15px;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #f1f5f9;
   line-height: 1.3;
   word-break: break-word;
 }
 
 .cfc-nivel {
   font-size: 11px;
-  color: #64748b;
+  color: #7dd3fc;
   margin-top: 2px;
   display: block;
+  opacity: 0.8;
 }
 
 .cfc-remover {
@@ -144,30 +140,58 @@
   display: flex;
   justify-content: space-around;
   padding: 10px 12px 8px;
-  border-bottom: 1px solid #0f2033;
+  border-bottom: 1px solid #1a3050;
+  background: rgba(15, 32, 51, 0.5);
 }
 
 .cfc-atrib-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .cfc-atrib-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: #94a3b8;
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
+.cfc-atrib-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cfc-atrib-btn {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #2d5a8e;
+  background: #0f172a;
+  color: #7dd3fc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  padding: 0;
+}
+.cfc-atrib-btn:hover  { background: #1e3a5f; }
+.cfc-atrib-btn:active { transform: scale(0.9); }
+
 .cfc-atrib-val {
   font-size: 22px;
   font-weight: 800;
-  color: #cbd5e1;
+  color: #f1f5f9;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: center;
 }
 
 /* ── STATS PA / PM / PV ──────────────────────────────────── */
@@ -175,18 +199,19 @@
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  border-bottom: 1px solid #0f2033;
+  gap: 8px;
+  border-bottom: 1px solid #1a3050;
+  background: rgba(8, 15, 30, 0.3);
 }
 
 .cfc-stat-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .cfc-stat-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -194,14 +219,14 @@
   flex-shrink: 0;
 }
 
-.cfc-stat-label.pa { color: #f59e0b; }
-.cfc-stat-label.pm { color: #818cf8; }
-.cfc-stat-label.pv { color: #34d399; }
+.cfc-stat-label.pa { color: #fbbf24; }
+.cfc-stat-label.pm { color: #a78bfa; }
+.cfc-stat-label.pv { color: #4ade80; }
 
 .cfc-stat-barra-wrap {
   flex: 1;
-  height: 8px;
-  background: #1e293b;
+  height: 7px;
+  background: #1a2d47;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -212,69 +237,141 @@
   transition: width 0.3s ease;
 }
 
-.cfc-stat-barra.pa { background: linear-gradient(90deg, #d97706, #f59e0b); }
-.cfc-stat-barra.pm { background: linear-gradient(90deg, #6366f1, #818cf8); }
-.cfc-stat-barra.pv { background: linear-gradient(90deg, #059669, #34d399); }
+.cfc-stat-barra.pa { background: linear-gradient(90deg, #b45309, #fbbf24); }
+.cfc-stat-barra.pm { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
+.cfc-stat-barra.pv { background: linear-gradient(90deg, #16a34a, #4ade80); }
 
 .cfc-stat-nums {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
 .cfc-stat-atual {
   font-weight: 700;
-  color: #e2e8f0;
-  min-width: 22px;
+  color: #f1f5f9;
+  min-width: 24px;
   text-align: right;
 }
 
 .cfc-stat-sep { color: #334155; font-size: 11px; }
 
 .cfc-stat-max {
-  color: #64748b;
-  min-width: 22px;
+  color: #94a3b8;
+  min-width: 24px;
   cursor: pointer;
   border-bottom: 1px dashed #334155;
   transition: color 0.15s;
 }
-.cfc-stat-max:hover { color: #94a3b8; }
+.cfc-stat-max:hover { color: #e2e8f0; }
 
+/* 4 botões: « ‹ › » */
 .cfc-stat-btns {
   display: flex;
   gap: 2px;
 }
 
 .cfc-stat-btn {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 1px solid #1e3a5f;
   background: #0f172a;
   color: #94a3b8;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s, color 0.15s;
   font-weight: 700;
+  padding: 0;
 }
 
-.cfc-stat-btn:hover { background: #1e293b; color: #e2e8f0; }
-.cfc-stat-btn:active { transform: scale(0.92); }
+.cfc-stat-btn:hover  { background: #1e3a5f; color: #f1f5f9; }
+.cfc-stat-btn:active { transform: scale(0.9); }
 
-/* ── GAVETAS (accordion) ─────────────────────────────────── */
+/* ── COMBATE ─────────────────────────────────────────────── */
+.cfc-combate-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 6px;
+}
+
+.cfc-toggle-btn {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #1e3a5f;
+  background: #0f172a;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.cfc-toggle-btn:hover { border-color: #2d5a8e; color: #94a3b8; }
+.cfc-toggle-btn.active {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #7dd3fc;
+}
+
+.cfc-combate-grid {
+  display: flex;
+  gap: 6px;
+  padding: 2px 10px 10px;
+}
+
+.cfc-combate-grupo {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1a3050;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.cfc-combate-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #64748b;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #1a3050;
+}
+
+.cfc-combate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.cfc-combate-row span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.cfc-combate-row strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── GAVETAS ─────────────────────────────────────────────── */
 .cfc-gavetas {
   display: flex;
   flex-direction: column;
 }
 
 .cfc-gaveta {
-  border-top: 1px solid #0f2033;
+  border-top: 1px solid #1a3050;
 }
 
 .cfc-gaveta-header {
@@ -286,40 +383,40 @@
   transition: background 0.15s;
   gap: 6px;
 }
-.cfc-gaveta-header:hover { background: rgba(30, 58, 95, 0.3); }
+.cfc-gaveta-header:hover { background: rgba(30, 58, 95, 0.35); }
 
-.cfc-gaveta-icon { font-size: 12px; opacity: 0.5; }
 .cfc-gaveta-titulo {
   flex: 1;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #64748b;
+  color: #94a3b8;
 }
 .cfc-gaveta-count {
   font-size: 10px;
-  color: #334155;
-  background: #0f2033;
+  color: #7dd3fc;
+  background: rgba(30, 58, 95, 0.6);
   padding: 1px 6px;
   border-radius: 8px;
+  border: 1px solid #1e3a5f;
 }
 .cfc-gaveta-seta {
   font-size: 10px;
-  color: #334155;
+  color: #475569;
   transition: transform 0.2s;
 }
 .cfc-gaveta.aberta .cfc-gaveta-seta { transform: rotate(180deg); }
 
 .cfc-gaveta-corpo {
   display: none;
-  padding: 0 10px 8px;
+  padding: 0 8px 8px;
   flex-direction: column;
   gap: 2px;
 }
 .cfc-gaveta.aberta .cfc-gaveta-corpo { display: flex; }
 
-/* ── ITEM DE GAVETA ──────────────────────────────────────── */
+/* ── ITEM DENTRO DE GAVETA ───────────────────────────────── */
 .cfc-item {
   border-radius: 6px;
   overflow: hidden;
@@ -339,25 +436,25 @@
 .cfc-item-nome {
   flex: 1;
   font-size: 12px;
-  color: #cbd5e1;
+  color: #e2e8f0;
   font-weight: 500;
 }
 
 .cfc-item-custo {
   font-size: 10px;
-  color: #475569;
+  color: #64748b;
 }
 
 .cfc-item-seta {
   font-size: 9px;
-  color: #334155;
+  color: #475569;
   transition: transform 0.15s;
 }
 .cfc-item.aberto .cfc-item-seta { transform: rotate(180deg); }
 
 .cfc-item-detalhe {
   display: none;
-  padding: 6px 8px 8px 14px;
+  padding: 5px 8px 7px 14px;
   border-left: 2px solid #1e3a5f;
   margin: 0 8px 4px;
 }
@@ -372,13 +469,13 @@
 
 .cfc-item-notas {
   font-size: 10px;
-  color: #475569;
+  color: #64748b;
   margin-top: 4px;
   font-style: italic;
   display: block;
 }
 
-/* ── CARACTERÍSTICAS (dentro da fonte) ───────────────────── */
+/* ── CARACTERÍSTICAS DENTRO DE FONTE ─────────────────────── */
 .cfc-carac-mini {
   display: flex;
   align-items: center;
@@ -387,15 +484,15 @@
 }
 .cfc-carac-mini-nome {
   font-size: 11px;
-  color: #a78bfa;
+  color: #c4b5fd;
   flex: 1;
 }
 .cfc-carac-mini-pm {
   font-size: 10px;
-  color: #475569;
+  color: #64748b;
 }
 
-/* ── PERICIAS ─────────────────────────────────────────────── */
+/* ── PERÍCIAS ─────────────────────────────────────────────── */
 .cfc-pericias-grid {
   display: flex;
   flex-wrap: wrap;
@@ -405,7 +502,7 @@
 
 .cfc-pericia-tag {
   font-size: 10px;
-  background: rgba(30, 58, 95, 0.5);
+  background: rgba(30, 58, 95, 0.6);
   color: #7dd3fc;
   padding: 2px 6px;
   border-radius: 4px;
@@ -415,76 +512,38 @@
 .cfc-pericia-tag.maestria {
   border-color: #d97706;
   color: #fbbf24;
-  background: rgba(217, 119, 6, 0.1);
+  background: rgba(217, 119, 6, 0.12);
 }
 
 /* ── VAZIO ────────────────────────────────────────────────── */
 .cfc-vazio {
   font-size: 11px;
-  color: #334155;
+  color: #475569;
   padding: 4px 8px;
   font-style: italic;
 }
 
-/* ── EDIT INLINE STAT MAX ────────────────────────────────── */
+/* ── EDIT INLINE MAX ─────────────────────────────────────── */
 .cfc-input-max {
-  width: 36px;
+  width: 40px;
   background: #0f172a;
   border: 1px solid #3b82f6;
   border-radius: 4px;
-  color: #e2e8f0;
+  color: #f1f5f9;
   font-size: 12px;
   text-align: center;
   padding: 1px 2px;
   outline: none;
 }
 
-/* ── PAINEL LATERAL (lista de fichas para drag) ───────────── */
-.cena-sidebar {
-  position: fixed;
-  right: 0;
-  top: 56px;
-  bottom: 0;
-  width: 220px;
-  background: rgba(10, 15, 30, 0.97);
-  border-left: 1px solid #1e3a5f;
-  display: flex;
-  flex-direction: column;
-  z-index: 50;
-  transition: transform 0.25s;
-  backdrop-filter: blur(8px);
-}
-
-.cena-sidebar.fechada { transform: translateX(220px); }
-
-.cena-sidebar-toggle {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #1e3a5f;
-  border: none;
-  color: #7dd3fc;
-  padding: 12px 6px;
-  cursor: pointer;
-  border-radius: 8px 0 0 8px;
-  font-size: 12px;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  letter-spacing: 1px;
-  z-index: 51;
-  transition: background 0.2s, right 0.25s;
-}
-
-.cena-sidebar:not(.fechada) ~ .cena-sidebar-toggle { right: 220px; }
-
+/* ── SIDEBAR ─────────────────────────────────────────────── */
 .cena-sidebar-header {
   padding: 12px 14px 8px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #475569;
+  color: #64748b;
   border-bottom: 1px solid #1e3a5f;
   flex-shrink: 0;
 }
@@ -507,8 +566,7 @@
   padding: 8px 10px;
   cursor: grab;
   transition: border-color 0.15s, background 0.15s;
-  font-size: 13px;
-  color: #cbd5e1;
+  color: #e2e8f0;
   user-select: none;
 }
 
@@ -520,11 +578,12 @@
   font-weight: 600;
   font-size: 13px;
   display: block;
+  color: #f1f5f9;
 }
 
 .cena-sidebar-item-meta {
   font-size: 10px;
-  color: #475569;
+  color: #64748b;
   margin-top: 2px;
 }
 
@@ -539,13 +598,14 @@
   transition: filter 0.2s, transform 0.1s;
   color: white;
 }
-.cena-btn:hover { filter: brightness(1.15); }
+.cena-btn:hover  { filter: brightness(1.15); }
 .cena-btn:active { transform: scale(0.97); }
 .cena-btn-voltar  { background: #1e3a5f; }
-.cena-btn-salvar  { background: #1d4ed8; }
-.cena-btn-limpar  { background: #7f1d1d; }
+.cena-btn-abrir   { background: #1d4ed8; padding: 6px 14px; }
+.cena-btn-renomear { background: #334155; padding: 6px 10px; font-size: 14px; }
+.cena-btn-del      { background: #7f1d1d; padding: 6px 10px; font-size: 14px; }
 
-/* ── ESTADO VAZIO (sem fichas na cena) ───────────────────── */
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
 .cena-empty-state {
   display: flex;
   flex-direction: column;
@@ -555,13 +615,13 @@
   padding: 60px 20px;
   color: #1e3a5f;
   text-align: center;
-  min-width: 300px;
+  min-width: 280px;
 }
 
 .cena-empty-icon { font-size: 48px; opacity: 0.3; }
 .cena-empty-text { font-size: 14px; opacity: 0.5; }
 
-/* ── TOASTS (reaproveitados do global) ───────────────────── */
+/* ── SAVE INDICATOR ─────────────────────────────────────── */
 .save-indicator {
   display: flex;
   align-items: center;
@@ -571,15 +631,14 @@
   border-radius: 6px;
   font-weight: 600;
 }
-.save-idle    { background: rgba(34,197,94,0.1);  color: #22c55e; }
-.save-saving  { background: rgba(59,130,246,0.1); color: #3b82f6; }
-.save-error   { background: rgba(239,68,68,0.1);  color: #ef4444; }
-
-.save-icon { font-size: 14px; }
+.save-idle    { background: rgba(34,197,94,0.12);  color: #4ade80; }
+.save-saving  { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.save-error   { background: rgba(239,68,68,0.12);  color: #f87171; }
+.save-icon    { font-size: 14px; }
 
 /* ── RESPONSIVO ──────────────────────────────────────────── */
 @media (max-width: 600px) {
   .cena-topbar h1 .cena-subtitulo { display: none; }
   .cena-fichas-area { padding: 10px; gap: 10px; }
-  .cena-ficha-card { width: 250px; }
+  .cena-ficha-card { width: 260px; }
 }

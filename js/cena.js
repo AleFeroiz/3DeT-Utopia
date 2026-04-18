@@ -1,50 +1,88 @@
 // ============================================================
-//  cena.js — Ferramenta CENA do Mestre
-//  Padrão: não-logado = localStorage; logado = Firebase only
+//  cena.js — Ferramenta CENA do Mestre  v2
+//  Doutrina: não-logado = localStorage; logado = Firebase only
 // ============================================================
 
 import { Storage }       from "./storage.js"
 import { Ficha }         from "./modelos/Ficha.js"
 import { StorageCenas, novaCena } from "./storageCenas.js"
-import { LISTA_PERICIAS } from "./dados/banco.js"
 import {
   inicializarFirebase, getUser, onLogin, onLogout,
-  estaConfigurado, aguardarAuth
+  estaConfigurado, aguardarAuth,
+  carregarIndiceFichasFirestore, carregarFichaFirestore,
+  salvarFichaFirestore
 } from "./firebase.js"
 import {
   inicializarFirebaseCenas, setUserCenas,
   carregarCenasFirestore, salvarCenasFirestore,
-  salvarCenaFirestore, removerCenaFirestore
 } from "./firebaseCenas.js"
 import { toastSucesso, toastErro, toastAviso, toastInfo } from "./ui/uiToast.js"
 
 // ── Estado global ─────────────────────────────────────────
-let _cenas     = []
-let _cenaAtual = null   // cena aberta no momento
-let _fichasMestre = []  // todas as fichas do mestre (para o sidebar)
-let _logado    = false
+let _cenas        = []
+let _cenaAtual    = null
+let _fichasMestre = []
+let _logado       = false
 
-// ── Helpers de save status ────────────────────────────────
+// ── Save indicator ────────────────────────────────────────
 function _setSaveStatus(estado) {
   const el = document.getElementById("saveIndicator")
   if (!el) return
   el.className = "save-indicator"
+  const icon = el.querySelector(".save-icon")
+  const text = el.querySelector(".save-text")
   if (estado === "salvando") {
     el.classList.add("save-saving")
-    el.querySelector(".save-icon").textContent = "⟳"
-    el.querySelector(".save-text").textContent = "Salvando..."
+    icon.textContent = "⟳"; text.textContent = "Salvando..."
   } else if (estado === "erro") {
     el.classList.add("save-error")
-    el.querySelector(".save-icon").textContent = "✗"
-    el.querySelector(".save-text").textContent = "Erro"
+    icon.textContent = "✗"; text.textContent = "Erro"
   } else {
     el.classList.add("save-idle")
-    el.querySelector(".save-icon").textContent = "✓"
-    el.querySelector(".save-text").textContent = "Salvo"
+    icon.textContent = "✓"; text.textContent = "Salvo"
   }
 }
 
-// ── Persistência ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+//  FICHAS DO MESTRE
+//  BUG FIX: quando logado, carrega do Firebase (não localStorage)
+// ─────────────────────────────────────────────────────────
+async function _carregarFichasMestre() {
+  if (_logado && estaConfigurado()) {
+    const indice = await carregarIndiceFichasFirestore("mestre")
+    if (indice && indice.length > 0) {
+      const promises = indice.map(meta => carregarFichaFirestore(meta.id, "mestre"))
+      const raws = await Promise.all(promises)
+      _fichasMestre = raws.filter(Boolean).map(f => Ficha.fromJSON(f))
+      return
+    }
+    _fichasMestre = []
+    return
+  }
+  const raw = Storage.carregarFichas("mestre")
+  _fichasMestre = raw.map(f => Ficha.fromJSON(f))
+}
+
+function _getFichaById(id) {
+  return _fichasMestre.find(f => f.id === id) ?? null
+}
+
+async function _salvarFicha(ficha) {
+  const idx = _fichasMestre.findIndex(f => f.id === ficha.id)
+  if (idx !== -1) _fichasMestre[idx] = ficha
+
+  if (_logado && estaConfigurado()) {
+    await salvarFichaFirestore(ficha.toJSON(), "mestre").catch(console.error)
+  } else {
+    const raw = Storage.carregarFichas("mestre")
+    const ri  = raw.findIndex(f => f.id === ficha.id)
+    if (ri !== -1) { raw[ri] = ficha.toJSON(); Storage.salvarFichas(raw, "mestre") }
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  CENAS — persistência
+// ─────────────────────────────────────────────────────────
 async function _carregarCenas() {
   if (_logado && estaConfigurado()) {
     const fb = await carregarCenasFirestore()
@@ -65,51 +103,26 @@ async function _salvarCenas() {
   } catch(e) {
     console.error("[Cena] salvar:", e)
     _setSaveStatus("erro")
+    toastErro("Erro ao salvar cena.")
   }
 }
 
-/** Salva apenas a cena atual de volta ao array e persiste */
 async function _salvarCenaAtual() {
   if (!_cenaAtual) return
+  _cenaAtual.updatedAt = new Date().toISOString()
   const idx = _cenas.findIndex(c => c.id === _cenaAtual.id)
-  if (idx !== -1) _cenas[idx] = { ..._cenaAtual, updatedAt: new Date().toISOString() }
-  else _cenas.push({ ..._cenaAtual, updatedAt: new Date().toISOString() })
+  if (idx !== -1) _cenas[idx] = _cenaAtual
+  else _cenas.push(_cenaAtual)
   await _salvarCenas()
 }
 
-// ── Fichas do Mestre ──────────────────────────────────────
-function _carregarFichasMestre() {
-  const raw = Storage.carregarFichas("mestre")
-  _fichasMestre = raw.map(f => Ficha.fromJSON(f))
-}
-
-function _getFichaById(id) {
-  return _fichasMestre.find(f => f.id === id) ?? null
-}
-
-/** Persiste uma ficha atualizada de volta ao Storage/Firestore */
-async function _salvarFicha(ficha) {
-  const raw = Storage.carregarFichas("mestre")
-  const idx = raw.findIndex(f => f.id === ficha.id)
-  if (idx !== -1) {
-    raw[idx] = ficha.toJSON()
-    Storage.salvarFichas(raw, "mestre")
-    // Sync Firebase se logado (usa a função existente do firebase.js)
-    if (_logado && estaConfigurado()) {
-      const { salvarFichaFirestore } = await import("./firebase.js")
-      await salvarFichaFirestore(ficha.toJSON(), "mestre").catch(console.error)
-    }
-  }
-}
-
 // ─────────────────────────────────────────────────────────
-//  RENDERIZAÇÃO — LISTA DE CENAS (tela inicial)
+//  LISTA DE CENAS
 // ─────────────────────────────────────────────────────────
 function renderListaCenas() {
   const lista = document.getElementById("listaCenas")
   const vazio = document.getElementById("cenasVazio")
   if (!lista) return
-
   lista.innerHTML = ""
 
   if (!_cenas.length) {
@@ -127,11 +140,10 @@ function renderListaCenas() {
         <span class="cena-card-meta">${cena.fichaIds?.length ?? 0} ficha(s)</span>
       </div>
       <div class="cena-card-acoes">
-        <button class="cena-btn cena-btn-abrir" data-id="${cena.id}">▶ Abrir</button>
-        <button class="cena-btn cena-btn-renomear" data-id="${cena.id}">✏️</button>
-        <button class="cena-btn cena-btn-del" data-id="${cena.id}">🗑️</button>
-      </div>
-    `
+        <button class="cena-btn cena-btn-abrir">▶ Abrir</button>
+        <button class="cena-btn cena-btn-renomear">✏️</button>
+        <button class="cena-btn cena-btn-del">🗑️</button>
+      </div>`
     card.querySelector(".cena-btn-abrir").onclick    = () => abrirCena(cena.id)
     card.querySelector(".cena-btn-renomear").onclick = () => renomearCena(cena.id)
     card.querySelector(".cena-btn-del").onclick      = () => deletarCena(cena.id)
@@ -139,9 +151,6 @@ function renderListaCenas() {
   }
 }
 
-// ─────────────────────────────────────────────────────────
-//  AÇÕES — LISTA
-// ─────────────────────────────────────────────────────────
 window.criarNovaCena = async function() {
   const nome = prompt("Nome da cena:", "Nova Cena")
   if (!nome?.trim()) return
@@ -155,7 +164,7 @@ window.criarNovaCena = async function() {
 async function deletarCena(id) {
   const cena = _cenas.find(c => c.id === id)
   if (!cena) return
-  if (!confirm(`Excluir a cena "${cena.nome}"? As fichas NÃO serão apagadas.`)) return
+  if (!confirm(`Excluir "${cena.nome}"? As fichas NÃO serão apagadas.`)) return
   _cenas = _cenas.filter(c => c.id !== id)
   await _salvarCenas()
   renderListaCenas()
@@ -173,13 +182,12 @@ async function renomearCena(id) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  ABRIR CENA — troca de tela
+//  ABRIR / FECHAR CENA
 // ─────────────────────────────────────────────────────────
-function abrirCena(id) {
+async function abrirCena(id) {
   const cena = _cenas.find(c => c.id === id)
   if (!cena) return
   _cenaAtual = cena
-  // Troca painéis
   document.getElementById("painelLista").style.display  = "none"
   document.getElementById("painelCena").style.display   = "flex"
   document.getElementById("cenaTopbarNome").textContent = cena.nome
@@ -216,7 +224,6 @@ function renderCena() {
     }
   }
 
-  // Drop zone sempre presente ao final
   const dropZone = document.createElement("div")
   dropZone.className = "cena-drop-zone"
   dropZone.innerHTML = `<div class="cena-drop-zone-icon">⊕</div><span>Solte fichas aqui</span>`
@@ -229,96 +236,127 @@ function renderCena() {
 // ─────────────────────────────────────────────────────────
 function _criarCardFicha(ficha) {
   ficha.calcularStatus()
+  if (!ficha._atribCombate) ficha._atribCombate = "poder"
+
   const card = document.createElement("div")
   card.className = "cena-ficha-card"
   card.dataset.fichaId = ficha.id
 
-  const raca = ficha.racaId ? ficha.racaId : "—"
-  const prof = ficha.profissaoId ? ficha.profissaoId : "—"
-
   card.innerHTML = `
-    <!-- HEADER -->
     <div class="cfc-header">
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="cfc-nome">${_esc(ficha.nome)}</div>
-        <span class="cfc-nivel">Nv.${ficha.nivel} · ${_esc(raca)} · ${_esc(prof)}</span>
+        <span class="cfc-nivel">Nv.${ficha.nivel} · ${_esc(ficha.racaId || "—")} · ${_esc(ficha.profissaoId || "—")}</span>
       </div>
       <button class="cfc-remover" title="Remover da cena">✕</button>
     </div>
 
-    <!-- ATRIBUTOS -->
-    <div class="cfc-atribs">
-      ${_htmlAtrib("P", ficha.atributos.poder)}
-      ${_htmlAtrib("H", ficha.atributos.habilidade)}
-      ${_htmlAtrib("R", ficha.atributos.resistencia)}
+    <div class="cfc-atribs" id="atribs-${ficha.id}">
+      ${_htmlAtribCtrl(ficha, "poder",       "P")}
+      ${_htmlAtribCtrl(ficha, "habilidade",  "H")}
+      ${_htmlAtribCtrl(ficha, "resistencia", "R")}
     </div>
 
-    <!-- STATS -->
     <div class="cfc-stats" id="stats-${ficha.id}">
       ${_htmlStat(ficha, "pa")}
       ${_htmlStat(ficha, "pm")}
       ${_htmlStat(ficha, "pv")}
     </div>
 
-    <!-- GAVETAS -->
+    <div class="cfc-gaveta" data-gaveta="combate">
+      <div class="cfc-gaveta-header">
+        <span class="cfc-gaveta-titulo">⚔️ Combate</span>
+        <span class="cfc-gaveta-seta">▼</span>
+      </div>
+      <div class="cfc-gaveta-corpo" id="combate-${ficha.id}">
+        ${_htmlCombate(ficha)}
+      </div>
+    </div>
+
     <div class="cfc-gavetas">
-      ${_htmlGaveta("pericias",   "📋 Perícias",            ficha)}
-      ${_htmlGaveta("vantagens",  "✅ Vantagens",           ficha)}
+      ${_htmlGaveta("pericias",    "📋 Perícias",           ficha)}
+      ${_htmlGaveta("vantagens",   "✅ Vantagens",          ficha)}
       ${_htmlGaveta("desvantagens","❌ Desvantagens",       ficha)}
-      ${_htmlGaveta("tecnicas",   "⚡ Técnicas",            ficha)}
-      ${_htmlGaveta("fontes",     "🌊 Fontes de Poder",     ficha)}
-      ${_htmlGaveta("isoladas",   "✨ Características Isoladas", ficha)}
+      ${_htmlGaveta("tecnicas",    "⚡ Técnicas",           ficha)}
+      ${_htmlGaveta("fontes",      "🌊 Fontes de Poder",    ficha)}
+      ${_htmlGaveta("isoladas",    "✨ Caract. Isoladas",   ficha)}
     </div>
   `
 
-  // Remover da cena
   card.querySelector(".cfc-remover").onclick = () => _removerFichaDaCena(ficha.id)
-
-  // Botões +/- stats
+  _bindAtribBtns(card, ficha)
   _bindStatBtns(card, ficha)
-
-  // Gavetas
   _bindGavetas(card, ficha)
+  _bindCombateToggle(card, ficha)
 
   return card
 }
 
-function _htmlAtrib(label, val) {
+// ─────────────────────────────────────────────────────────
+//  ATRIBUTOS  ‹ valor ›
+// ─────────────────────────────────────────────────────────
+function _htmlAtribCtrl(ficha, chave, label) {
+  const val = ficha.atributos[chave] ?? 0
   return `
     <div class="cfc-atrib-item">
       <span class="cfc-atrib-label">${label}</span>
-      <span class="cfc-atrib-val">${val ?? 0}</span>
+      <div class="cfc-atrib-ctrl">
+        <button class="cfc-atrib-btn" data-chave="${chave}" data-delta="-1">‹</button>
+        <span class="cfc-atrib-val" id="atrib-${ficha.id}-${chave}">${val}</span>
+        <button class="cfc-atrib-btn" data-chave="${chave}" data-delta="1">›</button>
+      </div>
     </div>`
 }
 
+function _bindAtribBtns(card, ficha) {
+  card.querySelectorAll(".cfc-atrib-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const chave = btn.dataset.chave
+      const delta = parseInt(btn.dataset.delta)
+      ficha.atributos[chave] = Math.max(0, (ficha.atributos[chave] ?? 0) + delta)
+      const el = card.querySelector(`#atrib-${ficha.id}-${chave}`)
+      if (el) el.textContent = ficha.atributos[chave]
+      ficha.calcularStatus()
+      _atualizarStatDOM(card, ficha, "pa")
+      _atualizarStatDOM(card, ficha, "pm")
+      _atualizarStatDOM(card, ficha, "pv")
+      _atualizarCombateDOM(card, ficha)
+      await _salvarFicha(ficha)
+    }
+  })
+}
+
+// ─────────────────────────────────────────────────────────
+//  STATS  «  ‹  ›  »
+// ─────────────────────────────────────────────────────────
 function _htmlStat(ficha, chave) {
-  const s      = ficha.status[chave]
-  const atual  = s.atual  ?? 0
-  const max    = s.max    ?? 1
-  const pct    = Math.min(100, Math.max(0, Math.round((atual / (max || 1)) * 100)))
+  const s     = ficha.status[chave]
+  const atual = s.atual ?? 0
+  const max   = s.max   ?? 1
+  const pct   = Math.min(100, Math.max(0, Math.round((atual / (max || 1)) * 100)))
   const labels = { pa: "PA", pm: "PM", pv: "PV" }
+
   return `
     <div class="cfc-stat-row">
       <span class="cfc-stat-label ${chave}">${labels[chave]}</span>
       <div class="cfc-stat-barra-wrap">
-        <div class="cfc-stat-barra ${chave}" style="width:${pct}%"></div>
+        <div class="cfc-stat-barra ${chave}" id="barra-${ficha.id}-${chave}" style="width:${pct}%"></div>
       </div>
       <div class="cfc-stat-nums">
         <span class="cfc-stat-atual" id="stat-atual-${ficha.id}-${chave}">${atual}</span>
         <span class="cfc-stat-sep">/</span>
-        <span class="cfc-stat-max"
-              id="stat-max-${ficha.id}-${chave}"
-              title="Clique para editar o máximo">${max}</span>
+        <span class="cfc-stat-max" id="stat-max-${ficha.id}-${chave}" title="Clique para editar o máximo">${max}</span>
       </div>
       <div class="cfc-stat-btns">
-        <button class="cfc-stat-btn" data-ficha="${ficha.id}" data-stat="${chave}" data-delta="-1">−</button>
-        <button class="cfc-stat-btn" data-ficha="${ficha.id}" data-stat="${chave}" data-delta="1">+</button>
+        <button class="cfc-stat-btn" data-stat="${chave}" data-delta="-5" title="-5">«</button>
+        <button class="cfc-stat-btn" data-stat="${chave}" data-delta="-1" title="-1">‹</button>
+        <button class="cfc-stat-btn" data-stat="${chave}" data-delta="1"  title="+1">›</button>
+        <button class="cfc-stat-btn" data-stat="${chave}" data-delta="5"  title="+5">»</button>
       </div>
     </div>`
 }
 
 function _bindStatBtns(card, ficha) {
-  // +/- ATUAL
   card.querySelectorAll(".cfc-stat-btn").forEach(btn => {
     btn.onclick = async () => {
       const chave = btn.dataset.stat
@@ -330,33 +368,30 @@ function _bindStatBtns(card, ficha) {
     }
   })
 
-  // Clique no MAX → edição inline
   ;["pa","pm","pv"].forEach(chave => {
     const maxEl = card.querySelector(`#stat-max-${ficha.id}-${chave}`)
     if (!maxEl) return
     maxEl.onclick = () => {
-      if (maxEl.querySelector("input")) return // já editando
-      const atual = ficha.status[chave].max ?? 0
+      if (maxEl.querySelector("input")) return
       const input = document.createElement("input")
-      input.type  = "number"
+      input.type = "number"
       input.className = "cfc-input-max"
-      input.value = atual
+      input.value = ficha.status[chave].max ?? 0
       maxEl.textContent = ""
       maxEl.appendChild(input)
-      input.focus()
-      input.select()
+      input.focus(); input.select()
       const confirmar = async () => {
         const novoMax = parseInt(input.value)
         if (!isNaN(novoMax) && novoMax >= 0) {
           ficha.setMaxManual(chave, novoMax)
-          // ajusta atual se exceder o novo max
-          if (ficha.status[chave].atual > novoMax) ficha.status[chave].atual = novoMax
+          if (ficha.status[chave].atual > novoMax)
+            ficha.status[chave].atual = novoMax
         }
         _atualizarStatDOM(card, ficha, chave)
         await _salvarFicha(ficha)
       }
-      input.onblur  = confirmar
-      input.onkeydown = (e) => { if (e.key === "Enter") input.blur() }
+      input.onblur = confirmar
+      input.onkeydown = e => { if (e.key === "Enter") input.blur() }
     }
   })
 }
@@ -366,22 +401,78 @@ function _atualizarStatDOM(card, ficha, chave) {
   const atual = s.atual ?? 0
   const max   = s.max   ?? 1
   const pct   = Math.min(100, Math.max(0, Math.round((atual / (max || 1)) * 100)))
-
   const elAtual = card.querySelector(`#stat-atual-${ficha.id}-${chave}`)
   const elMax   = card.querySelector(`#stat-max-${ficha.id}-${chave}`)
-  const barra   = card.querySelector(`.cfc-stats .cfc-stat-barra.${chave}`)
-
+  const barra   = card.querySelector(`#barra-${ficha.id}-${chave}`)
   if (elAtual) elAtual.textContent = atual
-  if (elMax)   elMax.textContent   = max
-  if (barra)   barra.style.width   = pct + "%"
+  if (elMax && !elMax.querySelector("input")) elMax.textContent = max
+  if (barra)   barra.style.width = pct + "%"
+}
+
+// ─────────────────────────────────────────────────────────
+//  COMBATE
+// ─────────────────────────────────────────────────────────
+function _htmlCombate(ficha) {
+  const atrib    = ficha.atributos[ficha._atribCombate] ?? 0
+  const res      = ficha.atributos.resistencia ?? 0
+  const hab      = ficha.atributos.habilidade  ?? 0
+  const bonusAtk = ficha.bonusAtaqueEquipamentos ?? 0
+  const bonusDef = ficha.bonusDefesaEquipamentos ?? 0
+  const ex       = ficha.combateExtras ?? {}
+
+  const atkSeguro    = bonusAtk + atrib       + (ex.atkSeguro    ?? 0)
+  const atkArriscado = bonusAtk + atrib * 2   + (ex.atkArriscado ?? 0)
+  const atkMaluco    = bonusAtk + atrib * 3   + (ex.atkMaluco    ?? 0)
+  const defBloqueio  = bonusDef + res * 2     + (ex.defBloqueio  ?? 0)
+  const defEsquiva   = bonusDef + hab * 2     + (ex.defEsquiva   ?? 0)
+  const defContra    = bonusDef               + (ex.defContra     ?? 0)
+  const isPoder      = ficha._atribCombate === "poder"
+
+  return `
+    <div class="cfc-combate-toggle">
+      <button class="cfc-toggle-btn${isPoder ? " active" : ""}" data-atrib="poder">Poder</button>
+      <button class="cfc-toggle-btn${!isPoder ? " active" : ""}" data-atrib="habilidade">Habilidade</button>
+    </div>
+    <div class="cfc-combate-grid">
+      <div class="cfc-combate-grupo">
+        <div class="cfc-combate-titulo">Ataque</div>
+        <div class="cfc-combate-row"><span>Seguro</span><strong>${atkSeguro}</strong></div>
+        <div class="cfc-combate-row"><span>Arriscado</span><strong>${atkArriscado}</strong></div>
+        <div class="cfc-combate-row"><span>Maluco</span><strong>${atkMaluco}</strong></div>
+      </div>
+      <div class="cfc-combate-grupo">
+        <div class="cfc-combate-titulo">Defesa</div>
+        <div class="cfc-combate-row"><span>Bloqueio</span><strong>${defBloqueio}</strong></div>
+        <div class="cfc-combate-row"><span>Esquiva</span><strong>${defEsquiva}</strong></div>
+        <div class="cfc-combate-row"><span>Contra</span><strong>${defContra}</strong></div>
+      </div>
+    </div>`
+}
+
+function _bindCombateToggle(card, ficha) {
+  const corpo = card.querySelector(`#combate-${ficha.id}`)
+  if (!corpo) return
+  corpo.addEventListener("click", e => {
+    const btn = e.target.closest(".cfc-toggle-btn")
+    if (!btn) return
+    ficha._atribCombate = btn.dataset.atrib
+    _atualizarCombateDOM(card, ficha)
+  })
+}
+
+function _atualizarCombateDOM(card, ficha) {
+  const corpo = card.querySelector(`#combate-${ficha.id}`)
+  if (!corpo) return
+  corpo.innerHTML = _htmlCombate(ficha)
+  _bindCombateToggle(card, ficha)
 }
 
 // ─────────────────────────────────────────────────────────
 //  GAVETAS
 // ─────────────────────────────────────────────────────────
 function _htmlGaveta(tipo, titulo, ficha) {
-  const conteudo = _conteudoGaveta(tipo, ficha)
   const count    = _contarGaveta(tipo, ficha)
+  const conteudo = _conteudoGaveta(tipo, ficha)
   return `
     <div class="cfc-gaveta" data-gaveta="${tipo}">
       <div class="cfc-gaveta-header">
@@ -414,18 +505,12 @@ function _conteudoGaveta(tipo, ficha) {
 }
 
 function _htmlPericias(ficha) {
-  const ativas = Object.entries(ficha.pericias)
-    .filter(([, v]) => v)
-    .map(([nome]) => nome)
-
+  const ativas = Object.entries(ficha.pericias).filter(([,v]) => v).map(([n]) => n)
   if (!ativas.length) return `<span class="cfc-vazio">Nenhuma perícia</span>`
-
-  return `<div class="cfc-pericias-grid">
-    ${ativas.map(nome => {
-      const m = ficha.maestrias?.[nome]
-      return `<span class="cfc-pericia-tag${m ? " maestria" : ""}">${_esc(nome)}${m ? " ★" : ""}</span>`
-    }).join("")}
-  </div>`
+  return `<div class="cfc-pericias-grid">${ativas.map(nome => {
+    const m = ficha.maestrias?.[nome]
+    return `<span class="cfc-pericia-tag${m ? " maestria" : ""}">${_esc(nome)}${m ? " ★" : ""}</span>`
+  }).join("")}</div>`
 }
 
 function _htmlElementos(ficha, tipo) {
@@ -462,7 +547,7 @@ function _htmlFontes(ficha) {
           <span class="cfc-item-seta">▾</span>
         </div>
         <div class="cfc-item-detalhe">
-          <p class="cfc-item-desc" style="color:#7c3aed;font-style:italic;margin-bottom:4px">
+          <p class="cfc-item-desc" style="color:#a78bfa;font-style:italic;margin-bottom:4px">
             ${_esc(f.tema || "Sem tema")} · ${_esc(f.subtipo ?? "geral")}
           </p>
           ${caracts || `<span class="cfc-vazio">Sem características</span>`}
@@ -489,26 +574,19 @@ function _htmlIsoladas(ficha) {
 }
 
 function _bindGavetas(card, ficha) {
-  // Toggle de gaveta principal
   card.querySelectorAll(".cfc-gaveta-header").forEach(header => {
-    header.onclick = () => {
-      const gaveta = header.closest(".cfc-gaveta")
-      gaveta.classList.toggle("aberta")
-    }
+    header.onclick = () => header.closest(".cfc-gaveta").classList.toggle("aberta")
   })
-
-  // Toggle de sub-item (gaveta de gaveta)
   card.querySelectorAll(".cfc-item-header").forEach(header => {
-    header.onclick = (e) => {
+    header.onclick = e => {
       e.stopPropagation()
-      const item = header.closest(".cfc-item")
-      item.classList.toggle("aberto")
+      header.closest(".cfc-item").classList.toggle("aberto")
     }
   })
 }
 
 // ─────────────────────────────────────────────────────────
-//  SIDEBAR — lista de fichas do mestre para drag & drop
+//  SIDEBAR
 // ─────────────────────────────────────────────────────────
 function renderSidebar() {
   const lista = document.getElementById("sidebarFichas")
@@ -518,45 +596,42 @@ function renderSidebar() {
   const nasCena = new Set(_cenaAtual?.fichaIds ?? [])
 
   if (!_fichasMestre.length) {
-    lista.innerHTML = `<span style="font-size:12px;color:#334155;padding:8px">Nenhuma ficha de mestre encontrada.</span>`
+    lista.innerHTML = `<span style="font-size:12px;color:#475569;padding:8px;display:block">
+      Nenhuma ficha de mestre encontrada.</span>`
     return
   }
 
   for (const ficha of _fichasMestre) {
     const jaTem = nasCena.has(ficha.id)
     const item  = document.createElement("div")
-    item.className    = "cena-sidebar-item" + (jaTem ? " ja-na-cena" : "")
-    item.draggable    = !jaTem
+    item.className       = "cena-sidebar-item" + (jaTem ? " ja-na-cena" : "")
+    item.draggable       = !jaTem
     item.dataset.fichaId = ficha.id
     item.innerHTML = `
       <span class="cena-sidebar-item-nome">${_esc(ficha.nome)}</span>
-      <span class="cena-sidebar-item-meta">Nv.${ficha.nivel}${jaTem ? " · na cena" : ""}</span>
-    `
+      <span class="cena-sidebar-item-meta">Nv.${ficha.nivel}${jaTem ? " · ✓ na cena" : ""}</span>`
     if (!jaTem) {
-      item.addEventListener("dragstart", (e) => {
+      item.addEventListener("dragstart", e => {
         e.dataTransfer.setData("fichaId", ficha.id)
         item.style.opacity = "0.5"
       })
-      item.addEventListener("dragend", () => {
-        item.style.opacity = ""
-      })
+      item.addEventListener("dragend", () => { item.style.opacity = "" })
     }
     lista.appendChild(item)
   }
 }
 
 window.toggleSidebar = function() {
-  const sb = document.getElementById("cenaSidebar")
-  if (sb) sb.classList.toggle("fechada")
+  document.getElementById("cenaSidebar")?.classList.toggle("fechada")
 }
 
 // ─────────────────────────────────────────────────────────
-//  DROP ZONE
+//  DROP
 // ─────────────────────────────────────────────────────────
 function _setupDropZone(el) {
-  el.addEventListener("dragover",  (e) => { e.preventDefault(); el.classList.add("drag-over") })
-  el.addEventListener("dragleave", (e) => { if (!el.contains(e.relatedTarget)) el.classList.remove("drag-over") })
-  el.addEventListener("drop",      async (e) => {
+  el.addEventListener("dragover",  e => { e.preventDefault(); el.classList.add("drag-over") })
+  el.addEventListener("dragleave", e => { if (!el.contains(e.relatedTarget)) el.classList.remove("drag-over") })
+  el.addEventListener("drop", async e => {
     e.preventDefault()
     el.classList.remove("drag-over")
     const fichaId = e.dataTransfer.getData("fichaId")
@@ -582,12 +657,9 @@ async function _removerFichaDaCena(fichaId) {
 //  UTILS
 // ─────────────────────────────────────────────────────────
 function _esc(str) {
-  if (!str) return ""
-  return String(str)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
+  return String(str ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
 }
 
 // ─────────────────────────────────────────────────────────
@@ -600,60 +672,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = getUser()
   _logado = !!user
 
-  // Conecta firebase de cenas usando instâncias já existentes
-  // Importa internos do firebase.js via side-effect (são módulo singleton)
-  if (_logado && estaConfigurado()) {
-    // Workaround: importa fns do Firebase já carregadas
-    // O padrão do projeto usa variáveis internas — reutilizamos via função dedicada
-    // (Ver firebaseCenas.js — inicializarFirebaseCenas recebe db/user/fns)
-    // Como o firebase.js não expõe _db diretamente, fazemos lazy init:
-    // na primeira chamada de carregarCenasFirestore ele vai falhar se não inicializado.
-    // Solução: bootstrap via firebase.js existente importando getFirestoreInternals
-    await _bootstrapFirebaseCenas()
-  }
+  if (_logado && estaConfigurado()) await _bootstrapFirebaseCenas()
 
-  onLogin(async (u) => {
+  onLogin(async u => {
     _logado = true
     setUserCenas(u)
     await _bootstrapFirebaseCenas()
-    await _carregarCenas()
-    _carregarFichasMestre()
+    await Promise.all([_carregarCenas(), _carregarFichasMestre()])
     renderListaCenas()
+    if (_cenaAtual) { renderCena(); renderSidebar() }
   })
 
-  onLogout(() => {
+  onLogout(async () => {
     _logado = false
     setUserCenas(null)
-    _carregarCenas().then(() => {
-      _carregarFichasMestre()
-      renderListaCenas()
-    })
+    await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    renderListaCenas()
+    if (_cenaAtual) { renderCena(); renderSidebar() }
   })
 
-  _carregarFichasMestre()
-  await _carregarCenas()
+  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
   renderListaCenas()
 })
 
-/**
- * Bootstrap das funções internas do Firebase para o módulo de cenas.
- * O firebase.js expõe as funções de alto nível mas não _db/_fns diretamente.
- * Usamos a mesma estratégia: importamos o SDK já carregado pelo firebase.js
- * através de uma re-importação (módulos são singletons em ES modules).
- */
 async function _bootstrapFirebaseCenas() {
   if (!estaConfigurado()) return
   try {
-    // Re-importa — o SDK já foi inicializado por firebase.js, então
-    // getFirestore() retorna a instância existente (singleton interno do Firebase SDK)
     const { getFirestore, doc, setDoc, getDoc } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
     const db   = getFirestore()
     const user = getUser()
-    if (db && user) {
-      inicializarFirebaseCenas(db, user, { doc, setDoc, getDoc })
-    }
-  } catch(e) {
-    console.warn("[cena.js] Bootstrap Firebase Cenas:", e)
-  }
+    if (db && user) inicializarFirebaseCenas(db, user, { doc, setDoc, getDoc })
+  } catch(e) { console.warn("[cena.js] Bootstrap Firebase Cenas:", e) }
 }
