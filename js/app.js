@@ -32,7 +32,7 @@ import {
   carregarFichaDeOutroUsuario, salvarFichaComoEditor,
   escutarFicha,
   salvarIndiceFichasFirestore, carregarIndiceFichasFirestore, aguardarAuth, estaConfigurado
-} from "./firebase.js"
+} from "./firebase.js?v=542442"
 
 // ── Debounce ──────────────────────────────────────────────
 function _debounce(fn, ms) {
