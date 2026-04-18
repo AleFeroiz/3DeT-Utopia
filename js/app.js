@@ -29,7 +29,7 @@ import {
   inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
   salvarFichaFirestore, carregarFichaFirestore,
   salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
-  salvarIndiceFichasFirestore, aguardarAuth, estaConfigurado
+  salvarIndiceFichasFirestore, carregarIndiceFichasFirestore, aguardarAuth, estaConfigurado
 } from "./firebase.js"
 
 // ── Debounce ──────────────────────────────────────────────
@@ -484,12 +484,28 @@ async function salvar() {
   try {
     if (_fichaOwner && user && _fichaId) {
       await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
-      // Atualiza índice: re-lê do localStorage (já tem o fichaJson salvo acima)
-      // e garante que a ficha atual está com os dados mais recentes
-      const fichasParaIndice = Storage.carregarFichas(_fichaModo).map(f =>
-        f.id === fichaJson.id ? fichaJson : f
-      )
-      salvarIndiceFichasFirestore(fichasParaIndice, _fichaModo)
+
+      // Atualiza índice no Firestore de forma cirúrgica:
+      // lê o índice atual, substitui só a entrada desta ficha, re-salva.
+      // Isso preserva pastaId e dados das outras fichas (que podem ser _soMetadados).
+      try {
+        const indiceAtual = await carregarIndiceFichasFirestore(_fichaModo) ?? []
+        const metaAtual = indiceAtual.find(m => m.id === fichaJson.id)
+        const novoMeta = {
+          id:          fichaJson.id,
+          nome:        fichaJson.nome ?? "Sem Nome",
+          nivel:       fichaJson.nivel ?? 1,
+          racaId:      fichaJson.racaId ?? "",
+          profissaoId: fichaJson.profissaoId ?? "",
+          pastaId:     metaAtual?.pastaId ?? fichaJson.pastaId ?? null,
+        }
+        const indiceAtualizado = indiceAtual.some(m => m.id === fichaJson.id)
+          ? indiceAtual.map(m => m.id === fichaJson.id ? novoMeta : m)
+          : [...indiceAtual, novoMeta]
+        salvarIndiceFichasFirestore(indiceAtualizado, _fichaModo)
+      } catch(eIdx) {
+        console.warn("[salvar] erro ao atualizar índice:", eIdx)
+      }
     }
 
   if (_fichaId) {
