@@ -28,7 +28,8 @@ import { toastErro, toastSucesso, toastAviso, toastInfo } from "./ui/uiToast.js"
 import {
   inicializarFirebase, loginGoogle, logout, getUser, onLogin, onLogout,
   salvarFichaFirestore, carregarFichaFirestore,
-  salvarFichaPublicaFirestore, carregarFichaPublicaFirestore, removerFichaPublicaFirestore,
+  registrarIndicePublico, removerIndicePublico,
+  carregarFichaDeOutroUsuario, salvarFichaComoEditor,
   salvarIndiceFichasFirestore, carregarIndiceFichasFirestore, aguardarAuth, estaConfigurado
 } from "./firebase.js"
 
@@ -65,13 +66,32 @@ function _showLoading(show) {
   if (el) el.style.display = show ? "flex" : "none"
 }
 
+function _mostrarFichaPrivada() {
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:#0f172a;font-family:sans-serif">
+      <div style="text-align:center;padding:40px;max-width:400px">
+        <div style="font-size:56px;margin-bottom:16px">🔒</div>
+        <h2 style="color:#e2e8f0;margin:0 0 12px">Ficha Privada</h2>
+        <p style="color:#94a3b8;margin:0 0 28px;line-height:1.6">
+          Esta ficha não está disponível para visualização pública.
+        </p>
+        <a href="index.html" style="display:inline-block;padding:10px 24px;
+          background:#3b82f6;color:#fff;border-radius:8px;text-decoration:none;
+          font-weight:600">← Voltar ao início</a>
+      </div>
+    </div>`
+}
+
 // ── Estado da ficha aberta ────────────────────────────────
 let ficha       = null
 let _fichaId    = null
 let _fichaModo  = "player"
-let _fichaOwner = true
+let _fichaOwner     = true
 let _loginFoiManual = false   // evita loop: onLogin só redireciona se o login foi ação do usuário
-let _fichaEraPublica = false  // rastreia se a ficha já foi pública: evita deletar doc inexistente
+let _fichaOwnerUid  = null    // uid do dono real da ficha (preenchido ao abrir ficha de terceiro)
+let _fichaOwnerModo = null    // modo do dono (player/mestre) para salvar como editor externo
+let _fichaEraPublica = false  // rastreia se a ficha estava pública ao ser carregada
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -92,32 +112,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     const user = getUser()
 
     if (user && estaConfigurado()) {
-      // Logado: fonte primária = Firestore
+      // Logado: tenta carregar como dono (ficha privada própria)
       const remoto = await carregarFichaFirestore(urlId, urlModo)
       if (remoto && !remoto._soMetadados) {
-        ficha       = Ficha.fromJSON(remoto)
-        _fichaOwner = true
+        ficha            = Ficha.fromJSON(remoto)
+        _fichaOwner      = true
+        _fichaOwnerUid   = user.uid
+        _fichaOwnerModo  = urlModo
+        _fichaEraPublica = remoto.isPublic ?? false
         Storage.salvarFichaPorId(ficha.toJSON(), _fichaModo)
       }
     }
 
     if (!ficha) {
-      // Não logado OU ficha não encontrada no Firestore: tenta localStorage
+      // Não logado OU não é o dono: tenta localStorage (cache offline do próprio dono)
       const found = Storage.carregarFichaPorId(urlId)
       if (found && !found.ficha._soMetadados) {
-        ficha       = Ficha.fromJSON(found.ficha)
-        _fichaModo  = found.modo
-        _fichaOwner = true
+        ficha            = Ficha.fromJSON(found.ficha)
+        _fichaModo       = found.modo
+        _fichaOwner      = true
+        _fichaOwnerUid   = getUser()?.uid ?? null
+        _fichaOwnerModo  = found.modo
+        _fichaEraPublica = found.ficha.isPublic ?? false
       }
     }
 
     if (!ficha && estaConfigurado()) {
-      // Último recurso: ficha pública de terceiro
-      const publica = await carregarFichaPublicaFirestore(urlId)
+      // Ficha de outro usuário: resolve via public_index → lê ficha real do dono
+      const publica = await carregarFichaDeOutroUsuario(urlId)
       if (publica) {
-        ficha       = Ficha.fromJSON(publica)
-        const user  = getUser()
-        _fichaOwner = !!(user && publica._ownerUid === user.uid)
+        ficha            = Ficha.fromJSON(publica)
+        const user       = getUser()
+        _fichaOwner      = !!(user && publica._ownerUid === user.uid)
+        _fichaOwnerUid   = publica._ownerUid ?? null
+        _fichaOwnerModo  = publica._modo ?? "player"
+        _fichaEraPublica = true
+        if (!publica.isPublic) {
+          // Ficha existe mas não está mais pública — exibe mensagem
+          ficha = null
+          _mostrarFichaPrivada()
+          _showLoading(false)
+          return
+        }
       }
     }
 
@@ -137,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   ficha.calcularStatus()
   ficha.calcularPontos()
-  _fichaEraPublica = ficha.isPublic ?? false  // inicializa com estado real da ficha
+  _fichaEraPublica = ficha.isPublic ?? false   // rastreia mudança de visibilidade
 
   _showLoading(false)  // Fase 2: esconde spinner após carregamento
 
@@ -492,25 +528,25 @@ async function salvar() {
 
   const fichaJson = ficha.toJSON()
 
-  // localStorage sempre (cache offline e testes locais)
-  if (_fichaId) Storage.salvarFichaPorId(fichaJson, _fichaModo)
+  // localStorage sempre (cache offline)
+  if (_fichaId && _fichaOwner) Storage.salvarFichaPorId(fichaJson, _fichaModo)
 
   if (!estaConfigurado()) { _setSaveStatus("salvo"); return }
-  const user = getUser()
-  if (!user) { _setSaveStatus("salvo"); return }
 
   _setSaveStatus("salvando")
 
   try {
+    const user = getUser()
+
     if (_fichaOwner && user && _fichaId) {
-      // DONO: salva na coleção privada + atualiza índice
+      // ── DONO: salva na própria coleção privada ──────────
       await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
 
       // Atualiza índice de forma cirúrgica preservando pastaId
       try {
         const indiceAtual = await carregarIndiceFichasFirestore(_fichaModo) ?? []
-        const metaAtual = indiceAtual.find(m => m.id === fichaJson.id)
-        const novoMeta = {
+        const metaAtual   = indiceAtual.find(m => m.id === fichaJson.id)
+        const novoMeta    = {
           id:          fichaJson.id,
           nome:        fichaJson.nome ?? "Sem Nome",
           nivel:       fichaJson.nivel ?? 1,
@@ -526,27 +562,27 @@ async function salvar() {
         console.warn("[salvar] erro ao atualizar índice:", eIdx)
       }
 
-    } else if (!_fichaOwner && ficha.editPublic && _fichaId) {
-      // EDITOR EXTERNO: salva direto na ficha pública (não cria cópia própria)
-      const ownerUid = fichaJson._ownerUid ?? null
-      await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
-      _setSaveStatus("salvo")
-      return
+      // Gerencia public_index conforme flag isPublic
+      if (fichaJson.isPublic) {
+        // Registra (ou atualiza) entrada no índice público
+        await registrarIndicePublico(fichaJson.id, user.uid, _fichaModo)
+        _fichaEraPublica = true
+      } else if (_fichaEraPublica) {
+        // Ficha deixou de ser pública: remove do índice público
+        await removerIndicePublico(fichaJson.id)
+        _fichaEraPublica = false
+      }
+
+    } else if (!_fichaOwner && ficha.editPublic && _fichaId && _fichaOwnerUid) {
+      // ── EDITOR EXTERNO: salva direto na ficha do dono ──
+      await salvarFichaComoEditor(
+        { ...fichaJson, _ownerUid: _fichaOwnerUid },
+        _fichaOwnerUid,
+        _fichaOwnerModo ?? "player"
+      )
     }
 
-  if (_fichaId) {
-    if (fichaJson.isPublic) {
-      const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
-      await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
-      _fichaEraPublica = true   // marca que já existiu como pública
-    } else if (_fichaOwner && _fichaEraPublica) {
-      // Só tenta remover se a ficha JÁ foi pública antes nesta sessão
-      await removerFichaPublicaFirestore(_fichaId)
-      _fichaEraPublica = false
-    }
-  }
-
-  _setSaveStatus("salvo")
+    _setSaveStatus("salvo")
   } catch(e) {
     console.error("[salvar]", e)
     _setSaveStatus("erro")

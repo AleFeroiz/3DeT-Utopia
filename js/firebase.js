@@ -147,37 +147,68 @@ export async function carregarPastasFirestore(modo = "player") {
   } catch(e) { console.error("[Firestore] carregar pastas:", e); return null }
 }
 
-// ─── Fichas públicas ──────────────────────────────────────
-export async function salvarFichaPublicaFirestore(fichaObj) {
-  if (!_okPub() || !fichaObj?.id) return false
+// ─── Índice público (resolução ownerUid a partir de fichaId) ─
+// Estrutura: public_index/{fichaId} → { ownerUid, modo }
+// Só existe enquanto a ficha tiver isPublic=true.
+// NÃO duplica dados — a ficha real continua em users/{uid}/fichas_player/{id}
+
+export async function registrarIndicePublico(fichaId, ownerUid, modo = "player") {
+  if (!_okPub() || !fichaId || !ownerUid) return false
   try {
     await _firebaseFns.setDoc(
-      _firebaseFns.doc(_db, "public_fichas", fichaObj.id),
-      { ...fichaObj, _updatedAt: new Date().toISOString() }
+      _firebaseFns.doc(_db, "public_index", fichaId),
+      { ownerUid, modo, _updatedAt: new Date().toISOString() }
     )
     return true
-  } catch(e) { console.error("[Firestore] salvar pública:", e); return false }
+  } catch(e) { console.error("[Firestore] registrar índice público:", e); return false }
 }
 
-export async function carregarFichaPublicaFirestore(fichaId) {
+export async function removerIndicePublico(fichaId) {
+  if (!_okPub() || !fichaId) return false
+  try {
+    await _firebaseFns.deleteDoc(_firebaseFns.doc(_db, "public_index", fichaId))
+    return true
+  } catch(e) { console.error("[Firestore] remover índice público:", e); return false }
+}
+
+// Carrega ficha pública de terceiro:
+// 1. Lê public_index para descobrir ownerUid + modo
+// 2. Lê a ficha REAL de users/{ownerUid}/fichas_{modo}/{fichaId}
+// 3. Retorna null se não existir ou não for pública
+export async function carregarFichaDeOutroUsuario(fichaId) {
   if (!_okPub()) return null
   try {
-    const snap = await _firebaseFns.getDoc(
-      _firebaseFns.doc(_db, "public_fichas", fichaId)
+    // Passo 1: resolve dono
+    const idxSnap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "public_index", fichaId)
     )
-    if (!snap.exists()) return null
-    const data = snap.data()
-    return data.isPublic ? data : null
-  } catch(e) { console.error("[Firestore] carregar pública:", e); return null }
+    if (!idxSnap.exists()) return null
+    const { ownerUid, modo } = idxSnap.data()
+    if (!ownerUid) return null
+
+    // Passo 2: lê ficha real do dono
+    const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
+    const fichaSnap = await _firebaseFns.getDoc(
+      _firebaseFns.doc(_db, "users", ownerUid, col, fichaId)
+    )
+    if (!fichaSnap.exists()) return null
+    const data = fichaSnap.data()
+
+    // Só retorna se ainda estiver marcada como pública
+    return data.isPublic ? { ...data, _ownerUid: ownerUid, _modo: modo } : null
+  } catch(e) { console.error("[Firestore] carregar ficha de outro usuário:", e); return null }
 }
 
-export async function removerFichaPublicaFirestore(fichaId) {
-  if (!_okPub()) return false
+// Salva edição de um editor externo direto na ficha do dono
+// Requer que editPublic=true nas regras do Firestore
+export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player") {
+  if (!_okPub() || !fichaObj?.id || !ownerUid) return false
   try {
-    await _firebaseFns.deleteDoc(_firebaseFns.doc(_db, "public_fichas", fichaId))
+    const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
+    await _firebaseFns.setDoc(
+      _firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id),
+      { ...fichaObj, _ownerUid: ownerUid, _updatedAt: new Date().toISOString() }
+    )
     return true
-  } catch(e) { console.error("[Firestore] remover pública:", e); return false }
+  } catch(e) { console.error("[Firestore] salvar como editor:", e); return false }
 }
-
-// ─── Legado (não remover — outros arquivos ainda importam) ─
-
