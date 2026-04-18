@@ -70,7 +70,7 @@ let ficha       = null
 let _fichaId    = null
 let _fichaModo  = "player"
 let _fichaOwner = true
-let _loginFoiManual = false  // ← ADICIONAR esta linha
+let _loginFoiManual = false  // evita loop: onLogin só redireciona se o login foi ação do usuário
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -139,12 +139,56 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   _showLoading(false)  // Fase 2: esconde spinner após carregamento
 
+  // ── Registrar callbacks dos módulos de UI ────────────
+  registrarCallbacks({
+    onSalvarElemento: (elemento) => {
+      if (!elemento) return
+      const idx = ficha.elementos.findIndex(e => e.id === elemento.id)
+      if (idx !== -1) {
+        ficha.elementos[idx] = elemento
+        ficha.calcularPontos()
+      } else {
+        ficha.adicionarElemento(elemento)
+      }
+      renderTudo(); salvar()
+    },
+    onSalvarFonte: (fonte, editandoId) => {
+      if (editandoId) {
+        const idx = ficha.elementos.findIndex(e => e.id === editandoId)
+        if (idx !== -1) ficha.elementos[idx] = fonte
+        ficha.calcularPontos()
+      } else {
+        ficha.adicionarElemento(fonte)
+      }
+      renderTudo(); salvar()
+      toastSucesso(editandoId ? "Fonte atualizada!" : "Fonte criada!")
+    },
+    getFicha: () => ficha
+  })
+
+  registrarCallbackIsolada((carac, editIndex) => {
+    if (!ficha.caracteristicasIsoladas) ficha.caracteristicasIsoladas = []
+    if (editIndex !== null && editIndex !== undefined) {
+      ficha.caracteristicasIsoladas[editIndex] = carac
+    } else {
+      ficha.caracteristicasIsoladas.push(carac)
+    }
+    renderTudo(); salvar()
+  })
+
+  registrarCallbackRacaProf((dados) => {
+    Object.assign(ficha, dados)
+    renderTudo(); salvar()
+  })
+
   // ── Render inicial ───────────────────────────────────
   renderTudo()
   _bindNomeEditavel()
   _bindStatusInputs()
   expor()
   _atualizarUILogin()
+  _renderCombate()
+  _renderVisibilidade()
 
 }) // fim DOMContentLoaded
 
@@ -460,8 +504,225 @@ async function salvar() {
 
 
 
+// ─────────────────────────────────────────────────────────
+//  BIND — Nome editável
+// ─────────────────────────────────────────────────────────
+function _bindNomeEditavel() {
+  const el = document.getElementById("nomeFicha")
+  if (!el) return
+  el.addEventListener("blur", () => {
+    const novo = el.innerText.trim()
+    if (novo) { ficha.nome = novo; salvar() }
+    else el.innerText = ficha.nome ?? "Nova Ficha"
+  })
+  el.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); el.blur() }
+  })
+}
+
+// ─────────────────────────────────────────────────────────
+//  BIND — Inputs de status (paMax, pmMax, pvMax) e campos editáveis
+// ─────────────────────────────────────────────────────────
+function _bindStatusInputs() {
+  // Inputs de atual (pa, pm, pv)
+  const bindAtual = (inputId, chave) => {
+    const el = document.getElementById(inputId)
+    if (!el) return
+    el.addEventListener("change", () => {
+      const val = Math.max(0, parseInt(el.value) || 0)
+      ficha.status[chave].atual = val
+      el.value = val
+      atualizarBarras(ficha)
+      salvar()
+    })
+  }
+  bindAtual("paAtual", "pa")
+  bindAtual("pmAtual", "pm")
+  bindAtual("pvAtual", "pv")
+
+  // Spans contenteditable de máximo (paMax, pmMax, pvMax)
+  const bindMax = (spanId, chave) => {
+    const el = document.getElementById(spanId)
+    if (!el) return
+    el.addEventListener("blur", () => {
+      const val = parseInt(el.innerText) || 0
+      if (val >= 0) {
+        const auto = ficha.status[chave].max  // valor base calculado
+        ficha.status[chave].offsetMax = val - auto
+        ficha.calcularStatus()
+        renderStatus(ficha)
+        salvar()
+      } else {
+        el.innerText = ficha.status[chave].max  // reverte se inválido
+      }
+    })
+    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el.blur() } })
+    el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
+  bindMax("paMax", "pa"); bindMax("pmMax", "pm"); bindMax("pvMax", "pv")
+
+  // Pontos usados e total (contenteditable)
+  const bindPontos = (spanId, campo) => {
+    const el = document.getElementById(spanId)
+    if (!el) return
+    el.addEventListener("blur", () => {
+      const val = parseInt(el.innerText) || 0
+      if (val >= 0) {
+        ficha.pontos[campo] = val
+        renderPontos(ficha)
+        salvar()
+      } else {
+        el.innerText = ficha.pontos[campo] ?? 0
+      }
+    })
+    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el.blur() } })
+    el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
+  bindPontos("usado",  "gastos")
+  bindPontos("total",  "offsetTotal")
+
+  // Maestria limite (contenteditable)
+  const mLimite = document.getElementById("maestriaLimite")
+  if (mLimite) {
+    mLimite.addEventListener("blur", () => {
+      const val = parseInt(mLimite.innerText) || 0
+      const base = ficha.maestraLimiteBase ?? ficha.maestraLimite
+      if (!ficha.maestrasCfg) ficha.maestrasCfg = {}
+      ficha.maestrasCfg.offsetLimite = val - base
+      _renderNivel()
+      salvar()
+    })
+    mLimite.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mLimite.blur() } })
+    mLimite.addEventListener("keypress", e => { if (!/[0-9-]/.test(e.key)) e.preventDefault() })
+  }
+
+  // Peso máximo do inventário (contenteditable)
+  const invPesoMax = document.getElementById("invPesoMax")
+  if (invPesoMax) {
+    invPesoMax.addEventListener("blur", () => {
+      window.editarPesoMaxInventario?.(invPesoMax.innerText)
+    })
+    invPesoMax.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); invPesoMax.blur() } })
+    invPesoMax.addEventListener("keypress", e => { if (!/[0-9-]/.test(e.key)) e.preventDefault() })
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  EXPANDIR FONTE — helpers e modal
+// ─────────────────────────────────────────────────────────
+
 // Alias: _resumoEscolhas → importado de uiResumoEscolhas.js
 const _resumoEscolhas = resumoEscolhas
+
+function _htmlVariantesExpandir(c) {
+  const renderV = (v, tipo) => {
+    if (!v) return ''
+    const amp   = tipo === 'amplificada'
+    const icone = amp ? '⬆️' : '⬇️'
+    const label = amp ? 'Amplificada' : 'Reduzida'
+    const cor   = amp ? '#f59e0b' : '#60a5fa'
+    const linhas = v.detalhes.map(d => {
+      const dc = d.destaque === 'amp' ? '#fbbf24' : d.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.45)'
+      return '<span style="color:' + dc + ';font-size:11px">' + d.label + ': <strong>' + d.valor + '</strong></span>'
+    }).join(' · ')
+    return '<div style="border:1px solid ' + cor + '55;border-radius:6px;padding:5px 8px;margin-top:5px;background:' + (amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)') + '">' +
+      '<span style="font-size:11px;font-weight:600;color:' + cor + '">' + icone + ' ' + label + ' — ' + v.custoPM + ' PM</span>' +
+      '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">' + linhas + '</div>' +
+    '</div>'
+  }
+  const ha = renderV(c.amplificada, 'amplificada')
+  const hr = renderV(c.reduzida,    'reduzida')
+  return (ha || hr) ? '<div style="margin-top:4px">' + ha + hr + '</div>' : ''
+}
+
+function _cardCaractExpandir(c) {
+  const PC_POR_ESCALA = {1:1,2:2,3:3,4:4,5:5,6:6}
+  const resumo = _resumoEscolhas(c.escolhas)
+  const rows = Object.entries(resumo)
+    .map(([l,v]) => '<div class="carac-resumo-row"><span class="carac-resumo-label">' + l + ':</span> <span>' + v + '</span></div>')
+    .join('')
+  const pc = c.gratuita ? '0 PC' : ((PC_POR_ESCALA[c.escala] ?? c.escala) + ' PC')
+  const gratuitaBadge = c.gratuita
+    ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px">GRÁTIS em PCs</span>'
+    : ''
+  return '<div class="card-info desbloqueado" style="margin-bottom:10px' + (c.gratuita ? ';border-color:#22c55e' : '') + '">' +
+    '<div class="carac-header-row">' +
+      '<strong>⚡ ' + c.nome + gratuitaBadge + '</strong>' +
+      '<div class="carac-badges">' +
+        '<span>Escala ' + c.escala + '</span>' +
+        '<span>' + pc + '</span>' +
+        (c.gratuita ? '' : '<span>Orç. ' + c.custo + '</span>') +
+        '<span>' + c.custoPM + ' PM</span>' +
+      '</div>' +
+    '</div>' +
+    (rows ? '<div class="carac-resumo">' + rows + '</div>' : '') +
+    _htmlVariantesExpandir(c) +
+    (c.descricao ? '<p class="carac-descricao">' + c.descricao + '</p>' : '') +
+  '</div>'
+}
+
+function _abrirExpandirFonte(fonte) {
+  const modal   = document.getElementById("modalExpandirFonte")
+  const content = document.getElementById("expandirFonteContent")
+  if (!modal || !content) return
+
+  let passivosHTML = ""
+  if (fonte.subtipo === "zoan") {
+    const resH = fonte.passivos?.zoan_res_hibrida
+    const resC = fonte.passivos?.zoan_res_completa
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>⚙️ Regra de Transformação</strong>
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Mudar de forma custa uma <strong>Ação Completa</strong>. Durante a transição você é considerado <strong>Indefeso</strong>.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🧍 Forma Humana</strong> — <span style="color:#94a3b8">Custo: Nenhum</span>
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Apenas características de Escala 1 da fruta.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🐺 Forma Híbrida</strong> — <span style="color:#fbbf24">3 PM</span>
+      ${resH?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resH.join(", ")}</span>` : ""}
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Mista: (5×Resistência) + (5×Habilidade) em PV/PM temporários. Escalas 1 e 2 + ficha normal liberadas.</p>
+    </div>`
+
+    passivosHTML += `<div class="passivo-tag zoan-forma" style="display:block;margin-top:6px">
+      <strong>🦖 Forma Zoan (Animal)</strong> — <span style="color:#f87171">6 PM</span>
+      ${resC?.length ? `<span style="margin-left:6px;font-size:12px">🛡️ ${resC.join(", ")}</span>` : ""}
+      <p style="font-size:12px;opacity:0.7;margin-top:3px">Vontade Animalesca: (10×Resistência) + (10×Habilidade) em PV/PM temporários. Todas as escalas liberadas, mas ficha normal indisponível.</p>
+    </div>`
+  }
+  if (fonte.subtipo === "logia" && fonte.passivos?.elemento) {
+    passivosHTML += `<div class="passivo-tag">🌊 Elemento: <strong>${fonte.passivos.elemento}</strong></div>`
+    passivosHTML += `<div class="passivo-tag">✨ Imune a danos mundanos (exceto Haki)</div>`
+  }
+
+  const caracts = fonte.caracteristicas.length
+    ? fonte.caracteristicas.map(c => _cardCaractExpandir(c)).join("")
+    : "<p style='opacity:0.4'>Nenhuma característica criada.</p>"
+
+  content.innerHTML = `
+    <div class="raca-header">
+      <span class="raca-emoji">🍎</span>
+      <div>
+        <h2>${fonte.nome}</h2>
+        <span class="badge-subtipo">${fonte.subtipo}</span>
+        ${fonte.tema ? `<p style="font-size:13px;opacity:0.6;margin-top:4px"><i>${fonte.tema}</i></p>` : ""}
+      </div>
+    </div>
+    <div class="pcs-display" style="margin:12px 0">
+      <span>PCs totais: <strong>${fonte.pcs}</strong></span>
+      <span>Gastos: <strong>${fonte.pcsGastos ?? 0}</strong></span>
+      <span>Restantes: <strong style="color:#22c55e">${fonte.pcsDisponiveis ?? fonte.pcs}</strong></span>
+    </div>
+    ${passivosHTML ? `<div style="margin-bottom:12px">${passivosHTML}</div>` : ""}
+    <h3 style="margin-bottom:8px">⚡ Características</h3>
+    ${caracts}
+  `
+
+  modal.classList.remove("hidden")
+}
 
 
 // ─────────────────────────────────────────────────────────
@@ -479,12 +740,30 @@ function _atualizarUILogin() {
 
 // Fase 2 (escopo): logar/deslogar na ficha redireciona para index.html
 // Não há ambiguidade sobre qual versão da ficha está sendo editada
-// DEPOIS — só redireciona se foi login/logout manual:
-onLogin(() => {
-  if (_loginFoiManual) window.location.href = "index.html"
-  _loginFoiManual = false
+onLogin(async (user) => {
+  _atualizarUILogin()
+  if (_loginFoiManual) {
+    _loginFoiManual = false
+    window.location.href = "index.html"
+    return
+  }
+  // Login automático (restauração de sessão): recarrega ficha da nuvem se mais recente
+  if (_fichaId && estaConfigurado()) {
+    const remoto = await carregarFichaFirestore(_fichaId, _fichaModo)
+    if (remoto && !remoto._soMetadados) {
+      const fichaRemota = Ficha.fromJSON(remoto)
+      if ((remoto._updatedAt ?? "") > (ficha.toJSON()._updatedAt ?? "")) {
+        ficha = fichaRemota
+        _fichaOwner = true
+        renderTudo()
+        toastInfo("Ficha atualizada da nuvem.")
+      }
+    }
+  }
 })
 onLogout(() => {
+  _atualizarUILogin()
+  toastInfo("Você saiu.")
   window.location.href = "index.html"
 })
 
@@ -1155,10 +1434,11 @@ function expor() {
 
   // Firebase
   window.fazerLogin  = () => {
-  _loginFoiManual = true
-  loginGoogle().catch(e => { _loginFoiManual = false; toastErro("Erro ao fazer login.") })
-}
+    _loginFoiManual = true
+    loginGoogle().catch(e => { _loginFoiManual = false; toastErro("Erro ao fazer login.") })
+  }
   window.fazerLogout = () => logout()
+  window._renderVisibilidade = _renderVisibilidade
 }
 
 // ═══════════════════════════════════════════════════════════
