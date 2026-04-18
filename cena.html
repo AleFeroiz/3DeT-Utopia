@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cenas — 3DeT One Piece</title>
+  <link rel="stylesheet" href="style/global.css">
+  <link rel="stylesheet" href="style/toast.css">
+  <link rel="stylesheet" href="style/cena.css">
+  <style>
+    /* ── Estilos exclusivos da página de cenas ────────────── */
+    body { padding: 0; }
+
+    /* Lista de cenas (tela inicial) */
+    #painelLista {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .cenas-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cenas-header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cenas-toolbar {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Card de cena na lista */
+    .cena-card-lista {
+      background: #0f172a;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .cena-card-lista:hover { border-color: #2d5a8e; }
+
+    .cena-card-info { flex: 1; }
+    .cena-card-nome {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 3px;
+    }
+    .cena-card-meta {
+      font-size: 12px;
+      color: #475569;
+    }
+    .cena-card-acoes {
+      display: flex;
+      gap: 6px;
+    }
+    .cena-btn-abrir    { background: #1d4ed8; padding: 6px 14px; }
+    .cena-btn-renomear { background: #334155; padding: 6px 10px; font-size: 14px; }
+    .cena-btn-del      { background: #7f1d1d; padding: 6px 10px; font-size: 14px; }
+
+    /* Estado vazio */
+    #cenasVazio {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 60px 20px;
+      color: #1e3a5f;
+      text-align: center;
+    }
+
+    /* Painel da cena aberta */
+    #painelCena {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Área de fichas + sidebar */
+    .cena-conteudo {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #cenaFichasArea {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      /* deixa espaço para a sidebar quando aberta */
+      padding-right: 240px;
+    }
+
+    /* Sidebar */
+    #cenaSidebar {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 228px;
+      background: rgba(8, 12, 24, 0.97);
+      border-left: 1px solid #1e3a5f;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      transition: transform 0.25s;
+    }
+
+    #cenaSidebar.fechada {
+      transform: translateX(228px);
+    }
+
+    /* Ajusta área principal quando sidebar fecha */
+    #cenaSidebar.fechada ~ #btnToggleSidebar { right: 0; }
+
+    #btnToggleSidebar {
+      position: absolute;
+      right: 228px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #1e3a5f;
+      border: none;
+      color: #7dd3fc;
+      padding: 14px 7px;
+      cursor: pointer;
+      border-radius: 8px 0 0 8px;
+      font-size: 11px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 1px;
+      z-index: 11;
+      transition: right 0.25s, background 0.2s;
+    }
+
+    #btnToggleSidebar:hover { background: #2d5a8e; }
+
+    .sidebar-closed-btn { right: 0 !important; }
+
+    /* Save indicator */
+    #saveIndicator {
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ PAINEL LISTA DE CENAS ════════════════════════════════ -->
+<div id="painelLista">
+
+  <div class="cenas-header">
+    <h1>
+      <a href="index.html" class="btn btn-voltar" style="font-size:13px;padding:6px 12px">← Voltar</a>
+      ⚔️ Cenas
+    </h1>
+    <div class="cenas-toolbar">
+      <button class="btn btn-criar" onclick="criarNovaCena()">+ Nova Cena</button>
+    </div>
+  </div>
+
+  <div id="cenasVazio">
+    <div style="font-size:48px;opacity:0.2">🎭</div>
+    <p style="font-size:14px;opacity:0.4">Nenhuma cena ainda.<br>Crie a primeira para começar.</p>
+  </div>
+
+  <div id="listaCenas"></div>
+
+</div>
+
+<!-- ══ PAINEL CENA ABERTA ═══════════════════════════════════ -->
+<div id="painelCena">
+
+  <!-- TOPBAR -->
+  <div class="cena-topbar">
+    <button class="cena-btn cena-btn-voltar" onclick="fecharCena()">← Cenas</button>
+    <h1 id="cenaTopbarNome">Cena
+      <span class="cena-subtitulo">Mestre</span>
+    </h1>
+    <div id="saveIndicator" class="save-indicator save-idle">
+      <span class="save-icon">✓</span>
+      <span class="save-text">Salvo</span>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO: fichas + sidebar -->
+  <div class="cena-conteudo">
+
+    <!-- Fichas da cena (scroll horizontal) -->
+    <div id="cenaFichasArea"></div>
+
+    <!-- Sidebar — lista de fichas do mestre para drag -->
+    <div id="cenaSidebar">
+      <div class="cena-sidebar-header">📋 Fichas do Mestre</div>
+      <div class="cena-sidebar-lista" id="sidebarFichas"></div>
+    </div>
+
+    <!-- Botão toggle sidebar -->
+    <button id="btnToggleSidebar" onclick="toggleSidebar()" title="Fichas disponíveis">
+      Fichas
+    </button>
+
+  </div>
+
+</div>
+
+<!-- Toast container (reutiliza o do global) -->
+<div id="toast-container" style="
+  position: fixed; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 8px; z-index: 9999;
+"></div>
+
+<script type="module" src="js/cena.js"></script>
+<script type="module">
+  // Ajusta o botão toggle quando a sidebar muda
+  import("./js/cena.js")
+
+  // Observa estado da sidebar para mover o botão toggle
+  const observer = new MutationObserver(() => {
+    const sb  = document.getElementById("cenaSidebar")
+    const btn = document.getElementById("btnToggleSidebar")
+    if (!sb || !btn) return
+    if (sb.classList.contains("fechada")) {
+      btn.style.right = "0"
+      btn.textContent = "Fichas ▸"
+    } else {
+      btn.style.right = "228px"
+      btn.textContent = "Fichas"
+    }
+  })
+
+  const sb = document.getElementById("cenaSidebar")
+  if (sb) observer.observe(sb, { attributes: true, attributeFilter: ["class"] })
+</script>
+</body>
+</html>

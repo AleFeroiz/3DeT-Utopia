@@ -1,0 +1,585 @@
+/* ============================================================
+   cena.css — Ferramenta CENA do Mestre
+   Estética: painel tático, denso, eficiente — "sala de guerra"
+   ============================================================ */
+
+/* ── LAYOUT RAIZ ─────────────────────────────────────────── */
+.cena-wrapper {
+  max-width: 100%;
+  min-height: 100vh;
+  padding: 0;
+  background: linear-gradient(160deg, #0a0f1e 0%, #050810 100%);
+}
+
+.cena-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid #1e3a5f;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.cena-topbar h1 {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+.cena-topbar h1 .cena-subtitulo {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.45;
+  margin-left: 8px;
+}
+
+/* ── ÁREA DE FICHAS (scroll horizontal) ──────────────────── */
+.cena-fichas-area {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  align-items: flex-start;
+  min-height: calc(100vh - 56px);
+  scrollbar-width: thin;
+  scrollbar-color: #1e3a5f transparent;
+}
+
+.cena-fichas-area::-webkit-scrollbar { height: 6px; }
+.cena-fichas-area::-webkit-scrollbar-track { background: transparent; }
+.cena-fichas-area::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+
+/* ── ZONA DROP ───────────────────────────────────────────── */
+.cena-drop-zone {
+  min-width: 200px;
+  min-height: 300px;
+  border: 2px dashed #1e3a5f;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: #3b5a80;
+  font-size: 13px;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: default;
+  flex-shrink: 0;
+  padding: 24px;
+}
+
+.cena-drop-zone.drag-over {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+  color: #93c5fd;
+}
+
+.cena-drop-zone-icon { font-size: 28px; opacity: 0.4; }
+
+/* ── CARD DE FICHA NA CENA ───────────────────────────────── */
+.cena-ficha-card {
+  background: #0f172a;
+  border: 1px solid #1e3a5f;
+  border-radius: 14px;
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  position: relative;
+}
+
+.cena-ficha-card:hover { border-color: #2d5a8e; }
+
+/* ── CABEÇALHO DO CARD ───────────────────────────────────── */
+.cfc-header {
+  padding: 12px 14px 10px;
+  background: linear-gradient(135deg, #111827, #0f172a);
+  border-bottom: 1px solid #1e3a5f;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cfc-nome {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.cfc-nivel {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+  display: block;
+}
+
+.cfc-remover {
+  background: transparent;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.cfc-remover:hover { color: #ef4444; }
+
+/* ── ATRIBUTOS P / H / R ─────────────────────────────────── */
+.cfc-atribs {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #0f2033;
+}
+
+.cfc-atrib-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cfc-atrib-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.cfc-atrib-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #cbd5e1;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── STATS PA / PM / PV ──────────────────────────────────── */
+.cfc-stats {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-bottom: 1px solid #0f2033;
+}
+
+.cfc-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cfc-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.cfc-stat-label.pa { color: #f59e0b; }
+.cfc-stat-label.pm { color: #818cf8; }
+.cfc-stat-label.pv { color: #34d399; }
+
+.cfc-stat-barra-wrap {
+  flex: 1;
+  height: 8px;
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cfc-stat-barra {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cfc-stat-barra.pa { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.cfc-stat-barra.pm { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.cfc-stat-barra.pv { background: linear-gradient(90deg, #059669, #34d399); }
+
+.cfc-stat-nums {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cfc-stat-atual {
+  font-weight: 700;
+  color: #e2e8f0;
+  min-width: 22px;
+  text-align: right;
+}
+
+.cfc-stat-sep { color: #334155; font-size: 11px; }
+
+.cfc-stat-max {
+  color: #64748b;
+  min-width: 22px;
+  cursor: pointer;
+  border-bottom: 1px dashed #334155;
+  transition: color 0.15s;
+}
+.cfc-stat-max:hover { color: #94a3b8; }
+
+.cfc-stat-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.cfc-stat-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1e3a5f;
+  background: #0f172a;
+  color: #94a3b8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 700;
+}
+
+.cfc-stat-btn:hover { background: #1e293b; color: #e2e8f0; }
+.cfc-stat-btn:active { transform: scale(0.92); }
+
+/* ── GAVETAS (accordion) ─────────────────────────────────── */
+.cfc-gavetas {
+  display: flex;
+  flex-direction: column;
+}
+
+.cfc-gaveta {
+  border-top: 1px solid #0f2033;
+}
+
+.cfc-gaveta-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  gap: 6px;
+}
+.cfc-gaveta-header:hover { background: rgba(30, 58, 95, 0.3); }
+
+.cfc-gaveta-icon { font-size: 12px; opacity: 0.5; }
+.cfc-gaveta-titulo {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #64748b;
+}
+.cfc-gaveta-count {
+  font-size: 10px;
+  color: #334155;
+  background: #0f2033;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+.cfc-gaveta-seta {
+  font-size: 10px;
+  color: #334155;
+  transition: transform 0.2s;
+}
+.cfc-gaveta.aberta .cfc-gaveta-seta { transform: rotate(180deg); }
+
+.cfc-gaveta-corpo {
+  display: none;
+  padding: 0 10px 8px;
+  flex-direction: column;
+  gap: 2px;
+}
+.cfc-gaveta.aberta .cfc-gaveta-corpo { display: flex; }
+
+/* ── ITEM DE GAVETA ──────────────────────────────────────── */
+.cfc-item {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cfc-item-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+  gap: 6px;
+}
+.cfc-item-header:hover { background: rgba(30, 58, 95, 0.4); }
+
+.cfc-item-nome {
+  flex: 1;
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.cfc-item-custo {
+  font-size: 10px;
+  color: #475569;
+}
+
+.cfc-item-seta {
+  font-size: 9px;
+  color: #334155;
+  transition: transform 0.15s;
+}
+.cfc-item.aberto .cfc-item-seta { transform: rotate(180deg); }
+
+.cfc-item-detalhe {
+  display: none;
+  padding: 6px 8px 8px 14px;
+  border-left: 2px solid #1e3a5f;
+  margin: 0 8px 4px;
+}
+.cfc-item.aberto .cfc-item-detalhe { display: block; }
+
+.cfc-item-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cfc-item-notas {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 4px;
+  font-style: italic;
+  display: block;
+}
+
+/* ── CARACTERÍSTICAS (dentro da fonte) ───────────────────── */
+.cfc-carac-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 0;
+}
+.cfc-carac-mini-nome {
+  font-size: 11px;
+  color: #a78bfa;
+  flex: 1;
+}
+.cfc-carac-mini-pm {
+  font-size: 10px;
+  color: #475569;
+}
+
+/* ── PERICIAS ─────────────────────────────────────────────── */
+.cfc-pericias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 6px 0 2px;
+}
+
+.cfc-pericia-tag {
+  font-size: 10px;
+  background: rgba(30, 58, 95, 0.5);
+  color: #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #1e3a5f;
+}
+
+.cfc-pericia-tag.maestria {
+  border-color: #d97706;
+  color: #fbbf24;
+  background: rgba(217, 119, 6, 0.1);
+}
+
+/* ── VAZIO ────────────────────────────────────────────────── */
+.cfc-vazio {
+  font-size: 11px;
+  color: #334155;
+  padding: 4px 8px;
+  font-style: italic;
+}
+
+/* ── EDIT INLINE STAT MAX ────────────────────────────────── */
+.cfc-input-max {
+  width: 36px;
+  background: #0f172a;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 12px;
+  text-align: center;
+  padding: 1px 2px;
+  outline: none;
+}
+
+/* ── PAINEL LATERAL (lista de fichas para drag) ───────────── */
+.cena-sidebar {
+  position: fixed;
+  right: 0;
+  top: 56px;
+  bottom: 0;
+  width: 220px;
+  background: rgba(10, 15, 30, 0.97);
+  border-left: 1px solid #1e3a5f;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  transition: transform 0.25s;
+  backdrop-filter: blur(8px);
+}
+
+.cena-sidebar.fechada { transform: translateX(220px); }
+
+.cena-sidebar-toggle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e3a5f;
+  border: none;
+  color: #7dd3fc;
+  padding: 12px 6px;
+  cursor: pointer;
+  border-radius: 8px 0 0 8px;
+  font-size: 12px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 1px;
+  z-index: 51;
+  transition: background 0.2s, right 0.25s;
+}
+
+.cena-sidebar:not(.fechada) ~ .cena-sidebar-toggle { right: 220px; }
+
+.cena-sidebar-header {
+  padding: 12px 14px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #475569;
+  border-bottom: 1px solid #1e3a5f;
+  flex-shrink: 0;
+}
+
+.cena-sidebar-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #1e3a5f transparent;
+}
+
+.cena-sidebar-item {
+  background: #111827;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: grab;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 13px;
+  color: #cbd5e1;
+  user-select: none;
+}
+
+.cena-sidebar-item:hover { border-color: #3b82f6; background: #0f1f3d; }
+.cena-sidebar-item:active { cursor: grabbing; }
+.cena-sidebar-item.ja-na-cena { opacity: 0.35; cursor: not-allowed; }
+
+.cena-sidebar-item-nome {
+  font-weight: 600;
+  font-size: 13px;
+  display: block;
+}
+
+.cena-sidebar-item-meta {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+/* ── BOTÕES TOPBAR ───────────────────────────────────────── */
+.cena-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: filter 0.2s, transform 0.1s;
+  color: white;
+}
+.cena-btn:hover { filter: brightness(1.15); }
+.cena-btn:active { transform: scale(0.97); }
+.cena-btn-voltar  { background: #1e3a5f; }
+.cena-btn-salvar  { background: #1d4ed8; }
+.cena-btn-limpar  { background: #7f1d1d; }
+
+/* ── ESTADO VAZIO (sem fichas na cena) ───────────────────── */
+.cena-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: #1e3a5f;
+  text-align: center;
+  min-width: 300px;
+}
+
+.cena-empty-icon { font-size: 48px; opacity: 0.3; }
+.cena-empty-text { font-size: 14px; opacity: 0.5; }
+
+/* ── TOASTS (reaproveitados do global) ───────────────────── */
+.save-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.save-idle    { background: rgba(34,197,94,0.1);  color: #22c55e; }
+.save-saving  { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.save-error   { background: rgba(239,68,68,0.1);  color: #ef4444; }
+
+.save-icon { font-size: 14px; }
+
+/* ── RESPONSIVO ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cena-topbar h1 .cena-subtitulo { display: none; }
+  .cena-fichas-area { padding: 10px; gap: 10px; }
+  .cena-ficha-card { width: 250px; }
+}
