@@ -30,6 +30,7 @@ import {
   salvarFichaFirestore, carregarFichaFirestore,
   registrarIndicePublico, removerIndicePublico,
   carregarFichaDeOutroUsuario, salvarFichaComoEditor,
+  escutarFicha,
   salvarIndiceFichasFirestore, carregarIndiceFichasFirestore, aguardarAuth, estaConfigurado
 } from "./firebase.js"
 
@@ -92,6 +93,8 @@ let _loginFoiManual = false   // evita loop: onLogin só redireciona se o login 
 let _fichaOwnerUid  = null    // uid do dono real da ficha (preenchido ao abrir ficha de terceiro)
 let _fichaOwnerModo = null    // modo do dono (player/mestre) para salvar como editor externo
 let _fichaEraPublica = false  // rastreia se a ficha estava pública ao ser carregada
+let _unsubscribeFicha = null  // função para cancelar listener realtime
+let _ultimaEdicaoLocal = 0    // timestamp da última edição local (throttle realtime)
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -147,17 +150,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         _fichaOwnerUid   = publica._ownerUid ?? null
         _fichaOwnerModo  = publica._modo ?? "player"
         _fichaEraPublica = true
-        if (!publica.isPublic) {
-          // Ficha existe mas não está mais pública — exibe mensagem
-          ficha = null
-          _mostrarFichaPrivada()
-          _showLoading(false)
-          return
-        }
+      } else {
+        // public_index não existe OU ficha não é pública:
+        // pode ser ficha privada de outro usuário ou id inválido
+        _mostrarFichaPrivada()
+        _showLoading(false)
+        return
       }
     }
 
+    // Se ainda não achou ficha com urlId → id inválido/inacessível
     if (!ficha) {
+      if (urlId) {
+        // Tinha um id na URL mas não encontrou em lugar nenhum
+        _mostrarFichaPrivada()
+        _showLoading(false)
+        return
+      }
       ficha       = Ficha.nova()
       _fichaId    = ficha.id
       _fichaOwner = true
@@ -227,6 +236,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   _atualizarUILogin()
   _renderCombate()
   _renderVisibilidade()
+  _iniciarEscutaRealtime()  // escuta mudanças remotas se ficha for pública
 
 }) // fim DOMContentLoaded
 
@@ -521,11 +531,58 @@ function _renderNivel() {
 }
 
 // ─────────────────────────────────────────────────────────
+//  REALTIME — escuta mudanças remotas na ficha
+// ─────────────────────────────────────────────────────────
+function _iniciarEscutaRealtime() {
+  // Só escuta se a ficha for pública (qualquer situação: dono ou externo)
+  if (!ficha.isPublic || !estaConfigurado()) return
+  if (!_fichaId || !_fichaOwnerUid) return
+
+  // Cancela escuta anterior se existir
+  _pararEscutaRealtime()
+
+  _unsubscribeFicha = escutarFicha(
+    _fichaId,
+    _fichaOwnerModo ?? _fichaModo,
+    _fichaOwnerUid,
+    (dadosRemotos) => {
+      // Ignora se o usuário editou localmente nos últimos 3s
+      // (evita sobrescrever o que ele está digitando)
+      if (Date.now() - _ultimaEdicaoLocal < 3000) return
+
+      // Ignora se os dados são os mesmos que já temos (evita loop)
+      const localJson = JSON.stringify(ficha.toJSON())
+      const remotoJson = JSON.stringify(dadosRemotos)
+      if (localJson === remotoJson) return
+
+      // Aplica a versão remota e re-renderiza silenciosamente
+      ficha = Ficha.fromJSON(dadosRemotos)
+      ficha.calcularStatus()
+      ficha.calcularPontos()
+      renderTudo()
+    }
+  )
+}
+
+function _pararEscutaRealtime() {
+  if (_unsubscribeFicha) {
+    _unsubscribeFicha()
+    _unsubscribeFicha = null
+  }
+}
+
+// Marca que houve edição local agora (chama antes de salvar)
+function _marcarEdicaoLocal() {
+  _ultimaEdicaoLocal = Date.now()
+}
+
+// ─────────────────────────────────────────────────────────
 //  PERSISTÊNCIA
 // ─────────────────────────────────────────────────────────
 async function salvar() {
   if (!_fichaOwner && !ficha.editPublic) return
 
+  _marcarEdicaoLocal()  // throttle: ignora updates remotos por 3s após edição local
   const fichaJson = ficha.toJSON()
 
   // localStorage sempre (cache offline)
@@ -1523,6 +1580,11 @@ function expor() {
     ficha[campo] = valor
     _renderVisibilidade()
     salvar()
+    // Reinicia escuta: se tornou pública inicia listener, se privada cancela
+    if (campo === "isPublic") {
+      if (valor) _iniciarEscutaRealtime()
+      else _pararEscutaRealtime()
+    }
   }
 
   // Fechar modais

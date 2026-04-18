@@ -33,12 +33,12 @@ export async function inicializarFirebase() {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
     const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
-    const { getFirestore, doc, setDoc, getDoc, deleteDoc } =
+    const { getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, getDoc, deleteDoc }
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, getDoc, deleteDoc, onSnapshot }
 
     onAuthStateChanged(_auth, (user) => {
       _user = user
@@ -211,4 +211,20 @@ export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player")
     )
     return true
   } catch(e) { console.error("[Firestore] salvar como editor:", e); return false }
+}
+
+// ─── Listener realtime ───────────────────────────────────
+// Escuta mudanças em tempo real numa ficha do Firestore.
+// Retorna função unsubscribe para parar a escuta.
+// ownerUid + modo: para fichas de terceiros (editor externo ou dono).
+export function escutarFicha(fichaId, modo = "player", ownerUid = null, callback) {
+  if (!_db || !_firebaseFns?.onSnapshot) return () => {}
+  const uid = ownerUid ?? _user?.uid
+  if (!uid) return () => {}
+  const col  = modo === "mestre" ? "fichas_mestre" : "fichas_player"
+  const ref  = _firebaseFns.doc(_db, "users", uid, col, fichaId)
+  return _firebaseFns.onSnapshot(ref,
+    (snap) => { if (snap.exists()) callback(snap.data()) },
+    (err)  => console.warn("[Firestore] escuta interrompida:", err)
+  )
 }
