@@ -484,8 +484,12 @@ async function salvar() {
   try {
     if (_fichaOwner && user && _fichaId) {
       await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
-      // Atualiza índice (nome/nível no card da index.html)
-      salvarIndiceFichasFirestore(Storage.carregarFichas(_fichaModo), _fichaModo)
+      // Atualiza índice: re-lê do localStorage (já tem o fichaJson salvo acima)
+      // e garante que a ficha atual está com os dados mais recentes
+      const fichasParaIndice = Storage.carregarFichas(_fichaModo).map(f =>
+        f.id === fichaJson.id ? fichaJson : f
+      )
+      salvarIndiceFichasFirestore(fichasParaIndice, _fichaModo)
     }
 
   if (_fichaId) {
@@ -515,13 +519,27 @@ async function salvar() {
 function _bindNomeEditavel() {
   const el = document.getElementById("nomeFicha")
   if (!el) return
+  // Exibe o nome atual ao montar
+  el.textContent = ficha.nome ?? "Nova Ficha"
   el.addEventListener("blur", () => {
-    const novo = el.innerText.trim()
-    if (novo) { ficha.nome = novo; salvar() }
-    else el.innerText = ficha.nome ?? "Nova Ficha"
+    // textContent evita HTML injetado; replace limpa quebras de linha do contenteditable
+    const novo = (el.textContent ?? "").replace(/[\n\r]+/g, " ").trim()
+    if (novo) {
+      ficha.nome = novo
+      el.textContent = novo  // normaliza o DOM também
+      salvar()
+    } else {
+      el.textContent = ficha.nome ?? "Nova Ficha"
+    }
   })
   el.addEventListener("keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); el.blur() }
+  })
+  // Impede colar HTML formatado
+  el.addEventListener("paste", e => {
+    e.preventDefault()
+    const texto = e.clipboardData.getData("text/plain")
+    document.execCommand("insertText", false, texto)
   })
 }
 
