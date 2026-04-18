@@ -15,6 +15,77 @@ import {
 import { toastSucesso, toastInfo, toastErro, toastAviso } from "./ui/uiToast.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
 
+// ── Overlay de sincronização ──────────────────────────────
+function _setSincronizando(ativo) {
+  let overlay = document.getElementById("overlaySincronizando")
+  if (!overlay) {
+    overlay = document.createElement("div")
+    overlay.id = "overlaySincronizando"
+    overlay.innerHTML = `<div class="sync-box"><span class="sync-spin">⟳</span> Sincronizando...</div>`
+    overlay.style.cssText = `
+      display:none;position:fixed;inset:0;z-index:9999;
+      background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);
+      align-items:center;justify-content:center;
+    `
+    const style = document.createElement("style")
+    style.textContent = `
+      .sync-box { background:#1e293b;color:#e2e8f0;padding:20px 36px;border-radius:12px;
+        font-size:16px;font-weight:600;display:flex;align-items:center;gap:12px;
+        border:1px solid #334155;box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+      .sync-spin { font-size:22px;display:inline-block;animation:spin 1s linear infinite; }
+      @keyframes spin { to { transform:rotate(360deg); } }
+    `
+    document.head.appendChild(style)
+    document.body.appendChild(overlay)
+  }
+  overlay.style.display = ativo ? "flex" : "none"
+}
+
+// Modal de confirmação customizado (substitui o confirm() nativo feio)
+function _confirmar(mensagem) {
+  return new Promise(resolve => {
+    let modal = document.getElementById("modalConfirm")
+    if (!modal) {
+      modal = document.createElement("div")
+      modal.id = "modalConfirm"
+      modal.style.cssText = `
+        display:none;position:fixed;inset:0;z-index:10000;
+        background:rgba(0,0,0,0.6);backdrop-filter:blur(2px);
+        align-items:center;justify-content:center;
+      `
+      modal.innerHTML = `
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;
+          padding:28px 32px;max-width:420px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.5)">
+          <p id="modalConfirmMsg" style="color:#e2e8f0;font-size:15px;margin:0 0 24px;line-height:1.5"></p>
+          <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button id="modalConfirmNao"
+              style="padding:8px 20px;border-radius:8px;border:1px solid #475569;
+              background:transparent;color:#94a3b8;cursor:pointer;font-size:14px">
+              Cancelar
+            </button>
+            <button id="modalConfirmSim"
+              style="padding:8px 20px;border-radius:8px;border:none;
+              background:#ef4444;color:#fff;cursor:pointer;font-size:14px;font-weight:600">
+              Excluir
+            </button>
+          </div>
+        </div>`
+      document.body.appendChild(modal)
+    }
+    document.getElementById("modalConfirmMsg").textContent = mensagem
+    modal.style.display = "flex"
+    const limpar = (res) => {
+      modal.style.display = "none"
+      document.getElementById("modalConfirmSim").onclick = null
+      document.getElementById("modalConfirmNao").onclick = null
+      resolve(res)
+    }
+    document.getElementById("modalConfirmSim").onclick = () => limpar(true)
+    document.getElementById("modalConfirmNao").onclick = () => limpar(false)
+    modal.onclick = (e) => { if (e.target === modal) limpar(false) }
+  })
+}
+
 // ── Estado ─────────────────────────────────────────────────
 const MODOS = {
   player: {
@@ -60,9 +131,9 @@ function _limparModo(modo) {
 async function _salvarFirebase(modo, opcoes = { fichas: true, pastas: true }) {
   if (!_logado || !estaConfigurado()) return
   const m = MODOS[modo]
+  _setSincronizando(true)
   try {
     if (opcoes.fichas) {
-      // Salva índice leve (não re-salva dados completos por operação de pasta)
       await salvarIndiceFichasFirestore(m.fichas, modo)
     }
     if (opcoes.pastas) {
@@ -71,6 +142,8 @@ async function _salvarFirebase(modo, opcoes = { fichas: true, pastas: true }) {
   } catch(e) {
     console.error("[salvar]", e)
     toastErro("Erro ao sincronizar com a nuvem.")
+  } finally {
+    _setSincronizando(false)
   }
 }
 
@@ -324,7 +397,8 @@ async function _deletarFicha(fichaId, modo) {
   const m     = MODOS[modo]
   const ficha = m.fichas.find(f => f.id === fichaId)
   if (!ficha) return
-  if (!confirm(`Excluir "${_esc(ficha.nome)}"?\nEsta ação não pode ser desfeita.`)) return
+  const confirmado = await _confirmar(`Excluir "${ficha.nome || "esta ficha"}"?\nEsta ação não pode ser desfeita.`)
+  if (!confirmado) return
 
   m.fichas = m.fichas.filter(f => f.id !== fichaId)
   Storage.salvarFichas(m.fichas, modo)
@@ -391,14 +465,15 @@ document.getElementById("inputNomePasta").addEventListener("keydown", (e) => {
   if (e.key === "Escape") fecharModalPasta()
 })
 
-function _excluirPasta(idx, pastaId, modo) {
+async function _excluirPasta(idx, pastaId, modo) {
   const m   = MODOS[modo]
   const nome = m.pastas[idx]?.nome || "esta pasta"
   const qtd  = m.fichas.filter(f => f.pastaId === pastaId).length
   const msg  = qtd > 0
     ? `Excluir a pasta "${nome}"?\nAs ${qtd} ficha(s) dentro dela ficarão sem pasta.`
     : `Excluir a pasta "${nome}"?`
-  if (!confirm(msg)) return
+  const confirmadoPasta = await _confirmar(msg)
+  if (!confirmadoPasta) return
   m.fichas.forEach(f => { if (f.pastaId === pastaId) delete f.pastaId })
   m.pastas.splice(idx, 1)
   m.pastasAbertas.delete(pastaId)
@@ -450,6 +525,7 @@ onLogin(async (user) => {
   }
 
   toastInfo("Sincronizando com a nuvem...")
+  _setSincronizando(true)
 
   let totalFichas = 0
 
@@ -486,6 +562,7 @@ onLogin(async (user) => {
     renderizar(modo)
   }
 
+  _setSincronizando(false)
   toastSucesso(`${user.displayName || "Jogador"} conectado! ${totalFichas} ficha(s) encontradas.`)
 })
 

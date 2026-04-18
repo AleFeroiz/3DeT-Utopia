@@ -233,19 +233,25 @@ function _renderVisibilidade() {
 
 // Bloqueia/desbloqueia toda a ficha conforme _fichaOwner e editPublic
 function _aplicarModoLeitura() {
-  const somenteLeitura = !_fichaOwner && !ficha.editPublic
+  const somenteLeitura   = !_fichaOwner && !ficha.editPublic
+  const editavelExterno  = !_fichaOwner && ficha.editPublic   // terceiro com permissão de edição
   const container = document.querySelector(".ficha-container")
   if (!container) return
 
   let banner = document.getElementById("bannerLeitura")
 
   if (somenteLeitura) {
-    // Desabilita todos os inputs, buttons e textareas exceto login
+    // Desabilita inputs/botões (exceto área de login)
     container.querySelectorAll("input, textarea, button, select").forEach(el => {
       if (el.closest(".login-area")) return
       el.disabled = true
     })
-    // Mostra banner
+    // Bloqueia contenteditable
+    container.querySelectorAll("[contenteditable]").forEach(el => {
+      el.setAttribute("contenteditable", "false")
+      el.style.cursor = "default"
+    })
+    // Banner de leitura
     if (!banner) {
       banner = document.createElement("div")
       banner.id = "bannerLeitura"
@@ -254,10 +260,24 @@ function _aplicarModoLeitura() {
       document.querySelector(".ficha-container").prepend(banner)
     }
   } else {
-    // Reabilita tudo
+    // Reabilita inputs/botões
     container.querySelectorAll("input, textarea, button, select").forEach(el => {
       el.disabled = false
     })
+    // Reabilita contenteditable — mas nome é sempre exclusivo do dono
+    container.querySelectorAll("[contenteditable]").forEach(el => {
+      el.setAttribute("contenteditable", "true")
+      el.style.cursor = ""
+    })
+    // Se é editor externo (não dono), bloqueia só o nome da ficha
+    if (editavelExterno) {
+      const nomeEl = document.getElementById("nomeFicha")
+      if (nomeEl) {
+        nomeEl.setAttribute("contenteditable", "false")
+        nomeEl.style.cursor = "default"
+        nomeEl.title = "Apenas o dono pode renomear esta ficha"
+      }
+    }
     banner?.remove()
   }
 }
@@ -483,11 +503,10 @@ async function salvar() {
 
   try {
     if (_fichaOwner && user && _fichaId) {
+      // DONO: salva na coleção privada + atualiza índice
       await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
 
-      // Atualiza índice no Firestore de forma cirúrgica:
-      // lê o índice atual, substitui só a entrada desta ficha, re-salva.
-      // Isso preserva pastaId e dados das outras fichas (que podem ser _soMetadados).
+      // Atualiza índice de forma cirúrgica preservando pastaId
       try {
         const indiceAtual = await carregarIndiceFichasFirestore(_fichaModo) ?? []
         const metaAtual = indiceAtual.find(m => m.id === fichaJson.id)
@@ -506,6 +525,13 @@ async function salvar() {
       } catch(eIdx) {
         console.warn("[salvar] erro ao atualizar índice:", eIdx)
       }
+
+    } else if (!_fichaOwner && ficha.editPublic && _fichaId) {
+      // EDITOR EXTERNO: salva direto na ficha pública (não cria cópia própria)
+      const ownerUid = fichaJson._ownerUid ?? null
+      await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
+      _setSaveStatus("salvo")
+      return
     }
 
   if (_fichaId) {
@@ -537,12 +563,14 @@ function _bindNomeEditavel() {
   if (!el) return
   // Exibe o nome atual ao montar
   el.textContent = ficha.nome ?? "Nova Ficha"
+
+  // Só o dono pode renomear — terceiros (mesmo com editPublic) não alteram nome
   el.addEventListener("blur", () => {
-    // textContent evita HTML injetado; replace limpa quebras de linha do contenteditable
+    if (!_fichaOwner) { el.textContent = ficha.nome ?? "Nova Ficha"; return }
     const novo = (el.textContent ?? "").replace(/[\n\r]+/g, " ").trim()
     if (novo) {
       ficha.nome = novo
-      el.textContent = novo  // normaliza o DOM também
+      el.textContent = novo
       salvar()
     } else {
       el.textContent = ficha.nome ?? "Nova Ficha"
