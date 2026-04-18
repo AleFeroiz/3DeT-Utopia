@@ -70,7 +70,8 @@ let ficha       = null
 let _fichaId    = null
 let _fichaModo  = "player"
 let _fichaOwner = true
-let _loginFoiManual = false  // evita loop: onLogin só redireciona se o login foi ação do usuário
+let _loginFoiManual = false   // evita loop: onLogin só redireciona se o login foi ação do usuário
+let _fichaEraPublica = false  // rastreia se a ficha já foi pública: evita deletar doc inexistente
 
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
@@ -136,6 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   ficha.calcularStatus()
   ficha.calcularPontos()
+  _fichaEraPublica = ficha.isPublic ?? false  // inicializa com estado real da ficha
 
   _showLoading(false)  // Fase 2: esconde spinner após carregamento
 
@@ -490,8 +492,11 @@ async function salvar() {
     if (fichaJson.isPublic) {
       const ownerUid = _fichaOwner && user ? user.uid : fichaJson._ownerUid
       await salvarFichaPublicaFirestore({ ...fichaJson, _ownerUid: ownerUid })
-    } else if (_fichaOwner) {
-      removerFichaPublicaFirestore(_fichaId)
+      _fichaEraPublica = true   // marca que já existiu como pública
+    } else if (_fichaOwner && _fichaEraPublica) {
+      // Só tenta remover se a ficha JÁ foi pública antes nesta sessão
+      await removerFichaPublicaFirestore(_fichaId)
+      _fichaEraPublica = false
     }
   }
 
