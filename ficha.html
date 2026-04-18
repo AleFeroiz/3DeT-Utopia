@@ -18,6 +18,18 @@
     <div class="ficha-topbar">
       <a href="index.html" class="btn-voltar">← Fichas</a>
       <h1 id="nomeFicha" contenteditable="true" class="nome-editavel">Nova Ficha</h1>
+      <div id="saveIndicator" class="save-indicator save-idle" title="Status de salvamento">
+        <span class="save-icon">✓</span>
+        <span class="save-text">Salvo</span>
+      </div>
+    </div>
+
+    <!-- Overlay de carregamento (Fase 2) -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loading-box">
+        <div class="loading-spinner"></div>
+        <p>Carregando ficha...</p>
+      </div>
     </div>
 
     <div class="pontos">

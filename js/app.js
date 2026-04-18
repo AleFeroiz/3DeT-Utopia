@@ -39,6 +39,32 @@ function _debounce(fn, ms) {
 }
 const _salvarDebounced = _debounce(() => salvar(), 800)
 
+// ── Indicador de salvamento (Fase 2) ─────────────────────
+function _setSaveStatus(estado) {
+  // estado: 'salvando' | 'salvo' | 'erro'
+  const el = document.getElementById("saveIndicator")
+  if (!el) return
+  el.className = "save-indicator"
+  if (estado === "salvando") {
+    el.classList.add("save-saving")
+    el.querySelector(".save-icon").textContent = "⟳"
+    el.querySelector(".save-text").textContent = "Salvando..."
+  } else if (estado === "erro") {
+    el.classList.add("save-error")
+    el.querySelector(".save-icon").textContent = "✗"
+    el.querySelector(".save-text").textContent = "Erro"
+  } else {
+    el.classList.add("save-idle")
+    el.querySelector(".save-icon").textContent = "✓"
+    el.querySelector(".save-text").textContent = "Salvo"
+  }
+}
+
+function _showLoading(show) {
+  const el = document.getElementById("loadingOverlay")
+  if (el) el.style.display = show ? "flex" : "none"
+}
+
 // ── Estado da ficha aberta ────────────────────────────────
 let ficha       = null
 let _fichaId    = null
@@ -48,6 +74,7 @@ let _fichaOwner = true
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
 
+  _showLoading(true)   // Fase 2: mostra spinner enquanto carrega
   await inicializarFirebase()
   await aguardarAuth()
 
@@ -109,14 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ficha.calcularStatus()
   ficha.calcularPontos()
 
-    _fichaModo  = dados?.modo ?? "player"
-    _fichaOwner = true
-  }
-
-  ficha.calcularStatus()
-  ficha.calcularPontos()
-
-
+  _showLoading(false)  // Fase 2: esconde spinner após carregamento
 
   // ── Render inicial ───────────────────────────────────
   renderTudo()
@@ -408,14 +428,18 @@ async function salvar() {
   // localStorage sempre (cache offline e testes locais)
   if (_fichaId) Storage.salvarFichaPorId(fichaJson, _fichaModo)
 
-  if (!estaConfigurado()) return
+  if (!estaConfigurado()) { _setSaveStatus("salvo"); return }
   const user = getUser()
+  if (!user) { _setSaveStatus("salvo"); return }
 
-  if (_fichaOwner && user && _fichaId) {
-    await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
-    // Atualiza índice (nome/nível no card da index.html)
-    salvarIndiceFichasFirestore(Storage.carregarFichas(_fichaModo), _fichaModo)
-  }
+  _setSaveStatus("salvando")
+
+  try {
+    if (_fichaOwner && user && _fichaId) {
+      await salvarFichaFirestore({ ...fichaJson, _ownerUid: user.uid }, _fichaModo)
+      // Atualiza índice (nome/nível no card da index.html)
+      salvarIndiceFichasFirestore(Storage.carregarFichas(_fichaModo), _fichaModo)
+    }
 
   if (_fichaId) {
     if (fichaJson.isPublic) {
@@ -424,6 +448,12 @@ async function salvar() {
     } else if (_fichaOwner) {
       removerFichaPublicaFirestore(_fichaId)
     }
+  }
+
+  _setSaveStatus("salvo")
+  } catch(e) {
+    console.error("[salvar]", e)
+    _setSaveStatus("erro")
   }
 }
 
