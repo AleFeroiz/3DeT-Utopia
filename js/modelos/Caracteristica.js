@@ -37,6 +37,22 @@ export class Caracteristica {
     this.reduzida    = reduzida     // { custoPM, detalhes } | null
   }
 
+  toJSON() {
+    return {
+      nome:        this.nome,
+      descricao:   this.descricao,
+      origem:      this.origem,
+      escala:      this.escala,
+      custoPT:     this.custoPT,
+      gratuita:    this.gratuita,
+      escolhas:    this.escolhas,
+      custo:       this.custo,
+      custoPM:     this.custoPM,
+      amplificada: this.amplificada,
+      reduzida:    this.reduzida,
+    }
+  }
+
   static fromJSON(obj) {
     return new Caracteristica(obj)
   }

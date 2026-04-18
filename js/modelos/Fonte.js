@@ -80,6 +80,22 @@ export class FonteDePoder extends ElementoFicha {
     Object.assign(this.caracteristicas[index], dados)
   }
 
+  toJSON() {
+    return {
+      id:              this.id,
+      nome:            this.nome,
+      tipo:            this.tipo,
+      custo:           this.custo,
+      descricao:       this.descricao,
+      notas:           this.notas,
+      tema:            this.tema,
+      subtipo:         this.subtipo,
+      pcs:             this.pcs,
+      passivos:        this.passivos,
+      caracteristicas: this.caracteristicas.map(c => c.toJSON ? c.toJSON() : { ...c }),
+    }
+  }
+
   static fromJSON(obj) {
     return new FonteDePoder(obj)
   }

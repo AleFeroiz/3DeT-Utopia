@@ -243,14 +243,27 @@ export class Ficha {
   // ── Serialização ──────────────────────────────────────────
   toJSON() {
     return {
-      id: this.id, nome: this.nome, isPublic: this.isPublic, editPublic: this.editPublic, maestrasCfg: this.maestrasCfg, racaId: this.racaId, racaDados: this.racaDados, profissaoId: this.profissaoId,
-      nivel: this.nivel, maestrias: this.maestrias,
-      atributos: this.atributos, pericias: this.pericias,
-      elementos: this.elementos, status: this.status, pontos: this.pontos,
+      id:          this.id,
+      nome:        this.nome,
+      isPublic:    this.isPublic,
+      editPublic:  this.editPublic,
+      maestrasCfg: this.maestrasCfg,
+      racaId:      this.racaId,
+      racaDados:   this.racaDados,
+      profissaoId: this.profissaoId,
+      nivel:       this.nivel,
+      maestrias:   this.maestrias,
+      atributos:   this.atributos,
+      pericias:    this.pericias,
+      // Serializa cada elemento usando seu próprio toJSON() para garantir
+      // que FonteDePoder (com caracteristicas, passivos, pcs) seja salvo completo
+      elementos:   this.elementos.map(e => e.toJSON ? e.toJSON() : { ...e }),
+      status:      this.status,
+      pontos:      this.pontos,
       caracteristicasIsoladas: this.caracteristicasIsoladas ?? [],
-      anotacoes: this.anotacoes,
-      inventario: this.inventario,
-      combateExtras: this.combateExtras
+      anotacoes:   this.anotacoes,
+      inventario:  this.inventario,
+      combateExtras: this.combateExtras,
     }
   }
 

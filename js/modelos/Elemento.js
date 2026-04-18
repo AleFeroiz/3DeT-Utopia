@@ -12,6 +12,17 @@ export class ElementoFicha {
     this.notas    = notas || "Escreva uma nota para lembrar aqui..."
   }
 
+  toJSON() {
+    return {
+      id:        this.id,
+      nome:      this.nome,
+      tipo:      this.tipo,
+      custo:     this.custo,
+      descricao: this.descricao,
+      notas:     this.notas,
+    }
+  }
+
   // Reconstrói a partir de um plain object (vindo do JSON)
   static fromJSON(obj) {
     return new ElementoFicha(obj)
