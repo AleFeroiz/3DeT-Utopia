@@ -816,12 +816,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Recarrega cenas quando o usuário volta para esta aba
   // (ex: excluiu ficha no index.html em outra aba)
-  document.addEventListener("visibilitychange", async () => {
-    if (document.visibilityState === "visible") {
-      await Promise.all([_carregarCenas(), _carregarFichasMestre()])
-      renderListaCenas()
-      if (_cenaAtual) { renderCena(); renderSidebar() }
-    }
+  // Usa window "focus" pois é o evento que dispara ao trocar abas no navegador
+  window.addEventListener("focus", async () => {
+    await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    renderListaCenas()
+    if (_cenaAtual) { renderCena(); renderSidebar() }
   })
 })
 

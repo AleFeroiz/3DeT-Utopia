@@ -63,7 +63,6 @@ function _injetarHTML() {
 function _injetarCSS() {
   const style = document.createElement('style')
   style.textContent = `
-    /* ── Botão flutuante ── */
     #diceRollerWrap {
       position: fixed;
       bottom: 24px;
@@ -72,12 +71,11 @@ function _injetarCSS() {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 8px;
+      gap: 10px;
     }
-
     #diceRollerBtn {
-      width: 48px;
-      height: 48px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
       border: none;
       background: #3b82f6;
@@ -98,20 +96,19 @@ function _injetarCSS() {
     }
     #diceRollerBtn:active { transform: scale(0.95); }
     #diceRollerBtn.aberto { background: #475569; box-shadow: none; }
-    #diceRollerBtn svg { width: 22px; height: 22px; }
+    #diceRollerBtn svg { width: 26px; height: 26px; }
 
-    /* ── Gaveta ── */
     #diceRollerGaveta {
       order: 1;
       background: #1e293b;
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px;
-      padding: 14px 16px;
-      width: 210px;
+      border-radius: 16px;
+      padding: 18px 20px;
+      width: 270px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       display: none;
       flex-direction: column;
-      gap: 10px;
+      gap: 14px;
       transform-origin: bottom left;
       animation: diceGavetaOpen 0.2s ease;
     }
@@ -122,37 +119,39 @@ function _injetarCSS() {
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
 
-    /* ── Resultado ── */
     #diceRollerResultado {
       background: #0f172a;
-      border-radius: 10px;
-      padding: 10px 12px;
+      border-radius: 12px;
+      padding: 14px 16px;
       text-align: center;
-      min-height: 58px;
+      min-height: 72px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
     }
     #diceResultTotal {
-      font-size: 26px;
+      font-size: 36px;
       font-weight: 700;
       color: #f1f5f9;
       line-height: 1;
     }
     #diceResultDetalhes {
-      font-size: 11px;
+      font-size: 13px;
       color: #94a3b8;
       word-break: break-all;
-      min-height: 14px;
+      min-height: 16px;
+      line-height: 1.5;
     }
+    .dice-val-min  { color: #f87171; font-weight: 700; }
+    .dice-val-max  { color: #4ade80; font-weight: 700; }
+    .dice-val-meio { color: #94a3b8; }
 
-    /* ── Linhas de dado ── */
     #diceRollerDados {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
     .dice-row {
       display: flex;
@@ -160,25 +159,25 @@ function _injetarCSS() {
       justify-content: space-between;
     }
     .dice-label {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
       color: #cbd5e1;
-      width: 32px;
+      width: 36px;
     }
     .dice-controles {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
     }
     .dice-btn-menos,
     .dice-btn-mais {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       border: none;
       background: #334155;
       color: white;
-      font-size: 16px;
+      font-size: 20px;
       line-height: 1;
       cursor: pointer;
       display: flex;
@@ -191,24 +190,23 @@ function _injetarCSS() {
     .dice-btn-menos:active,
     .dice-btn-mais:active  { transform: scale(0.92); }
     .dice-qtd {
-      min-width: 22px;
+      min-width: 26px;
       text-align: center;
-      font-size: 14px;
+      font-size: 17px;
       font-weight: 600;
       color: #f1f5f9;
     }
     .dice-row.ativo .dice-label { color: #60a5fa; }
     .dice-row.ativo .dice-qtd   { color: #60a5fa; }
 
-    /* ── Botão rolar ── */
     #diceRolarBtn {
       width: 100%;
-      padding: 8px;
+      padding: 11px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #3b82f6;
       color: white;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s, transform 0.1s;
@@ -222,15 +220,12 @@ function _injetarCSS() {
       cursor: not-allowed;
     }
 
-    /* ── Animação de resultado ── */
     @keyframes dicePop {
       0%   { transform: scale(0.7); opacity: 0; }
       60%  { transform: scale(1.1); }
       100% { transform: scale(1);   opacity: 1; }
     }
-    .dice-resultado-pop {
-      animation: dicePop 0.28s ease;
-    }
+    .dice-resultado-pop { animation: dicePop 0.28s ease; }
   `
   document.head.appendChild(style)
 }
@@ -249,7 +244,6 @@ function _bindEventos() {
     btn.classList.toggle('aberto', _aberta)
   })
 
-  // Fechar clicando fora
   document.addEventListener('click', e => {
     if (_aberta && !document.getElementById('diceRollerWrap').contains(e.target)) {
       _aberta = false
@@ -259,7 +253,6 @@ function _bindEventos() {
     }
   })
 
-  // + / - por dado
   document.querySelectorAll('.dice-btn-mais').forEach(b => {
     b.addEventListener('click', () => _mudarQtd(+b.dataset.dado, 1))
   })
@@ -287,38 +280,40 @@ function _atualizarBotaoRolar() {
 
 function _rolar() {
   const resultados = []
-
   DADOS.forEach(d => {
     for (let i = 0; i < _qtd[d]; i++) {
       resultados.push({ dado: d, valor: Math.floor(Math.random() * d) + 1 })
     }
   })
-
   if (!resultados.length) return
 
   const total = resultados.reduce((s, r) => s + r.valor, 0)
 
-  // Agrupa detalhes por tipo de dado: "D6[3,5] D4[2]"
   const grupos = {}
   resultados.forEach(r => {
     if (!grupos[r.dado]) grupos[r.dado] = []
     grupos[r.dado].push(r.valor)
   })
-  const detalhe = Object.entries(grupos)
-    .map(([d, vals]) => `D${d}[${vals.join(',')}]`)
-    .join(' ')
+
+  const detalheHtml = Object.entries(grupos).map(([d, vals]) => {
+    const dNum = +d
+    const valsHtml = vals.map(v => {
+      let cls = 'dice-val-meio'
+      if (v === 1)    cls = 'dice-val-min'
+      if (v === dNum) cls = 'dice-val-max'
+      return `<span class="${cls}">${v}</span>`
+    }).join(',')
+    return `D${d}[${valsHtml}]`
+  }).join(' ')
 
   const totalEl   = document.getElementById('diceResultTotal')
   const detalheEl = document.getElementById('diceResultDetalhes')
+  totalEl.textContent = total
+  detalheEl.innerHTML = detalheHtml
 
-  totalEl.textContent   = total
-  detalheEl.textContent = detalhe
-
-  // Animação pop no resultado
   totalEl.classList.remove('dice-resultado-pop')
-  void totalEl.offsetWidth // reflow
+  void totalEl.offsetWidth
   totalEl.classList.add('dice-resultado-pop')
 }
 
-// Inicia com botão rolar desabilitado
 setTimeout(_atualizarBotaoRolar, 0)
