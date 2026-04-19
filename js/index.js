@@ -305,8 +305,9 @@ function _criarCard(f, modo) {
   const total  = f.pontos?.total  ?? 10
 
   // Bug #25: escapa dados do usuário antes de inserir no HTML
-  const retratoHtml = f.imagemUrl
-    ? `<div class="ficha-retrato" style="background-image:url('${f.imagemUrl}')"></div>`
+  const imgSrc = f.imagemThumb || f.imagemUrl || null
+  const retratoHtml = imgSrc
+    ? `<div class="ficha-retrato" style="background-image:url('${imgSrc}')"></div>`
     : `<div class="ficha-retrato ficha-retrato-vazio">👤</div>`
 
   div.innerHTML = `
@@ -576,7 +577,8 @@ onLogin(async (user) => {
         id: meta.id, nome: meta.nome ?? "Sem Nome",
         pastaId: meta.pastaId ?? null, nivel: meta.nivel ?? 1,
         racaId: meta.racaId ?? "", profissaoId: meta.profissaoId ?? "",
-        pontos: { gastos: 0, total: 10 }
+        pontos: { gastos: 0, total: 10 },
+        imagemThumb: meta.imagemThumb ?? null,
       }))
       totalFichas += m.fichas.length
     }

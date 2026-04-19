@@ -696,7 +696,6 @@ function _bindRetrato() {
   const btnDel  = document.getElementById("fichaRetratoBtnRemover")
   if (!grande || !input) return
 
-  // Aplica imagem atual da ficha
   function _atualizarRetratoUI() {
     if (ficha.imagemUrl) {
       grande.style.backgroundImage = `url('${ficha.imagemUrl}')`
@@ -709,45 +708,201 @@ function _bindRetrato() {
       grande.textContent = "👤"
       if (btnDel) btnDel.style.display = "none"
     }
-    // Só dono pode editar
     if (btnEdit) btnEdit.style.display = _fichaOwner ? "flex" : "none"
   }
 
   _atualizarRetratoUI()
-
   if (!_fichaOwner) return
 
-  // Clique no retrato ou no botão editar → abre file picker
   grande.addEventListener("click", () => input.click())
   if (btnEdit) btnEdit.addEventListener("click", () => input.click())
 
-  // Remover imagem
   if (btnDel) btnDel.addEventListener("click", (e) => {
     e.stopPropagation()
-    ficha.imagemUrl = null
+    ficha.imagemUrl   = null
+    ficha.imagemThumb = null
     _atualizarRetratoUI()
     salvar()
   })
 
-  // Lê o arquivo e converte para base64
   input.addEventListener("change", () => {
     const file = input.files[0]
     if (!file) return
-    // Limita 2MB
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Imagem muito grande. Use uma imagem de até 2MB.")
-      input.value = ""
-      return
-    }
+    input.value = ""
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      ficha.imagemUrl = ev.target.result  // base64
+    reader.onload = (ev) => _abrirCropModal(ev.target.result, async (croppedUrl) => {
+      ficha.imagemUrl   = croppedUrl
+      ficha.imagemThumb = await _gerarThumbnail(croppedUrl, 80)
       _atualizarRetratoUI()
       salvar()
-      input.value = ""
-    }
+    })
     reader.readAsDataURL(file)
   })
+}
+
+/** Gera uma thumbnail quadrada reduzida (tamanho px) em base64 */
+function _gerarThumbnail(base64, tamanho = 80) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = tamanho; canvas.height = tamanho
+      const ctx = canvas.getContext("2d")
+      // Crop central quadrado
+      const lado = Math.min(img.width, img.height)
+      const ox   = (img.width  - lado) / 2
+      const oy   = (img.height - lado) / 2
+      ctx.drawImage(img, ox, oy, lado, lado, 0, 0, tamanho, tamanho)
+      resolve(canvas.toDataURL("image/jpeg", 0.7))
+    }
+    img.src = base64
+  })
+}
+
+/** Abre o modal de crop — o usuário arrasta para posicionar e confirma */
+function _abrirCropModal(srcBase64, onConfirm) {
+  // Remove modal anterior se existir
+  document.getElementById("cropModal")?.remove()
+
+  const modal = document.createElement("div")
+  modal.id = "cropModal"
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);
+    display:flex;align-items:center;justify-content:center;z-index:9999;`
+
+  modal.innerHTML = `
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:16px;
+                padding:24px;display:flex;flex-direction:column;gap:16px;
+                max-width:min(480px,92vw);width:100%">
+      <p style="color:#f1f5f9;font-size:15px;font-weight:600;margin:0">
+        ✂️ Ajustar Retrato
+      </p>
+      <p style="color:#94a3b8;font-size:12px;margin:0">
+        Arraste a imagem para posicionar. A área circular será o retrato.
+      </p>
+
+      <!-- Viewport de crop -->
+      <div id="cropViewport" style="
+        position:relative;width:260px;height:260px;
+        border-radius:50%;overflow:hidden;
+        border:3px solid #3b82f6;
+        align-self:center;cursor:grab;
+        background:#000;flex-shrink:0">
+        <img id="cropImg" src="${srcBase64}" draggable="false" style="
+          position:absolute;user-select:none;max-width:none;"/>
+      </div>
+
+      <!-- Slider de zoom -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:#64748b">🔍</span>
+        <input type="range" id="cropZoom" min="50" max="300" value="100" style="flex:1;accent-color:#3b82f6">
+        <span style="font-size:12px;color:#64748b" id="cropZoomLabel">100%</span>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="cropCancelar" style="
+          padding:8px 18px;border:1px solid #334155;background:#1e293b;
+          color:#94a3b8;border-radius:8px;cursor:pointer;font-size:13px">Cancelar</button>
+        <button id="cropConfirmar" style="
+          padding:8px 18px;border:none;background:#1d4ed8;
+          color:white;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Usar Retrato</button>
+      </div>
+    </div>`
+
+  document.body.appendChild(modal)
+
+  const viewport = document.getElementById("cropViewport")
+  const img      = document.getElementById("cropImg")
+  const zoom     = document.getElementById("cropZoom")
+  const zoomLbl  = document.getElementById("cropZoomLabel")
+
+  const VP = 260  // tamanho do viewport em px
+  let scale = 1, ox = 0, oy = 0
+  let dragging = false, startX = 0, startY = 0, startOx = 0, startOy = 0
+
+  function _clamp() {
+    const w = img.naturalWidth  * scale
+    const h = img.naturalHeight * scale
+    ox = Math.min(0, Math.max(VP - w, ox))
+    oy = Math.min(0, Math.max(VP - h, oy))
+  }
+
+  function _aplicar() {
+    img.style.width     = (img.naturalWidth  * scale) + "px"
+    img.style.height    = (img.naturalHeight * scale) + "px"
+    img.style.left      = ox + "px"
+    img.style.top       = oy + "px"
+  }
+
+  img.onload = () => {
+    // Zoom inicial: preenche o viewport
+    const minScale = Math.max(VP / img.naturalWidth, VP / img.naturalHeight)
+    scale = minScale
+    ox = (VP - img.naturalWidth  * scale) / 2
+    oy = (VP - img.naturalHeight * scale) / 2
+    zoom.min = Math.round(minScale * 100)
+    zoom.value = Math.round(scale * 100)
+    zoomLbl.textContent = zoom.value + "%"
+    _aplicar()
+  }
+
+  zoom.addEventListener("input", () => {
+    const cx = VP / 2, cy = VP / 2
+    const newScale = +zoom.value / 100
+    ox = cx - (cx - ox) * (newScale / scale)
+    oy = cy - (cy - oy) * (newScale / scale)
+    scale = newScale
+    _clamp(); _aplicar()
+    zoomLbl.textContent = zoom.value + "%"
+  })
+
+  // Drag
+  const onDown = (e) => {
+    dragging = true
+    const pt = e.touches ? e.touches[0] : e
+    startX = pt.clientX; startY = pt.clientY
+    startOx = ox;        startOy = oy
+    viewport.style.cursor = "grabbing"
+    e.preventDefault()
+  }
+  const onMove = (e) => {
+    if (!dragging) return
+    const pt = e.touches ? e.touches[0] : e
+    ox = startOx + (pt.clientX - startX)
+    oy = startOy + (pt.clientY - startY)
+    _clamp(); _aplicar()
+    e.preventDefault()
+  }
+  const onUp = () => { dragging = false; viewport.style.cursor = "grab" }
+
+  viewport.addEventListener("mousedown",  onDown)
+  viewport.addEventListener("mousemove",  onMove)
+  viewport.addEventListener("mouseup",    onUp)
+  viewport.addEventListener("mouseleave", onUp)
+  viewport.addEventListener("touchstart", onDown, { passive: false })
+  viewport.addEventListener("touchmove",  onMove, { passive: false })
+  viewport.addEventListener("touchend",   onUp)
+
+  const fechar = () => modal.remove()
+
+  document.getElementById("cropCancelar").onclick = fechar
+  modal.addEventListener("click", e => { if (e.target === modal) fechar() })
+
+  document.getElementById("cropConfirmar").onclick = () => {
+    // Renderiza o crop num canvas quadrado 400px
+    const OUT = 400
+    const canvas = document.createElement("canvas")
+    canvas.width = OUT; canvas.height = OUT
+    const ctx = canvas.getContext("2d")
+    // ox/oy são em pixels do viewport (260px) — converte para coords da imagem original
+    const srcX = -ox / scale
+    const srcY = -oy / scale
+    const srcW = VP  / scale
+    ctx.drawImage(img, srcX, srcY, srcW, srcW, 0, 0, OUT, OUT)
+    const result = canvas.toDataURL("image/jpeg", 0.88)
+    fechar()
+    onConfirm(result)
+  }
 }
 
 // ─────────────────────────────────────────────────────────

@@ -83,6 +83,7 @@ export async function salvarIndiceFichasFirestore(fichas, modo = "player") {
       id: f.id, nome: f.nome ?? "Sem Nome",
       pastaId: f.pastaId ?? null, nivel: f.nivel ?? 1,
       racaId: f.racaId ?? "", profissaoId: f.profissaoId ?? "",
+      imagemThumb: f.imagemThumb ?? null,
     }))
     await _firebaseFns.setDoc(
       _firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo)),
