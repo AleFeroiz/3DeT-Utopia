@@ -127,7 +127,7 @@ function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover) {
 }
 
 // ── RENDER PERÍCIAS ───────────────────────────────────────
-export function renderPericias(ficha, onToggle, onToggleMaestria) {
+export function renderPericias(ficha, onToggle, onToggleMaestria, somenteLeitura = false) {
   const container = document.getElementById("listaPericias")
   if (!container) return
 
@@ -186,10 +186,16 @@ export function renderPericias(ficha, onToggle, onToggleMaestria) {
       }
     }
 
-    row.querySelector(".chk-pericia").onchange = () => onToggle(pericia.id)
+    row.querySelector(".chk-pericia").onchange = () => { if (!somenteLeitura) onToggle(pericia.id) }
+    if (somenteLeitura) {
+      row.querySelector(".chk-pericia").disabled = true
+    }
     if (temPericia) {
       const btnM = row.querySelector(".btn-maestria")
-      if (btnM) btnM.onclick = () => onToggleMaestria(pericia.id)
+      if (btnM) {
+        if (somenteLeitura) btnM.disabled = true
+        else btnM.onclick = () => onToggleMaestria(pericia.id)
+      }
     }
 
     container.appendChild(row)

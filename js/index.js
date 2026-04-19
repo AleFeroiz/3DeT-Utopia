@@ -377,17 +377,20 @@ function criarFicha(pastaId = null, modo = modoAtivo) {
 }
 
 // Bug #24: opera por id
-function _duplicarFicha(fichaId, modo) {
-  const m       = MODOS[modo]
+async function _duplicarFicha(fichaId, modo) {
+  const m        = MODOS[modo]
   const original = m.fichas.find(f => f.id === fichaId)
   if (!original) return
-  const copia  = JSON.parse(JSON.stringify(original))
-  copia.id     = crypto.randomUUID()
-  copia.nome   = (original.nome || "Ficha") + " (cópia)"
-  const idx    = m.fichas.indexOf(original)
+  const copia      = JSON.parse(JSON.stringify(original))
+  copia.id         = crypto.randomUUID()
+  copia.nome       = (original.nome || "Ficha") + " (cópia)"
+  copia.isPublic   = false         // cópia sempre começa privada
+  copia.editPublic = false
+  copia._ownerUid  = getUser()?.uid ?? null  // associa ao usuário atual
+  const idx = m.fichas.indexOf(original)
   m.fichas.splice(idx + 1, 0, copia)
-  _salvarFichaIndividual(copia, modo)
-  salvar(modo)
+  await _salvarFichaIndividual(copia, modo)  // documento individual primeiro
+  await salvar(modo)                          // índice + pastas depois
   renderizar(modo)
   toastSucesso(`"${copia.nome}" criada!`)
 }

@@ -241,6 +241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 }) // fim DOMContentLoaded
 
 function _renderPericias() {
+  const somenteLeitura = !_fichaOwner && !ficha.editPublic
   renderPericias(ficha,
     (id) => { ficha.togglePericia(id); _renderPericias(); renderPontos(ficha); salvar() },
     (id) => {
@@ -248,7 +249,8 @@ function _renderPericias() {
       if (!res.ok) { toastAviso(res.motivo); return }
       _renderPericias(); renderPontos(ficha); salvar()
       toastSucesso(ficha.maestrias[id] ? "Maestria aplicada! (2 PT)" : "Maestria removida.")
-    }
+    },
+    somenteLeitura
   )
 }
 

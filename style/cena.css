@@ -219,9 +219,9 @@
   flex-shrink: 0;
 }
 
-.cfc-stat-label.pa { color: #fbbf24; }
-.cfc-stat-label.pm { color: #a78bfa; }
-.cfc-stat-label.pv { color: #4ade80; }
+.cfc-stat-label.pa { color: #3b82f6; }
+.cfc-stat-label.pm { color: #a855f7; }
+.cfc-stat-label.pv { color: #ef4444; }
 
 .cfc-stat-barra-wrap {
   flex: 1;
@@ -237,9 +237,21 @@
   transition: width 0.3s ease;
 }
 
-.cfc-stat-barra.pa { background: linear-gradient(90deg, #b45309, #fbbf24); }
-.cfc-stat-barra.pm { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
-.cfc-stat-barra.pv { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.cfc-stat-barra.pa { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+.cfc-stat-barra.pm { background: linear-gradient(90deg, #7e22ce, #a855f7); }
+.cfc-stat-barra.pv { background: linear-gradient(90deg, #991b1b, #ef4444); }
+
+/* Estado over-max — cores brilhosas idênticas à ficha original */
+.cfc-stat-barra.pa.over { background: linear-gradient(90deg, #38bdf8, #bfdbfe); }
+.cfc-stat-barra.pm.over { background: linear-gradient(90deg, #e879f9, #f5d0fe); }
+.cfc-stat-barra.pv.over { background: linear-gradient(90deg, #fb923c, #fde68a); }
+
+/* Valor atual em over-max fica brilhoso */
+.cfc-stat-atual.status-over {
+  color: #fbbf24;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
 
 .cfc-stat-nums {
   display: flex;

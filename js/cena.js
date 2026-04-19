@@ -333,17 +333,18 @@ function _htmlStat(ficha, chave) {
   const s     = ficha.status[chave]
   const atual = s.atual ?? 0
   const max   = s.max   ?? 1
-  const pct   = Math.min(100, Math.max(0, Math.round((atual / (max || 1)) * 100)))
+  const over  = atual > max
+  const pct   = over ? 100 : Math.max(0, Math.round((atual / (max || 1)) * 100))
   const labels = { pa: "PA", pm: "PM", pv: "PV" }
 
   return `
     <div class="cfc-stat-row">
       <span class="cfc-stat-label ${chave}">${labels[chave]}</span>
       <div class="cfc-stat-barra-wrap">
-        <div class="cfc-stat-barra ${chave}" id="barra-${ficha.id}-${chave}" style="width:${pct}%"></div>
+        <div class="cfc-stat-barra ${chave}${over ? " over" : ""}" id="barra-${ficha.id}-${chave}" style="width:${pct}%"></div>
       </div>
       <div class="cfc-stat-nums">
-        <span class="cfc-stat-atual" id="stat-atual-${ficha.id}-${chave}">${atual}</span>
+        <span class="cfc-stat-atual${over ? " status-over" : ""}" id="stat-atual-${ficha.id}-${chave}">${atual}</span>
         <span class="cfc-stat-sep">/</span>
         <span class="cfc-stat-max" id="stat-max-${ficha.id}-${chave}" title="Clique para editar o máximo">${max}</span>
       </div>
@@ -362,7 +363,7 @@ function _bindStatBtns(card, ficha) {
       const chave = btn.dataset.stat
       const delta = parseInt(btn.dataset.delta)
       const s = ficha.status[chave]
-      s.atual = Math.max(0, Math.min(s.max ?? 999, (s.atual ?? 0) + delta))
+      s.atual = Math.max(0, (s.atual ?? 0) + delta)  // sem teto — pode ultrapassar max
       _atualizarStatDOM(card, ficha, chave)
       await _salvarFicha(ficha)
     }
@@ -400,13 +401,22 @@ function _atualizarStatDOM(card, ficha, chave) {
   const s     = ficha.status[chave]
   const atual = s.atual ?? 0
   const max   = s.max   ?? 1
-  const pct   = Math.min(100, Math.max(0, Math.round((atual / (max || 1)) * 100)))
+  const over  = atual > max
+  const pct   = over ? 100 : Math.max(0, Math.round((atual / (max || 1)) * 100))
+
   const elAtual = card.querySelector(`#stat-atual-${ficha.id}-${chave}`)
   const elMax   = card.querySelector(`#stat-max-${ficha.id}-${chave}`)
   const barra   = card.querySelector(`#barra-${ficha.id}-${chave}`)
-  if (elAtual) elAtual.textContent = atual
+
+  if (elAtual) {
+    elAtual.textContent = atual
+    elAtual.classList.toggle("status-over", over)
+  }
   if (elMax && !elMax.querySelector("input")) elMax.textContent = max
-  if (barra)   barra.style.width = pct + "%"
+  if (barra) {
+    barra.style.width = pct + "%"
+    barra.classList.toggle("over", over)
+  }
 }
 
 // ─────────────────────────────────────────────────────────
