@@ -13,6 +13,8 @@ import {
   removerFichaFirestore
 } from "./firebase.js"
 import { toastSucesso, toastInfo, toastErro, toastAviso } from "./ui/uiToast.js"
+import { StorageCenas } from "./storageCenas.js"
+import { carregarCenasFirestore, salvarCenasFirestore } from "./firebaseCenas.js"
 import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO, RESULTADOS_NAVEGADOR, RESULTADOS_PILOTO } from "./viagem.js"
 
 // ── Overlay de sincronização ──────────────────────────────
@@ -445,6 +447,24 @@ async function _deletarFicha(fichaId, modo) {
       console.error("[deletar ficha]", e)
       toastErro("Erro ao remover ficha da nuvem.")
     }
+  }
+
+  // Remove referência da ficha excluída em todas as cenas
+  try {
+    let cenas = _logado && estaConfigurado()
+      ? (await carregarCenasFirestore() ?? StorageCenas.carregar())
+      : StorageCenas.carregar()
+    const cenasAlteradas = cenas.some(c => c.fichaIds?.includes(fichaId))
+    if (cenasAlteradas) {
+      cenas = cenas.map(c => ({
+        ...c,
+        fichaIds: (c.fichaIds ?? []).filter(id => id !== fichaId)
+      }))
+      StorageCenas.salvar(cenas)
+      if (_logado && estaConfigurado()) await salvarCenasFirestore(cenas)
+    }
+  } catch(eCena) {
+    console.warn("[deletar ficha] erro ao limpar cenas:", eCena)
   }
 }
 
