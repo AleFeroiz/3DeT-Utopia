@@ -64,7 +64,27 @@ const EVENTOS_RUIM = [
   "Sabotagem descoberta — alguém ou algo causou dano ao navio",
 ]
 
-// ── Rolar dados ────────────────────────────────────────────
+// ── Teste do Navegador ─────────────────────────────────────
+// Fracasso  → gera rotas falsas (desinformação)
+// Passou    → marca 1 rota real aleatória; as outras 2 são falsas
+// Perfeito  → marca 2 rotas reais aleatórias; a outra é falsa
+export const RESULTADOS_NAVEGADOR = [
+  { id: "fracasso",  label: "Fracassou",        rotasReais: 0, desc: "Recebe informação errada — todas as rotas são falsas." },
+  { id: "passou",    label: "Passou",            rotasReais: 1, desc: "Sabe de 1 rota real. As outras 2 são falsas." },
+  { id: "perfeito",  label: "Sucesso Perfeito",  rotasReais: 2, desc: "Sabe de 2 rotas reais. A outra é falsa." },
+]
+
+// ── Teste do Piloto ────────────────────────────────────────
+// Fracasso       → +1 NR
+// Passou         → -1 NR
+// Sucesso Perfeito → -2 NR
+export const RESULTADOS_PILOTO = [
+  { id: "fracasso", label: "Fracassou",        deltaNR: +1, desc: "+1 NR na viagem." },
+  { id: "passou",   label: "Passou",            deltaNR: -1, desc: "-1 NR na viagem." },
+  { id: "perfeito", label: "Sucesso Perfeito",  deltaNR: -2, desc: "-2 NR na viagem." },
+]
+
+// ── Rola dados ────────────────────────────────────────────
 function d6() { return Math.floor(Math.random() * 6) + 1 }
 
 function _sortear3Rotas() {
@@ -85,16 +105,37 @@ function _calcularEvento(nrTotal) {
 
 // ── Gerador principal ──────────────────────────────────────
 export function gerarViagem(opts = {}) {
-  const ambiente = opts.ambiente ?? AMBIENTES[Math.floor(Math.random() * AMBIENTES.length)]
-  const ritmo    = opts.ritmo    ?? RITMOS[1]   // Normal por padrão
-  const porte    = opts.porte    ?? PORTES[1]   // Médio por padrão
-  const estado   = opts.estado   ?? ESTADOS_VEICULO[0] // Normal por padrão
+  const ambiente        = opts.ambiente        ?? AMBIENTES[Math.floor(Math.random() * AMBIENTES.length)]
+  const ritmo           = opts.ritmo           ?? RITMOS[1]
+  const porte           = opts.porte           ?? PORTES[1]
+  const estado          = opts.estado          ?? ESTADOS_VEICULO[0]
+  const testeNavegador  = opts.testeNavegador  ?? null   // null = não aplicar
+  const testePiloto     = opts.testePiloto     ?? null   // null = não aplicar
+
+  // Delta NR do piloto
+  const deltaPiloto = testePiloto ? testePiloto.deltaNR : 0
 
   const rotas = _sortear3Rotas()
 
-  // NR base = ambiente + veículo (porte + estado) + ritmo
-  // A rota escolhida é adicionada quando o jogador decide
-  const nrBase = ambiente.nr + porte.nr + estado.nr + ritmo.nr
+  // NR base = ambiente + veículo (porte + estado) + ritmo + piloto
+  const nrBase = ambiente.nr + porte.nr + estado.nr + ritmo.nr + deltaPiloto
+
+  // ── Lógica do Navegador ───────────────────────────────
+  // Determina quais índices de rota são "reais" vs "falsas"
+  let indicesReais = []
+  let rotasFalsas  = []
+
+  if (testeNavegador && testeNavegador.rotasReais > 0) {
+    // Sorteia aleatoriamente quais rotas o navegador conhece de verdade
+    const indices = [0, 1, 2]
+    const embaralhados = indices.sort(() => Math.random() - 0.5)
+    indicesReais = embaralhados.slice(0, testeNavegador.rotasReais)
+  } else if (testeNavegador && testeNavegador.rotasReais === 0) {
+    // Fracasso: todas as rotas são falsas — gera rotas alternativas enganosas
+    indicesReais = []
+    rotasFalsas  = _sortear3Rotas()  // rotas completamente diferentes
+  }
+  // null = sem teste = todas as rotas visíveis normalmente (visão do Mestre)
 
   return {
     ambiente,
@@ -103,24 +144,28 @@ export function gerarViagem(opts = {}) {
     porte,
     estado,
     nrBase,
-    // Pré-calcula evento para cada rota
-    eventos: rotas.map(r => {
+    deltaPiloto,
+    testeNavegador,
+    testePiloto,
+    indicesReais,   // índices (0,1,2) que o navegador conhece corretamente
+    rotasFalsas,    // rotas alternativas geradas para o fracasso do navegador
+    eventos: rotas.map((r, i) => {
       const nrTotal = nrBase + r.nr
       const eInfo   = _calcularEvento(nrTotal)
       const dado    = d6()
-      const lista   = eInfo.lista
-      const eventText = lista[dado - 1]
       return {
-        rota:     r,
+        rota:    r,
         nrTotal,
-        tipo:     eInfo.tipo,
-        cor:      eInfo.cor,
-        icon:     eInfo.icon,
+        tipo:    eInfo.tipo,
+        cor:     eInfo.cor,
+        icon:    eInfo.icon,
         dado,
-        evento:   eventText,
+        evento:  eInfo.lista[dado - 1],
+        // Para o navegador: é uma rota que ele "sabe"?
+        navegadorSabe: testeNavegador ? indicesReais.includes(i) : null,
       }
     }),
   }
 }
 
-export { AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO, TIPOS_ROTA }
+export { AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO, TIPOS_ROTA, RESULTADOS_NAVEGADOR, RESULTADOS_PILOTO }

@@ -152,9 +152,9 @@ function renderListaCenas() {
 }
 
 window.criarNovaCena = async function() {
-  const nome = prompt("Nome da cena:", "Nova Cena")
-  if (!nome?.trim()) return
-  const cena = novaCena(nome.trim())
+  const nome = await _modalPrompt("Nome da nova cena:", "Nova Cena")
+  if (!nome) return
+  const cena = novaCena(nome)
   _cenas.push(cena)
   await _salvarCenas()
   renderListaCenas()
@@ -164,7 +164,8 @@ window.criarNovaCena = async function() {
 async function deletarCena(id) {
   const cena = _cenas.find(c => c.id === id)
   if (!cena) return
-  if (!confirm(`Excluir "${cena.nome}"? As fichas NÃO serão apagadas.`)) return
+  const ok = await _modalConfirm(`Excluir "${cena.nome}"? As fichas NÃO serão apagadas.`)
+  if (!ok) return
   _cenas = _cenas.filter(c => c.id !== id)
   await _salvarCenas()
   renderListaCenas()
@@ -174,9 +175,9 @@ async function deletarCena(id) {
 async function renomearCena(id) {
   const cena = _cenas.find(c => c.id === id)
   if (!cena) return
-  const novo = prompt("Novo nome:", cena.nome)
-  if (!novo?.trim() || novo.trim() === cena.nome) return
-  cena.nome = novo.trim()
+  const novo = await _modalPrompt("Novo nome da cena:", cena.nome)
+  if (!novo || novo === cena.nome) return
+  cena.nome = novo
   await _salvarCenas()
   renderListaCenas()
 }
@@ -373,16 +374,21 @@ function _bindStatBtns(card, ficha) {
     const maxEl = card.querySelector(`#stat-max-${ficha.id}-${chave}`)
     if (!maxEl) return
     maxEl.onclick = () => {
-      if (maxEl.querySelector("input")) return
+      if (maxEl.dataset.editing) return
+      maxEl.dataset.editing = "1"
+      const valorAnterior = ficha.status[chave].max ?? 0
       const input = document.createElement("input")
-      input.type = "number"
+      input.type = "text"
       input.className = "cfc-input-max"
-      input.value = ficha.status[chave].max ?? 0
+      input.value = valorAnterior
+      input.inputMode = "numeric"
       maxEl.textContent = ""
       maxEl.appendChild(input)
       input.focus(); input.select()
       const confirmar = async () => {
-        const novoMax = parseInt(input.value)
+        delete maxEl.dataset.editing
+        const raw = input.value.replace(",", ".").trim()
+        const novoMax = parseInt(raw)
         if (!isNaN(novoMax) && novoMax >= 0) {
           ficha.setMaxManual(chave, novoMax)
           if (ficha.status[chave].atual > novoMax)
@@ -392,7 +398,10 @@ function _bindStatBtns(card, ficha) {
         await _salvarFicha(ficha)
       }
       input.onblur = confirmar
-      input.onkeydown = e => { if (e.key === "Enter") input.blur() }
+      input.onkeydown = e => {
+        if (e.key === "Enter") { e.preventDefault(); input.blur() }
+        if (e.key === "Escape") { delete maxEl.dataset.editing; input.value = valorAnterior; input.blur() }
+      }
     }
   })
 }
@@ -661,6 +670,96 @@ async function _removerFichaDaCena(fichaId) {
   await _salvarCenaAtual()
   renderCena()
   renderSidebar()
+}
+
+// ─────────────────────────────────────────────────────────
+//  MODAL UTILITÁRIOS (evita prompt/confirm nativo do browser)
+// ─────────────────────────────────────────────────────────
+function _modalPrompt(titulo, valorInicial = "") {
+  return new Promise(resolve => {
+    let modal = document.getElementById("cenaModalPrompt")
+    if (!modal) {
+      modal = document.createElement("div")
+      modal.id = "cenaModalPrompt"
+      modal.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.7);
+        display:flex;align-items:center;justify-content:center;z-index:9999;`
+      modal.innerHTML = `
+        <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:14px;
+                    padding:24px 28px;min-width:320px;max-width:90vw;display:flex;flex-direction:column;gap:16px;">
+          <p id="cenaModalPromptTitulo" style="color:#f1f5f9;font-size:15px;font-weight:600;margin:0"></p>
+          <input id="cenaModalPromptInput" type="text"
+            style="background:#1e293b;border:1px solid #2d5a8e;border-radius:8px;
+                   color:#f1f5f9;font-size:14px;padding:9px 12px;outline:none;width:100%;box-sizing:border-box"/>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="cenaModalPromptCancelar"
+              style="padding:7px 16px;border:1px solid #334155;background:#1e293b;
+                     color:#94a3b8;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
+            <button id="cenaModalPromptOk"
+              style="padding:7px 16px;border:none;background:#1d4ed8;
+                     color:white;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">OK</button>
+          </div>
+        </div>`
+      document.body.appendChild(modal)
+    }
+    const input    = document.getElementById("cenaModalPromptInput")
+    const titulo_el = document.getElementById("cenaModalPromptTitulo")
+    titulo_el.textContent = titulo
+    input.value = valorInicial
+    modal.style.display = "flex"
+    input.focus(); input.select()
+
+    const limpar = (val) => {
+      modal.style.display = "none"
+      document.getElementById("cenaModalPromptOk").onclick = null
+      document.getElementById("cenaModalPromptCancelar").onclick = null
+      modal.onclick = null; input.onkeydown = null
+      resolve(val)
+    }
+    document.getElementById("cenaModalPromptOk").onclick      = () => limpar(input.value.trim() || null)
+    document.getElementById("cenaModalPromptCancelar").onclick = () => limpar(null)
+    modal.onclick   = e => { if (e.target === modal) limpar(null) }
+    input.onkeydown = e => { if (e.key === "Enter") limpar(input.value.trim() || null); if (e.key === "Escape") limpar(null) }
+  })
+}
+
+function _modalConfirm(mensagem) {
+  return new Promise(resolve => {
+    let modal = document.getElementById("cenaModalConfirm")
+    if (!modal) {
+      modal = document.createElement("div")
+      modal.id = "cenaModalConfirm"
+      modal.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.7);
+        display:flex;align-items:center;justify-content:center;z-index:9999;`
+      modal.innerHTML = `
+        <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:14px;
+                    padding:24px 28px;min-width:300px;max-width:90vw;display:flex;flex-direction:column;gap:16px;">
+          <p id="cenaModalConfirmMsg" style="color:#e2e8f0;font-size:15px;margin:0;line-height:1.5"></p>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="cenaModalConfirmNao"
+              style="padding:7px 16px;border:1px solid #334155;background:#1e293b;
+                     color:#94a3b8;border-radius:7px;cursor:pointer;font-size:13px">Cancelar</button>
+            <button id="cenaModalConfirmSim"
+              style="padding:7px 16px;border:none;background:#7f1d1d;
+                     color:white;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Confirmar</button>
+          </div>
+        </div>`
+      document.body.appendChild(modal)
+    }
+    document.getElementById("cenaModalConfirmMsg").textContent = mensagem
+    modal.style.display = "flex"
+    const limpar = (val) => {
+      modal.style.display = "none"
+      document.getElementById("cenaModalConfirmSim").onclick = null
+      document.getElementById("cenaModalConfirmNao").onclick = null
+      modal.onclick = null
+      resolve(val)
+    }
+    document.getElementById("cenaModalConfirmSim").onclick = () => limpar(true)
+    document.getElementById("cenaModalConfirmNao").onclick = () => limpar(false)
+    modal.onclick = e => { if (e.target === modal) limpar(false) }
+  })
 }
 
 // ─────────────────────────────────────────────────────────

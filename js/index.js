@@ -13,7 +13,7 @@ import {
   removerFichaFirestore
 } from "./firebase.js"
 import { toastSucesso, toastInfo, toastErro, toastAviso } from "./ui/uiToast.js"
-import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO } from "./viagem.js"
+import { gerarViagem, AMBIENTES, RITMOS, PORTES, ESTADOS_VEICULO, RESULTADOS_NAVEGADOR, RESULTADOS_PILOTO } from "./viagem.js"
 
 // ── Overlay de sincronização ──────────────────────────────
 function _setSincronizando(ativo) {
@@ -394,16 +394,19 @@ async function _duplicarFicha(fichaId, modo) {
   const copia      = JSON.parse(JSON.stringify(dadosCompletos))
   copia.id         = crypto.randomUUID()
   copia.nome       = (dadosCompletos.nome || "Ficha") + " (cópia)"
-  copia.isPublic   = false         // cópia sempre começa privada
+  copia.isPublic   = false
   copia.editPublic = false
-  delete copia._soMetadados        // garante que não herda a flag de metadado
-  delete copia._ownerUid           // será sobrescrito pelo salvarFichaFirestore
+  // Preserva a pasta da original — pega do metadado (mais confiável que o doc)
+  copia.pastaId    = encontrado.pastaId ?? dadosCompletos.pastaId ?? null
+  if (!copia.pastaId) delete copia.pastaId
+  delete copia._soMetadados
+  delete copia._ownerUid   // será sobrescrito pelo salvarFichaFirestore
 
   const idx = m.fichas.indexOf(encontrado)
   m.fichas.splice(idx + 1, 0, copia)
 
-  await _salvarFichaIndividual(copia, modo)  // documento completo primeiro
-  await salvar(modo)                          // índice + pastas depois
+  await _salvarFichaIndividual(copia, modo)
+  await salvar(modo)
   renderizar(modo)
   toastSucesso(`"${copia.nome}" criada!`)
 }
@@ -624,8 +627,15 @@ document.getElementById("btnGerarViagem").addEventListener("click", () => {
   const ritmoIdx    = +document.getElementById("viagemRitmo").value
   const porteIdx    = +document.getElementById("viagemPorte").value
   const estadoIdx   = +document.getElementById("viagemEstado").value
+
+  const navIdx    = document.getElementById("viagemNavegador")?.value ?? "nenhum"
+  const pilotoIdx = document.getElementById("viagemPiloto")?.value   ?? "nenhum"
+
   const opts = { ritmo: RITMOS[ritmoIdx], porte: PORTES[porteIdx], estado: ESTADOS_VEICULO[estadoIdx] }
   if (ambienteIdx !== "aleatorio") opts.ambiente = AMBIENTES[+ambienteIdx]
+  if (navIdx    !== "nenhum") opts.testeNavegador = RESULTADOS_NAVEGADOR[+navIdx]
+  if (pilotoIdx !== "nenhum") opts.testePiloto    = RESULTADOS_PILOTO[+pilotoIdx]
+
   _renderViagem(gerarViagem(opts))
 })
 
@@ -636,31 +646,91 @@ function _renderViagem(r) {
   const el = document.getElementById("viagemResultado")
   el.classList.remove("hidden")
   const ambCor = r.ambiente.cor
+
+  // ── Bloco de testes (navegador / piloto) ──
+  let blocoTestes = ""
+
+  if (r.testePiloto) {
+    const cor = r.testePiloto.deltaNR > 0 ? "#ef4444" : "#22c55e"
+    blocoTestes += `
+      <div class="viagem-teste-bloco" style="border-color:${cor}40;background:${cor}08">
+        <span class="viagem-teste-icone">🚢</span>
+        <div>
+          <strong style="color:${cor}">Piloto: ${r.testePiloto.label}</strong>
+          <span style="color:${cor};font-weight:700;margin-left:8px">${_nrStr(r.testePiloto.deltaNR)} NR</span>
+          <p style="margin:2px 0 0;font-size:11px;color:#94a3b8">${r.testePiloto.desc}</p>
+        </div>
+      </div>`
+  }
+
+  if (r.testeNavegador) {
+    const cor = r.testeNavegador.rotasReais === 0 ? "#ef4444"
+              : r.testeNavegador.rotasReais === 1 ? "#f59e0b" : "#22c55e"
+    blocoTestes += `
+      <div class="viagem-teste-bloco" style="border-color:${cor}40;background:${cor}08">
+        <span class="viagem-teste-icone">🧭</span>
+        <div>
+          <strong style="color:${cor}">Navegador: ${r.testeNavegador.label}</strong>
+          <p style="margin:2px 0 0;font-size:11px;color:#94a3b8">${r.testeNavegador.desc}</p>
+        </div>
+      </div>`
+  }
+
+  // ── Rotas ──
+  // Se o navegador fracassou, exibe as rotas FALSAS (enganosas)
+  const rotasParaExibir = (r.testeNavegador?.rotasReais === 0) ? r.rotasFalsas : r.rotas
+
+  const htmlRotas = r.eventos.map((ev, i) => {
+    const c      = _nrCor(ev.nrTotal)
+    const rotaReal = rotasParaExibir[i] ?? ev.rota
+
+    // Badge do navegador
+    let navBadge = ""
+    if (r.testeNavegador) {
+      if (r.testeNavegador.rotasReais === 0) {
+        navBadge = `<span class="viagem-nav-badge falsa">🧭 Info Falsa</span>`
+      } else if (ev.navegadorSabe) {
+        navBadge = `<span class="viagem-nav-badge real">🧭 Rota Conhecida</span>`
+      } else {
+        navBadge = `<span class="viagem-nav-badge desconhecida">🧭 Desconhecida</span>`
+      }
+    }
+
+    return `<div class="viagem-rota" style="border-color:${c}60">
+      <div class="viagem-rota-header">
+        <span class="viagem-rota-num">Rota ${i+1}</span>
+        <span class="viagem-rota-tipo">${rotaReal.icon} ${rotaReal.nome}</span>
+        <span class="viagem-nr-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">NR ${_nrStr(ev.nrTotal)}</span>
+        ${navBadge}
+      </div>
+      <p class="viagem-rota-desc">${rotaReal.desc}</p>
+      <div class="viagem-evento" style="border-left:3px solid ${ev.cor}">
+        <span style="color:${ev.cor};font-weight:600">${ev.icon} Evento ${ev.tipo}</span>
+        <span class="viagem-dado">🎲 D6: ${ev.dado}</span>
+        <p>${ev.evento}</p>
+      </div>
+    </div>`
+  }).join("")
+
   el.innerHTML = `<div class="viagem-resultado-inner">
     <div class="viagem-bloco viagem-ambiente" style="border-color:${ambCor}40;background:${ambCor}10">
-      <div class="viagem-bloco-header"><span class="viagem-bloco-icon">${r.ambiente.icon}</span>
+      <div class="viagem-bloco-header">
+        <span class="viagem-bloco-icon">${r.ambiente.icon}</span>
         <div><strong>Ambiente: ${r.ambiente.nome}</strong>
-        <span class="viagem-nr" style="color:${ambCor}">${_nrStr(r.ambiente.nr)} NR</span></div></div>
-      <p class="viagem-bloco-desc">${r.ambiente.desc}</p></div>
+        <span class="viagem-nr" style="color:${ambCor}">${_nrStr(r.ambiente.nr)} NR</span></div>
+      </div>
+      <p class="viagem-bloco-desc">${r.ambiente.desc}</p>
+    </div>
     <div class="viagem-config-resumo">
       <span>🚢 ${r.porte.nome} (${_nrStr(r.porte.nr)})</span>
       <span>🔧 ${r.estado.nome} (${_nrStr(r.estado.nr)})</span>
       <span>💨 Ritmo ${r.ritmo.nome} (${_nrStr(r.ritmo.nr)})</span>
-      <span>📊 NR Base: <strong style="color:${_nrCor(r.nrBase)}">${_nrStr(r.nrBase)}</strong></span></div>
+      ${r.deltaPiloto ? `<span>🚢 Piloto (${_nrStr(r.deltaPiloto)})</span>` : ""}
+      <span>📊 NR Base: <strong style="color:${_nrCor(r.nrBase)}">${_nrStr(r.nrBase)}</strong></span>
+    </div>
+    ${blocoTestes ? `<div class="viagem-testes-area">${blocoTestes}</div>` : ""}
     <div class="viagem-rotas-titulo">🗺️ As 3 Rotas Possíveis</div>
-    <div class="viagem-rotas">${r.eventos.map((ev,i)=>{
-      const c=_nrCor(ev.nrTotal)
-      return `<div class="viagem-rota" style="border-color:${c}60">
-        <div class="viagem-rota-header">
-          <span class="viagem-rota-num">Rota ${i+1}</span>
-          <span class="viagem-rota-tipo">${ev.rota.icon} ${ev.rota.nome}</span>
-          <span class="viagem-nr-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">NR ${_nrStr(ev.nrTotal)}</span></div>
-        <p class="viagem-rota-desc">${ev.rota.desc}</p>
-        <div class="viagem-evento" style="border-left:3px solid ${ev.cor}">
-          <span style="color:${ev.cor};font-weight:600">${ev.icon} Evento ${ev.tipo}</span>
-          <span class="viagem-dado">🎲 D6: ${ev.dado}</span>
-          <p>${ev.evento}</p></div></div>`
-    }).join("")}</div>
+    <div class="viagem-rotas">${htmlRotas}</div>
     <p class="viagem-nota">💡 Revele apenas o <em>tipo</em> da rota aos jogadores. O NR e o evento são informações do Mestre.</p>
   </div>`
 }
