@@ -14,6 +14,12 @@ body {
   font-family: 'Segoe UI', Arial, sans-serif;
   min-height: 100vh;
   padding: 24px;
+  transition: background 0.5s ease;
+}
+
+/* Modo Mestre — background vira vinho escuro */
+body[data-modo="mestre"] {
+  background: linear-gradient(135deg, #1a0a0a, #0d0305 60%, #1a0508);
 }
 
 a { color: inherit; text-decoration: none; }

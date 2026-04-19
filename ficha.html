@@ -17,6 +17,15 @@
 
     <div class="ficha-topbar">
       <a href="index.html" class="btn-voltar">← Fichas</a>
+
+      <!-- Retrato do personagem -->
+      <div class="ficha-retrato-wrap" id="fichaRetratoWrap">
+        <div class="ficha-retrato-grande" id="fichaRetratoGrande">👤</div>
+        <input type="file" id="fichaRetratoInput" accept="image/*" style="display:none">
+        <button class="ficha-retrato-btn" id="fichaRetratoBtnEditar" title="Trocar imagem">✏️</button>
+        <button class="ficha-retrato-btn ficha-retrato-btn-del" id="fichaRetratoBtnRemover" title="Remover imagem" style="display:none">✕</button>
+      </div>
+
       <h1 id="nomeFicha" contenteditable="true" class="nome-editavel">Nova Ficha</h1>
       <div id="saveIndicator" class="save-indicator save-idle" title="Status de salvamento">
         <span class="save-icon">✓</span>

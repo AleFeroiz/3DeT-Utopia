@@ -243,8 +243,13 @@ function _criarCardFicha(ficha) {
   card.className = "cena-ficha-card"
   card.dataset.fichaId = ficha.id
 
+  const retratoHtml = ficha.imagemUrl
+    ? `<div class="cfc-retrato" style="background-image:url('${ficha.imagemUrl}')"></div>`
+    : `<div class="cfc-retrato cfc-retrato-vazio">👤</div>`
+
   card.innerHTML = `
     <div class="cfc-header">
+      ${retratoHtml}
       <div style="flex:1;min-width:0">
         <div class="cfc-nome">${_esc(ficha.nome)}</div>
         <span class="cfc-nivel">Nv.${ficha.nivel} · ${_esc(ficha.racaId || "—")} · ${_esc(ficha.profissaoId || "—")}</span>
@@ -626,9 +631,15 @@ function renderSidebar() {
     item.className       = "cena-sidebar-item" + (jaTem ? " ja-na-cena" : "")
     item.draggable       = !jaTem
     item.dataset.fichaId = ficha.id
+    const retratoSide = ficha.imagemUrl
+      ? `<div class="cena-sidebar-retrato" style="background-image:url('${ficha.imagemUrl}')"></div>`
+      : `<div class="cena-sidebar-retrato cena-sidebar-retrato-vazio">👤</div>`
     item.innerHTML = `
-      <span class="cena-sidebar-item-nome">${_esc(ficha.nome)}</span>
-      <span class="cena-sidebar-item-meta">Nv.${ficha.nivel}${jaTem ? " · ✓ na cena" : ""}</span>`
+      ${retratoSide}
+      <div style="flex:1;min-width:0">
+        <span class="cena-sidebar-item-nome">${_esc(ficha.nome)}</span>
+        <span class="cena-sidebar-item-meta">Nv.${ficha.nivel}${jaTem ? " · ✓ na cena" : ""}</span>
+      </div>`
     if (!jaTem) {
       item.addEventListener("dragstart", e => {
         e.dataTransfer.setData("fichaId", ficha.id)

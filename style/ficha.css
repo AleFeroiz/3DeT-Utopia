@@ -37,6 +37,61 @@
   font-size: 22px;
 }
 
+/* ── RETRATO DO PERSONAGEM ───────────────────────────────── */
+.ficha-retrato-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ficha-retrato-grande {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: #0f172a;
+  border: 2px solid #334155;
+  cursor: pointer;
+  transition: border-color 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  opacity: 0.4;
+  user-select: none;
+}
+
+.ficha-retrato-grande:hover {
+  border-color: #3b82f6;
+  opacity: 1;
+}
+
+/* Quando tem imagem — não mostrar emoji */
+.ficha-retrato-grande[style*="url"] {
+  opacity: 1;
+  font-size: 0;
+}
+
+.ficha-retrato-btn {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.ficha-retrato-btn:hover { filter: brightness(1.2); }
+#fichaRetratoBtnEditar  { bottom: 0; right: 0; background: #1d4ed8; color: white; }
+#fichaRetratoBtnRemover { bottom: 0; left: 0;  background: #7f1d1d; color: white; }
+
 /* ── PONTOS ──────────────────────────────────────────────── */
 
 .pontos {
@@ -246,6 +301,7 @@
   font-size: 13px;
   font-weight: bold;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .bar input::-webkit-outer-spin-button,
@@ -1294,6 +1350,7 @@ hr {
   transition: border-color 0.15s;
   /* esconde setas padrão do number */
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .combate-extra::-webkit-outer-spin-button,
 .combate-extra::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

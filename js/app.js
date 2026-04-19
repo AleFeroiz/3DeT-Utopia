@@ -232,6 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderTudo()
   _bindNomeEditavel()
   _bindStatusInputs()
+  _bindRetrato()
   expor()
   _atualizarUILogin()
   _renderCombate()
@@ -682,6 +683,70 @@ function _bindNomeEditavel() {
     e.preventDefault()
     const texto = e.clipboardData.getData("text/plain")
     document.execCommand("insertText", false, texto)
+  })
+}
+
+// ─────────────────────────────────────────────────────────
+//  BIND — Retrato do personagem
+// ─────────────────────────────────────────────────────────
+function _bindRetrato() {
+  const grande  = document.getElementById("fichaRetratoGrande")
+  const input   = document.getElementById("fichaRetratoInput")
+  const btnEdit = document.getElementById("fichaRetratoBtnEditar")
+  const btnDel  = document.getElementById("fichaRetratoBtnRemover")
+  if (!grande || !input) return
+
+  // Aplica imagem atual da ficha
+  function _atualizarRetratoUI() {
+    if (ficha.imagemUrl) {
+      grande.style.backgroundImage = `url('${ficha.imagemUrl}')`
+      grande.style.fontSize = "0"
+      grande.textContent = ""
+      if (btnDel) btnDel.style.display = "flex"
+    } else {
+      grande.style.backgroundImage = ""
+      grande.style.fontSize = ""
+      grande.textContent = "👤"
+      if (btnDel) btnDel.style.display = "none"
+    }
+    // Só dono pode editar
+    if (btnEdit) btnEdit.style.display = _fichaOwner ? "flex" : "none"
+  }
+
+  _atualizarRetratoUI()
+
+  if (!_fichaOwner) return
+
+  // Clique no retrato ou no botão editar → abre file picker
+  grande.addEventListener("click", () => input.click())
+  if (btnEdit) btnEdit.addEventListener("click", () => input.click())
+
+  // Remover imagem
+  if (btnDel) btnDel.addEventListener("click", (e) => {
+    e.stopPropagation()
+    ficha.imagemUrl = null
+    _atualizarRetratoUI()
+    salvar()
+  })
+
+  // Lê o arquivo e converte para base64
+  input.addEventListener("change", () => {
+    const file = input.files[0]
+    if (!file) return
+    // Limita 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Imagem muito grande. Use uma imagem de até 2MB.")
+      input.value = ""
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      ficha.imagemUrl = ev.target.result  // base64
+      _atualizarRetratoUI()
+      salvar()
+      input.value = ""
+    }
+    reader.readAsDataURL(file)
   })
 }
 

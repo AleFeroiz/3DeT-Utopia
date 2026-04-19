@@ -31,7 +31,8 @@ export class Ficha {
       notas:       ""
     },
     inventario = { itens: [], offsetPeso: 0 },
-    combateExtras = {}
+    combateExtras = {},
+    imagemUrl = null
   } = {}) {
     this.id          = id ?? crypto.randomUUID()
     this.nome        = nome
@@ -63,6 +64,7 @@ export class Ficha {
       defEsquiva:   combateExtras?.defEsquiva   ?? 0,
       defContra:    combateExtras?.defContra     ?? 0,
     }
+    this.imagemUrl = imagemUrl ?? null
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
       e.tipo === "fonte" ? FonteDePoder.fromJSON(e) : ElementoFicha.fromJSON(e)

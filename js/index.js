@@ -305,7 +305,12 @@ function _criarCard(f, modo) {
   const total  = f.pontos?.total  ?? 10
 
   // Bug #25: escapa dados do usuário antes de inserir no HTML
+  const retratoHtml = f.imagemUrl
+    ? `<div class="ficha-retrato" style="background-image:url('${f.imagemUrl}')"></div>`
+    : `<div class="ficha-retrato ficha-retrato-vazio">👤</div>`
+
   div.innerHTML = `
+    ${retratoHtml}
     <div class="ficha-info">
       <strong class="ficha-nome">${_esc(f.nome) || "Sem Nome"}</strong>
       <div class="ficha-meta">
