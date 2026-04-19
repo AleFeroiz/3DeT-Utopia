@@ -396,11 +396,18 @@ async function _duplicarFicha(fichaId, modo) {
   copia.nome       = (dadosCompletos.nome || "Ficha") + " (cópia)"
   copia.isPublic   = false
   copia.editPublic = false
-  // Preserva a pasta da original — pega do metadado (mais confiável que o doc)
-  copia.pastaId    = encontrado.pastaId ?? dadosCompletos.pastaId ?? null
-  if (!copia.pastaId) delete copia.pastaId
   delete copia._soMetadados
-  delete copia._ownerUid   // será sobrescrito pelo salvarFichaFirestore
+  delete copia._ownerUid  // será sobrescrito pelo salvarFichaFirestore
+
+  // pastaId: prioridade ao metadado SE for uma string válida (UUID),
+  // caso contrário usa o que veio do doc completo
+  const pastaIdFinal = (typeof encontrado.pastaId === "string" && encontrado.pastaId)
+    ? encontrado.pastaId
+    : (typeof dadosCompletos.pastaId === "string" && dadosCompletos.pastaId)
+      ? dadosCompletos.pastaId
+      : null
+  if (pastaIdFinal) copia.pastaId = pastaIdFinal
+  else delete copia.pastaId
 
   const idx = m.fichas.indexOf(encontrado)
   m.fichas.splice(idx + 1, 0, copia)
@@ -621,6 +628,10 @@ document.getElementById("btnMigrar")?.addEventListener("click", () => {
   document.getElementById("btnMigrar").style.display = "none"
 })
 
+// ── Botões de modo (evita onclick inline que quebra com módulos ES6) ──
+document.getElementById("btnModoPlayer").addEventListener("click", () => setModo("player"))
+document.getElementById("btnModoMestre").addEventListener("click", () => setModo("mestre"))
+
 // ── Sistema de Viagem ──────────────────────────────────────
 document.getElementById("btnGerarViagem").addEventListener("click", () => {
   const ambienteIdx = document.getElementById("viagemAmbiente").value
@@ -677,40 +688,66 @@ function _renderViagem(r) {
   }
 
   // ── Rotas ──
-  // Se o navegador fracassou, exibe as rotas FALSAS (enganosas)
-  const rotasParaExibir = (r.testeNavegador?.rotasReais === 0) ? r.rotasFalsas : r.rotas
+  const fracasso = r.testeNavegador?.rotasReais === 0
 
-  const htmlRotas = r.eventos.map((ev, i) => {
-    const c      = _nrCor(ev.nrTotal)
-    const rotaReal = rotasParaExibir[i] ?? ev.rota
+  // Gera HTML de uma rota individual
+  function _htmlRota(ev, i, rota, opts = {}) {
+    const c          = _nrCor(ev.nrTotal)
+    const conhecida  = opts.conhecida  ?? false
+    const ehFalsa    = opts.ehFalsa    ?? false
+    const label      = opts.label      ?? `Rota ${i + 1}`
 
-    // Badge do navegador
+    const borderStyle = conhecida
+      ? `border-color:#4ade80;box-shadow:0 0 0 1px #4ade8055`
+      : ehFalsa
+        ? `border-color:#f8717180`
+        : `border-color:${c}60`
+
     let navBadge = ""
     if (r.testeNavegador) {
-      if (r.testeNavegador.rotasReais === 0) {
-        navBadge = `<span class="viagem-nav-badge falsa">🧭 Info Falsa</span>`
-      } else if (ev.navegadorSabe) {
-        navBadge = `<span class="viagem-nav-badge real">🧭 Rota Conhecida</span>`
-      } else {
+      if (ehFalsa) {
+        navBadge = `<span class="viagem-nav-badge falsa">⚠️ Info Falsa</span>`
+      } else if (conhecida) {
+        navBadge = `<span class="viagem-nav-badge real">🧭 Conhecida</span>`
+      } else if (!fracasso) {
         navBadge = `<span class="viagem-nav-badge desconhecida">🧭 Desconhecida</span>`
       }
     }
 
-    return `<div class="viagem-rota" style="border-color:${c}60">
+    return `<div class="viagem-rota" style="${borderStyle}">
       <div class="viagem-rota-header">
-        <span class="viagem-rota-num">Rota ${i+1}</span>
-        <span class="viagem-rota-tipo">${rotaReal.icon} ${rotaReal.nome}</span>
+        <span class="viagem-rota-num">${label}</span>
+        <span class="viagem-rota-tipo">${rota.icon} ${rota.nome}</span>
         <span class="viagem-nr-pill" style="background:${c}22;color:${c};border:1px solid ${c}55">NR ${_nrStr(ev.nrTotal)}</span>
         ${navBadge}
       </div>
-      <p class="viagem-rota-desc">${rotaReal.desc}</p>
+      <p class="viagem-rota-desc">${rota.desc}</p>
       <div class="viagem-evento" style="border-left:3px solid ${ev.cor}">
         <span style="color:${ev.cor};font-weight:600">${ev.icon} Evento ${ev.tipo}</span>
         <span class="viagem-dado">🎲 D6: ${ev.dado}</span>
         <p>${ev.evento}</p>
       </div>
     </div>`
-  }).join("")
+  }
+
+  // Rotas reais do mestre (sempre as 3 verdadeiras)
+  let htmlRotas = r.eventos.map((ev, i) =>
+    _htmlRota(ev, i, ev.rota, { conhecida: ev.navegadorSabe === true })
+  ).join("")
+
+  // Se fracassou: adiciona bloco de INFORMAÇÃO FALSA abaixo das 3 rotas reais
+  if (fracasso && r.rotasFalsas?.length) {
+    htmlRotas += `
+      <div class="viagem-fracasso-sep">
+        <span>⚠️ Informação Falsa recebida pelo Navegador</span>
+      </div>`
+    r.rotasFalsas.forEach((rotaFalsa, i) => {
+      htmlRotas += _htmlRota(r.eventos[i], i, rotaFalsa, {
+        ehFalsa: true,
+        label: `Falsa ${i + 1}`
+      })
+    })
+  }
 
   el.innerHTML = `<div class="viagem-resultado-inner">
     <div class="viagem-bloco viagem-ambiente" style="border-color:${ambCor}40;background:${ambCor}10">

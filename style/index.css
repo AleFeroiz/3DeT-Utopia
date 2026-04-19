@@ -619,6 +619,25 @@ body[data-modo="mestre"] .viagem-divisor { border-color: #3f0000; }
   line-height: 1.4;
 }
 
+.viagem-fracasso-sep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f87171;
+  letter-spacing: 0.4px;
+}
+
+.viagem-fracasso-sep::before,
+.viagem-fracasso-sep::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #f8717140;
+}
+
 /* Badge nas rotas */
 .viagem-nav-badge {
   font-size: 10px;
