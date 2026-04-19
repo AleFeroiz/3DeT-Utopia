@@ -268,6 +268,8 @@ export class Ficha {
       anotacoes:   this.anotacoes,
       inventario:  this.inventario,
       combateExtras: this.combateExtras,
+      imagemUrl:   this.imagemUrl   ?? null,
+      imagemThumb: this.imagemThumb ?? null,
     }
   }
 

@@ -616,6 +616,7 @@ async function salvar() {
           racaId:      fichaJson.racaId ?? "",
           profissaoId: fichaJson.profissaoId ?? "",
           pastaId:     metaAtual?.pastaId ?? fichaJson.pastaId ?? null,
+          imagemThumb: fichaJson.imagemThumb ?? metaAtual?.imagemThumb ?? null,
         }
         const indiceAtualizado = indiceAtual.some(m => m.id === fichaJson.id)
           ? indiceAtual.map(m => m.id === fichaJson.id ? novoMeta : m)
