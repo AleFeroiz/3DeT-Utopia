@@ -813,6 +813,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await Promise.all([_carregarCenas(), _carregarFichasMestre()])
   renderListaCenas()
+
+  // Recarrega cenas quando o usuário volta para esta aba
+  // (ex: excluiu ficha no index.html em outra aba)
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+      renderListaCenas()
+      if (_cenaAtual) { renderCena(); renderSidebar() }
+    }
+  })
 })
 
 async function _bootstrapFirebaseCenas() {
