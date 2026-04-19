@@ -379,17 +379,30 @@ function criarFicha(pastaId = null, modo = modoAtivo) {
 // Bug #24: opera por id
 async function _duplicarFicha(fichaId, modo) {
   const m        = MODOS[modo]
-  const original = m.fichas.find(f => f.id === fichaId)
-  if (!original) return
-  const copia      = JSON.parse(JSON.stringify(original))
+  const encontrado = m.fichas.find(f => f.id === fichaId)
+  if (!encontrado) return
+
+  // Se estiver logado, os cards são só metadados (_soMetadados: true).
+  // Precisa carregar o documento completo antes de copiar.
+  let dadosCompletos = encontrado
+  if (encontrado._soMetadados) {
+    const remoto = await carregarFichaFirestore(fichaId, modo)
+    if (!remoto) { toastErro("Não foi possível carregar a ficha para duplicar."); return }
+    dadosCompletos = remoto
+  }
+
+  const copia      = JSON.parse(JSON.stringify(dadosCompletos))
   copia.id         = crypto.randomUUID()
-  copia.nome       = (original.nome || "Ficha") + " (cópia)"
+  copia.nome       = (dadosCompletos.nome || "Ficha") + " (cópia)"
   copia.isPublic   = false         // cópia sempre começa privada
   copia.editPublic = false
-  copia._ownerUid  = getUser()?.uid ?? null  // associa ao usuário atual
-  const idx = m.fichas.indexOf(original)
+  delete copia._soMetadados        // garante que não herda a flag de metadado
+  delete copia._ownerUid           // será sobrescrito pelo salvarFichaFirestore
+
+  const idx = m.fichas.indexOf(encontrado)
   m.fichas.splice(idx + 1, 0, copia)
-  await _salvarFichaIndividual(copia, modo)  // documento individual primeiro
+
+  await _salvarFichaIndividual(copia, modo)  // documento completo primeiro
   await salvar(modo)                          // índice + pastas depois
   renderizar(modo)
   toastSucesso(`"${copia.nome}" criada!`)
