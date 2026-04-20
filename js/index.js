@@ -295,6 +295,25 @@ function _esc(str) {
   return String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
 }
 
+/** Converte hex para [hue, saturation, lightness] — espelho do app.js */
+function _hexToHsl(hex) {
+  let r = parseInt(hex.slice(1,3), 16) / 255
+  let g = parseInt(hex.slice(3,5), 16) / 255
+  let b = parseInt(hex.slice(5,7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  let h, s, l = (max + min) / 2
+  if (max === min) { h = s = 0 } else {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+      case g: h = ((b - r) / d + 2) / 6; break
+      case b: h = ((r - g) / d + 4) / 6; break
+    }
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)]
+}
+
 // ── Card ───────────────────────────────────────────────────
 function _criarCard(f, modo) {
   // Bug #24: opera por ficha.id, não por índice
@@ -311,6 +330,15 @@ function _criarCard(f, modo) {
   div.style.setProperty("--cor-tema", cor)
   div.style.setProperty("--cor-tema-dim", cor + "22")
   div.style.setProperty("--cor-tema-mid", cor + "55")
+
+  // Gera paleta de fundo derivada da matiz da cor tema (mesmo algoritmo do app.js)
+  const [h, s] = _hexToHsl(cor)
+  const sat = Math.min(s * 0.35, 25)
+  div.style.setProperty("--bg-card",   `hsl(${h},${sat}%,13%)`)
+  div.style.setProperty("--bg-base",   `hsl(${h},${sat}%,7%)`)
+  div.style.setProperty("--bg-accent", `hsl(${h},${Math.min(s * 0.5, 35)}%,18%)`)
+  div.style.setProperty("--bg-hover",  `hsl(${h},${sat}%,17%)`)
+  div.style.setProperty("--border",    `hsl(${h},${sat}%,20%)`)
 
   // Bug #25: escapa dados do usuário antes de inserir no HTML
   const imgSrc = f.imagemThumb || f.imagemUrl || null

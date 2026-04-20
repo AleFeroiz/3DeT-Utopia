@@ -819,6 +819,9 @@ function _darkenHex(hex, factor) {
 //  BOOT
 // ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
+  // Cena é sempre ferramenta do Mestre — aplica tema escuro vinho do modo mestre
+  document.body.setAttribute("data-modo", "mestre")
+
   await inicializarFirebase()
   await aguardarAuth()
 

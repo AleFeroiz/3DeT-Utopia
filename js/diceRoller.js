@@ -78,21 +78,21 @@ function _injetarCSS() {
       height: 54px;
       border-radius: 50%;
       border: none;
-      background: #3b82f6;
+      background: var(--cor-tema, #3b82f6);
       color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(59,130,246,0.45);
+      box-shadow: 0 4px 14px var(--cor-tema-mid, rgba(59,130,246,0.45));
       transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
       order: 2;
       flex-shrink: 0;
     }
     #diceRollerBtn:hover {
-      background: #2563eb;
+      background: var(--cor-tema-dark, #2563eb);
       transform: scale(1.08);
-      box-shadow: 0 6px 18px rgba(59,130,246,0.55);
+      box-shadow: 0 6px 18px var(--cor-tema-mid, rgba(59,130,246,0.55));
     }
     #diceRollerBtn:active { transform: scale(0.95); }
     #diceRollerBtn.aberto { background: #475569; box-shadow: none; }
@@ -196,15 +196,15 @@ function _injetarCSS() {
       font-weight: 600;
       color: #f1f5f9;
     }
-    .dice-row.ativo .dice-label { color: #60a5fa; }
-    .dice-row.ativo .dice-qtd   { color: #60a5fa; }
+    .dice-row.ativo .dice-label { color: var(--cor-tema, #60a5fa); }
+    .dice-row.ativo .dice-qtd   { color: var(--cor-tema, #60a5fa); }
 
     #diceRolarBtn {
       width: 100%;
       padding: 11px;
       border: none;
       border-radius: 10px;
-      background: #3b82f6;
+      background: var(--cor-tema, #3b82f6);
       color: white;
       font-size: 16px;
       font-weight: 700;
@@ -212,7 +212,7 @@ function _injetarCSS() {
       transition: background 0.15s, transform 0.1s;
       letter-spacing: 0.03em;
     }
-    #diceRolarBtn:hover  { background: #2563eb; }
+    #diceRolarBtn:hover  { background: var(--cor-tema-dark, #2563eb); }
     #diceRolarBtn:active { transform: scale(0.97); }
     #diceRolarBtn:disabled {
       background: #334155;

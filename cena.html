@@ -43,8 +43,8 @@
 
     /* Card de cena na lista */
     .cena-card-lista {
-      background: #0f172a;
-      border: 1px solid #1e3a5f;
+      background: var(--bg-base, #0f172a);
+      border: 1px solid var(--bg-accent, #1e3a5f);
       border-radius: 12px;
       padding: 14px 16px;
       margin-bottom: 10px;
@@ -54,7 +54,7 @@
       transition: border-color 0.2s;
     }
 
-    .cena-card-lista:hover { border-color: #2d5a8e; }
+    .cena-card-lista:hover { border-color: var(--cor-tema, #2d5a8e); }
 
     .cena-card-info { flex: 1; }
     .cena-card-nome {
@@ -72,8 +72,8 @@
       display: flex;
       gap: 6px;
     }
-    .cena-btn-abrir    { background: #1d4ed8; padding: 6px 14px; }
-    .cena-btn-renomear { background: #334155; padding: 6px 10px; font-size: 14px; }
+    .cena-btn-abrir    { background: var(--cor-tema, #1d4ed8); padding: 6px 14px; }
+    .cena-btn-renomear { background: var(--bg-hover, #334155); padding: 6px 10px; font-size: 14px; }
     .cena-btn-del      { background: #7f1d1d; padding: 6px 10px; font-size: 14px; }
 
     /* Estado vazio */
@@ -84,7 +84,7 @@
       justify-content: center;
       gap: 12px;
       padding: 60px 20px;
-      color: #1e3a5f;
+      color: var(--bg-accent, #1e3a5f);
       text-align: center;
     }
 
@@ -124,7 +124,7 @@
       bottom: 0;
       width: 228px;
       background: rgba(8, 12, 24, 0.97);
-      border-left: 1px solid #1e3a5f;
+      border-left: 1px solid var(--bg-accent, #1e3a5f);
       display: flex;
       flex-direction: column;
       z-index: 10;
@@ -143,7 +143,7 @@
       right: 228px;
       top: 50%;
       transform: translateY(-50%);
-      background: #1e3a5f;
+      background: var(--bg-accent, #1e3a5f);
       border: none;
       color: #7dd3fc;
       padding: 14px 7px;
@@ -157,7 +157,7 @@
       transition: right 0.25s, background 0.2s;
     }
 
-    #btnToggleSidebar:hover { background: #2d5a8e; }
+    #btnToggleSidebar:hover { background: var(--cor-tema, #2d5a8e); }
 
     .sidebar-closed-btn { right: 0 !important; }
 
