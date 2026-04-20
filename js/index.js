@@ -333,8 +333,11 @@ function _criarCard(f, modo) {
 
   // Gera paleta de fundo derivada da matiz da cor tema (mesmo algoritmo do app.js)
   const [h, s] = _hexToHsl(cor)
-  const satFundo  = Math.min(s * 0.35, 25)  // saturação sutil para bordas/elementos
-  const satCard   = Math.min(s * 0.55, 40)  // saturação mais visível para o fundo do card
+  const satFundo  = Math.min(s * 0.35, 25)
+  const satCard   = Math.min(s * 0.55, 40)
+  // Aplica background diretamente — CSS variables locais não sobrescrevem seletores de classe
+  div.style.background   = `hsl(${h},${satCard}%,15%)`
+  div.style.borderColor  = `hsl(${h},${satFundo}%,25%)`
   div.style.setProperty("--bg-card",   `hsl(${h},${satCard}%,15%)`)
   div.style.setProperty("--bg-base",   `hsl(${h},${satFundo}%,7%)`)
   div.style.setProperty("--bg-accent", `hsl(${h},${Math.min(s * 0.5, 35)}%,18%)`)
