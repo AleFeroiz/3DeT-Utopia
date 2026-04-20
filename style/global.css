@@ -9,7 +9,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #0f172a, #020617);
+  background: linear-gradient(135deg, var(--bg-base, #0f172a), var(--bg-deepest, #020617));
   color: white;
   font-family: 'Segoe UI', Arial, sans-serif;
   min-height: 100vh;
@@ -44,7 +44,7 @@ a { color: inherit; text-decoration: none; }
 .btn-abrir   { background: #3b82f6; }
 .btn-deletar { background: #ef4444; }
 .btn-voltar  {
-  background: #334155;
+  background: var(--bg-hover, #334155);
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 13px;
@@ -72,7 +72,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .ficha-card {
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   padding: 16px 20px;
   border-radius: 12px;
   margin-bottom: 12px;
@@ -80,7 +80,7 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   transition: border-color 0.2s;
 }
 
@@ -130,7 +130,7 @@ a { color: inherit; text-decoration: none; }
 .hidden { display: none !important; }
 
 .modal-content {
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   padding: 24px;
   border-radius: 16px;
   width: min(440px, 95vw);
@@ -139,7 +139,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
 }
 
 .modal-content.grande {
@@ -161,8 +161,8 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0f172a;
+  border: 1px solid var(--border, #334155);
+  background: var(--bg-base, #0f172a);
   color: white;
   font-size: 14px;
   font-family: inherit;
@@ -196,8 +196,8 @@ a { color: inherit; text-decoration: none; }
 /* ── ITEMS DE LISTA (modal do livro) ─────────────────────── */
 
 .item-lista {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   padding: 12px;
   border-radius: 10px;
   margin-bottom: 8px;
@@ -216,8 +216,8 @@ a { color: inherit; text-decoration: none; }
 /* ── CARDS DE ELEMENTOS ──────────────────────────────────── */
 
 .card-elemento {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   padding: 12px 14px;
   border-radius: 10px;
   margin-bottom: 10px;
@@ -259,13 +259,13 @@ a { color: inherit; text-decoration: none; }
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
-  background: #334155;
+  background: var(--bg-hover, #334155);
   color: white;
   transition: background 0.2s;
 }
 
 .btn-remover { background: #7f1d1d !important; }
-.btn-editar  { background: #1e3a5f !important; }
+.btn-editar  { background: var(--bg-accent, #1e3a5f) !important; }
 .card-actions button:hover { filter: brightness(1.2); }
 
 .carac-item {
@@ -273,7 +273,7 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   font-size: 13px;
   padding: 5px 0;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-dim, #1e293b);
   opacity: 0.85;
 }
 
@@ -298,7 +298,7 @@ a { color: inherit; text-decoration: none; }
 .tabela-sistema td {
   padding: 8px;
   text-align: center;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--border-dim, #1e293b);
 }
 
 .tabela-sistema tbody tr {
@@ -306,7 +306,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
 }
 
-.tabela-sistema tbody tr:hover    { background: #1e293b; }
+.tabela-sistema tbody tr:hover    { background: var(--bg-card, #1e293b); }
 .tabela-sistema tbody tr.selecionado { background: #14532d; }
 
 /* ── FONTE: PC DISPLAY ───────────────────────────────────── */
@@ -314,7 +314,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -328,8 +328,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ── PASSIVOS ────────────────────────────────────────────── */
 .passivo-bloco {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 13px;
@@ -340,7 +340,7 @@ a { color: inherit; text-decoration: none; }
 
 .passivo-tag {
   display: inline-block;
-  background: #1e3a5f;
+  background: var(--bg-accent, #1e3a5f);
   border-radius: 6px;
   padding: 3px 8px;
   font-size: 12px;
@@ -357,9 +357,9 @@ a { color: inherit; text-decoration: none; }
 
 .btn-tipo-dano {
   padding: 4px 10px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 6px;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   color: white;
   cursor: pointer;
   font-size: 12px;
@@ -368,7 +368,7 @@ a { color: inherit; text-decoration: none; }
 
 .btn-tipo-dano:hover     { border-color: #3b82f6; }
 .btn-tipo-dano.selecionado {
-  background: #1e3a5f;
+  background: var(--bg-accent, #1e3a5f);
   border-color: #3b82f6;
 }
 
@@ -377,7 +377,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 99px;
-  background: #334155;
+  background: var(--bg-hover, #334155);
   text-transform: capitalize;
   opacity: 0.8;
 }
@@ -393,8 +393,8 @@ a { color: inherit; text-decoration: none; }
 }
 .login-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .user-info-header { font-size: 13px; opacity: 0.7; }
-.btn-login-header  { background: #1e3a5f; font-size: 13px; }
-.btn-logout-header { background: transparent; border: 1px solid #334155; color: #94a3b8; font-size: 12px; }
+.btn-login-header  { background: var(--bg-accent, #1e3a5f); font-size: 13px; }
+.btn-logout-header { background: transparent; border: 1px solid var(--border, #334155); color: #94a3b8; font-size: 12px; }
 
 /* ══════════════════════════════════════════════════════════
    RESPONSIVIDADE MOBILE — global
@@ -435,8 +435,8 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex;
   align-items: center;
   gap: 0;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   overflow: hidden;
   width: 100%;

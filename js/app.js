@@ -701,11 +701,52 @@ function _bindNomeEditavel() {
 // ─────────────────────────────────────────────────────────
 function _aplicarCorTema(cor) {
   const c = cor || "#3b82f6"
-  // Deriva variações da cor base para uso em gradientes e transparências
+  const [h, s] = _hexToHsl(c)
+
+  // Variações diretas da cor tema (para botões, bordas ativas, destaques)
   document.documentElement.style.setProperty("--cor-tema",      c)
   document.documentElement.style.setProperty("--cor-tema-dark", _darken(c, 0.7))
   document.documentElement.style.setProperty("--cor-tema-dim",  c + "22")
   document.documentElement.style.setProperty("--cor-tema-mid",  c + "55")
+
+  // Paleta de fundo derivada da matiz da cor tema
+  // Cada camada é progressivamente mais clara, mantendo saturação baixa
+  // para não competir com os elementos de UI
+  const sat = Math.min(s * 0.35, 25) // saturação bem reduzida nos fundos
+  document.documentElement.style.setProperty("--bg-deepest", `hsl(${h},${sat}%,2%)`)   // #020617 equiv
+  document.documentElement.style.setProperty("--bg-base",    `hsl(${h},${sat}%,7%)`)   // #0f172a equiv
+  document.documentElement.style.setProperty("--bg-deep",    `hsl(${h},${sat}%,4%)`)   // #0a1628 equiv
+  document.documentElement.style.setProperty("--bg-card",    `hsl(${h},${sat}%,13%)`)  // #1e293b equiv
+  document.documentElement.style.setProperty("--bg-input",   `hsl(${h},${sat}%,10%)`)  // #0c1a3a equiv
+  document.documentElement.style.setProperty("--bg-darker",  `hsl(${h},${sat}%,5%)`)   // #080f1e equiv
+  document.documentElement.style.setProperty("--bg-hover",   `hsl(${h},${sat}%,17%)`)  // #334155 equiv
+  document.documentElement.style.setProperty("--bg-accent",  `hsl(${h},${Math.min(s * 0.5, 35)}%,18%)`) // #1e3a5f equiv
+  document.documentElement.style.setProperty("--border",     `hsl(${h},${sat}%,20%)`)  // #334155 equiv
+  document.documentElement.style.setProperty("--border-dim", `hsl(${h},${sat}%,12%)`)  // #1e293b equiv
+
+  // Atualiza também o background do body com gradiente derivado
+  document.body.style.background = `linear-gradient(135deg, hsl(${h},${sat}%,7%), hsl(${h},${sat}%,2%))`
+}
+
+/** Converte hex para [hue, saturation, lightness] */
+function _hexToHsl(hex) {
+  let r = parseInt(hex.slice(1,3), 16) / 255
+  let g = parseInt(hex.slice(3,5), 16) / 255
+  let b = parseInt(hex.slice(5,7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  let h, s, l = (max + min) / 2
+  if (max === min) {
+    h = s = 0
+  } else {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+      case g: h = ((b - r) / d + 2) / 6; break
+      case b: h = ((r - g) / d + 4) / 6; break
+    }
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)]
 }
 
 /** Escurece uma cor hex multiplicando os canais por `factor` (0-1) */

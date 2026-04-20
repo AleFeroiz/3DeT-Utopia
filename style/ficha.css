@@ -15,10 +15,10 @@
 .main  { flex: 6; min-width: 0; }
 .sidebar {
   flex: 3;
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   padding: 18px;
   border-radius: 16px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   position: sticky;
   top: 24px;
   min-width: 200px;
@@ -49,8 +49,8 @@
   border-radius: 50%;
   background-size: cover;
   background-position: center;
-  background-color: #0f172a;
-  border: 2px solid #334155;
+  background-color: var(--bg-base, #0f172a);
+  border: 2px solid var(--border, #334155);
   cursor: pointer;
   transition: border-color 0.2s, opacity 0.2s;
   display: flex;
@@ -115,8 +115,8 @@
 
 .tab {
   padding: 8px 14px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
@@ -135,10 +135,10 @@
 
 .section {
   display: none;
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   padding: 24px;
   border-radius: 14px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
 }
 
 .section.active { display: block; }
@@ -223,8 +223,8 @@
   gap: 10px;
   margin-bottom: 8px;
   padding: 10px 14px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -249,7 +249,7 @@
 }
 
 .status-bloco {
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   padding: 10px 12px;
   border-radius: 10px;
   margin-bottom: 10px;
@@ -312,7 +312,7 @@
 #pmFill { background: linear-gradient(90deg, #7e22ce, #a855f7); }
 #pvFill { background: linear-gradient(90deg, #991b1b, #ef4444); }
 
-#paBackground { background: #0c1a3a; }
+#paBackground { background: var(--bg-input, #0c1a3a); }
 #pmBackground { background: #1e0a3c; }
 #pvBackground { background: #2a0a0a; }
 
@@ -320,7 +320,7 @@
 
 .info-pcs {
   font-size: 14px;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   padding: 8px 12px;
   border-radius: 8px;
 }
@@ -366,7 +366,7 @@
 .orcamento-preview {
   display: flex;
   gap: 24px;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -391,7 +391,7 @@ hr {
 
 /* ── NÍVEL ───────────────────────────────────────────────── */
 .nivel-bloco {
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   border-radius: 10px;
   padding: 10px 12px;
   display: flex;
@@ -402,7 +402,7 @@ hr {
 .nivel-controle { display: flex; align-items: center; gap: 12px; }
 .nivel-num { font-size: 28px; font-weight: bold; color: var(--cor-tema, #3b82f6); min-width: 32px; text-align: center; }
 .btn-nivel {
-  background: #1e293b; border: 1px solid #334155; color: white;
+  background: var(--bg-card, #1e293b); border: 1px solid var(--border, #334155); color: white;
   width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 16px;
   transition: background 0.2s;
 }
@@ -418,8 +418,8 @@ hr {
 .btn-sidebar-escolha {
   width: 100%;
   padding: 8px 10px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   color: white;
   cursor: pointer;
@@ -427,7 +427,7 @@ hr {
   text-align: left;
   transition: border-color 0.2s, background 0.2s;
 }
-.btn-sidebar-escolha:hover { background: #1e293b; border-color: var(--cor-tema, #3b82f6); }
+.btn-sidebar-escolha:hover { background: var(--bg-card, #1e293b); border-color: var(--cor-tema, #3b82f6); }
 
 /* ── LOGIN AREA ──────────────────────────────────────────── */
 .login-area { display: flex; flex-direction: column; gap: 6px; }
@@ -439,15 +439,15 @@ hr {
 }
 .btn-login:hover  { filter: brightness(1.2); }
 .btn-logout {
-  padding: 6px; border: 1px solid #334155; border-radius: 8px;
+  padding: 6px; border: 1px solid var(--border, #334155); border-radius: 8px;
   background: transparent; color: #94a3b8; cursor: pointer; font-size: 12px;
 }
-.btn-logout:hover { background: #1e293b; }
+.btn-logout:hover { background: var(--bg-card, #1e293b); }
 
 /* ── PERÍCIAS COM MAESTRIA ───────────────────────────────── */
 .maestria-info {
-  background: #0f172a; border-radius: 8px; padding: 8px 12px;
-  font-size: 13px; margin-bottom: 12px; border: 1px solid #334155;
+  background: var(--bg-base, #0f172a); border-radius: 8px; padding: 8px 12px;
+  font-size: 13px; margin-bottom: 12px; border: 1px solid var(--border, #334155);
 }
 .pericia-row {
   display: flex; align-items: center; gap: 8px;
@@ -455,15 +455,15 @@ hr {
 }
 .pericia-label {
   flex: 1; display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; background: #0f172a; border: 1px solid #334155;
+  padding: 8px 12px; background: var(--bg-base, #0f172a); border: 1px solid var(--border, #334155);
   border-radius: 8px; cursor: pointer; font-size: 14px; transition: border-color 0.2s;
 }
 .pericia-label.ativa { border-color: var(--cor-tema, #3b82f6); }
 .pericia-label:hover  { border-color: #475569; }
 .pericia-custo { margin-left: auto; opacity: 0.5; font-size: 12px; }
 .btn-maestria {
-  width: 32px; height: 32px; border-radius: 8px; border: 1px solid #334155;
-  background: #0f172a; color: #6b7280; cursor: pointer; font-size: 14px;
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border, #334155);
+  background: var(--bg-base, #0f172a); color: #6b7280; cursor: pointer; font-size: 14px;
   transition: all 0.2s; flex-shrink: 0;
 }
 .btn-maestria.ativa  { background: #1c1400; border-color: #854d0e; color: #fbbf24; }
@@ -485,7 +485,7 @@ hr {
 .raca-emoji { font-size: 36px; }
 .raca-header h2 { font-size: 20px; margin: 0; }
 .btn-trocar {
-  margin-left: auto; padding: 6px 12px; border: 1px solid #334155;
+  margin-left: auto; padding: 6px 12px; border: 1px solid var(--border, #334155);
   border-radius: 6px; background: transparent; color: white; cursor: pointer; font-size: 12px;
 }
 .btn-trocar:hover { background: #334155; }
@@ -497,10 +497,10 @@ hr {
 .secao-info h3 { font-size: 14px; opacity: 0.7; margin-bottom: 8px; }
 .tag-extra {
   display: inline-block; padding: 3px 10px; border-radius: 99px;
-  background: var(--cor-tema-dim, #1e3a5f); border: 1px solid #334155; font-size: 13px; margin: 2px;
+  background: var(--cor-tema-dim, #1e3a5f); border: 1px solid var(--border, #334155); font-size: 13px; margin: 2px;
 }
 .card-info {
-  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  background: var(--bg-base, #0f172a); border: 1px solid var(--border, #334155); border-radius: 8px;
   padding: 10px 12px; margin-bottom: 6px; font-size: 13px;
   word-break: break-word; overflow-wrap: break-word;
 }
@@ -512,7 +512,7 @@ hr {
   display: inline-block; font-size: 11px; padding: 2px 6px;
   border-radius: 4px; background: #14532d; color: #86efac; margin-bottom: 4px;
 }
-.badge-nivel.bloqueado { background: #1e293b; color: #94a3b8; }
+.badge-nivel.bloqueado { background: var(--bg-card, #1e293b); color: #94a3b8; }
 
 /* ── FONTE EXPANDIR BTN ──────────────────────────────────── */
 .btn-expandir {
@@ -529,20 +529,20 @@ hr {
 .status-arrows button {
   flex: 1;
   padding: 3px 0;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 5px;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   color: #94a3b8;
   cursor: pointer;
   font-size: 13px;
   font-weight: bold;
   transition: background 0.15s, color 0.15s;
 }
-.status-arrows button:hover { background: #1e293b; color: white; }
+.status-arrows button:hover { background: var(--bg-card, #1e293b); color: white; }
 
 /* ── CARACTERÍSTICA: RESUMO DE ESCOLHAS ──────────────────── */
 .carac-resumo {
-  background: #080f1e;
+  background: var(--bg-darker, #080f1e);
   border-radius: 6px;
   padding: 6px 10px;
   margin: 6px 0 4px;
@@ -552,7 +552,7 @@ hr {
   display: flex;
   gap: 6px;
   padding: 2px 0;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-dim, #1e293b);
   line-height: 1.4;
 }
 .carac-resumo-row:last-child { border-bottom: none; }
@@ -582,15 +582,15 @@ hr {
   opacity: 0.65;
 }
 .carac-badges span {
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   padding: 1px 6px;
   border-radius: 4px;
 }
 
 /* ── PROFISSÃO: NÍVEL BADGE ──────────────────────────────── */
 .nivel-prof-badge {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 13px;
@@ -600,7 +600,7 @@ hr {
 /* ── MAESTRIA: OUTLINE DOURADA ───────────────────────────── */
 .pericia-label.maestria {
   border-color: #854d0e;
-  background: linear-gradient(135deg, #1c1400, #0f172a);
+  background: linear-gradient(135deg, #1c1400, var(--bg-base, #0f172a));
   box-shadow: 0 0 0 1px #854d0e;
 }
 .pericia-maestria-tag {
@@ -660,10 +660,10 @@ hr {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   padding: 5px 10px;
   border-radius: 7px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
 }
 .maestria-sidebar-label { opacity: 0.6; font-size: 12px; }
 
@@ -671,8 +671,8 @@ hr {
 .base-gratuita {
   display: flex;
   justify-content: space-between;
-  background: #0a1628;
-  border: 1px dashed #1e3a5f;
+  background: var(--bg-deep, #0a1628);
+  border: 1px dashed var(--bg-accent, #1e3a5f);
   border-radius: 6px;
   padding: 5px 10px;
   font-size: 12px;
@@ -857,7 +857,7 @@ hr {
 
 .pericia-tooltip {
   position: relative;
-  background: #0f172a;
+  background: var(--bg-base, #0f172a);
   border: 1px solid var(--cor-tema, #3b82f6);
   border-radius: 8px;
   padding: 10px 12px;
@@ -902,7 +902,7 @@ hr {
 
 /* ── VARIANTES (Amplificada / Reduzida) ──────────────────── */
 .variante-bloco {
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 13px;
@@ -977,8 +977,8 @@ hr {
 
 /* ── ZOAN: REGRAS FIXAS ──────────────────────────────────── */
 .zoan-regra-bloco {
-  background: #0a1628;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-deep, #0a1628);
+  border: 1px solid var(--bg-accent, #1e3a5f);
   border-radius: 8px;
   padding: 8px 12px;
   margin: 8px 0 4px;
@@ -998,7 +998,7 @@ hr {
 
 .zoan-forma-bloco {
   margin-top: 10px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--border-dim, #1e293b);
   padding-top: 10px;
 }
 .zoan-forma-titulo {
@@ -1044,8 +1044,8 @@ hr {
 .anotacao-area {
   width: 100%;
   min-height: 130px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 10px;
   color: white;
   font-family: inherit;
@@ -1168,8 +1168,8 @@ hr {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border, #334155);
   border-radius: 10px;
   padding: 10px 14px;
   transition: border-color 0.15s;
@@ -1209,8 +1209,8 @@ hr {
   font-size: 13px;
   font-weight: 600;
   color: #94a3b8;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 6px;
   padding: 2px 8px;
   white-space: nowrap;
@@ -1224,7 +1224,7 @@ hr {
 .inv-item-acoes .btn-editar,
 .inv-item-acoes .btn-remover {
   background: transparent;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   color: #94a3b8;
   border-radius: 6px;
   padding: 4px 8px;
@@ -1232,7 +1232,7 @@ hr {
   font-size: 13px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.inv-item-acoes .btn-editar:hover  { background: #1e3a5f; border-color: var(--cor-tema, #3b82f6); color: #93c5fd; }
+.inv-item-acoes .btn-editar:hover  { background: var(--bg-accent, #1e3a5f); border-color: var(--cor-tema, #3b82f6); color: #93c5fd; }
 .inv-item-acoes .btn-remover:hover { background: #3f1515; border-color: #ef4444; color: #fca5a5; }
 
 /* ── MODAL ITEM: CATEGORIA ───────────────────────────────── */
@@ -1241,7 +1241,7 @@ hr {
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
@@ -1274,8 +1274,8 @@ hr {
 
 /* ── SIDEBAR: BLOCO DE COMBATE ───────────────────────────── */
 .combate-bloco {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -1293,7 +1293,7 @@ hr {
 }
 .toggle-atrib {
   padding: 3px 8px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 5px;
   background: transparent;
   color: #64748b;
@@ -1319,7 +1319,7 @@ hr {
   justify-content: space-between;
   align-items: center;
   padding: 3px 0;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-dim, #1e293b);
   font-size: 13px;
 }
 .combate-linha:last-child { border-bottom: none; }
@@ -1340,8 +1340,8 @@ hr {
 .combate-extra {
   width: 38px;
   padding: 2px 4px;
-  background: #0a1628;
-  border: 1px solid #334155;
+  background: var(--bg-deep, #0a1628);
+  border: 1px solid var(--border, #334155);
   border-radius: 5px;
   color: #fbbf24;
   font-size: 11px;
@@ -1375,8 +1375,8 @@ hr {
 .mestico-select, .mestico-input {
   width: 100%;
   padding: 7px 10px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 7px;
   color: white;
   font-size: 13px;
@@ -1386,8 +1386,8 @@ hr {
 .mestico-select-sm {
   width: 100%;
   padding: 5px 8px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 7px;
   color: white;
   font-size: 12px;
@@ -1396,8 +1396,8 @@ hr {
 }
 .mestico-input-sm {
   padding: 5px 8px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 6px;
   color: white;
   font-size: 13px;
@@ -1408,8 +1408,8 @@ hr {
   width: 100%;
   min-height: 50px;
   padding: 7px 10px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 7px;
   color: white;
   font-size: 13px;
@@ -1423,8 +1423,8 @@ hr {
   outline: none; border-color: var(--cor-tema, #3b82f6);
 }
 .mestico-raca-bloco {
-  background: #080f1e;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-darker, #080f1e);
+  border: 1px solid var(--bg-accent, #1e3a5f);
   border-radius: 10px;
   padding: 10px 14px;
 }
@@ -1447,14 +1447,14 @@ hr {
 .mopt-lista { display: flex; flex-direction: column; gap: 4px; }
 .mopt-card {
   padding: 7px 10px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 7px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   font-size: 13px;
   line-height: 1.4;
 }
-.mopt-card:hover { background: #1e293b; border-color: #475569; }
+.mopt-card:hover { background: var(--bg-card, #1e293b); border-color: #475569; }
 .mopt-card.mopt-sel {
   border-color: var(--cor-tema, #3b82f6);
   background: var(--cor-tema-dim, rgba(59,130,246,0.1));
@@ -1472,7 +1472,7 @@ hr {
   gap: 10px;
   align-items: flex-start;
   padding: 8px 10px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -1483,7 +1483,7 @@ hr {
 }
 .mestico-evol-card input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
 .mestico-btn-add {
-  background: #1e293b;
+  background: var(--bg-card, #1e293b);
   border: 1px dashed #334155;
   color: #94a3b8;
   border-radius: 8px;
@@ -1495,8 +1495,8 @@ hr {
 }
 .mestico-btn-add:hover { background: #263447; color: white; }
 .mod-evol-row {
-  background: #080f1e;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-darker, #080f1e);
+  border: 1px solid var(--bg-accent, #1e3a5f);
   border-radius: 8px;
   padding: 10px;
 }
@@ -1509,8 +1509,8 @@ hr {
   gap: 16px;
   font-size: 15px;
   font-weight: 600;
-  background: #080f1e;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-darker, #080f1e);
+  border: 1px solid var(--bg-accent, #1e3a5f);
   border-radius: 10px;
   padding: 10px 16px;
   margin-bottom: 12px;
@@ -1659,8 +1659,8 @@ hr {
 
 /* ── VISIBILIDADE DA FICHA ───────────────────────────────── */
 .visib-bloco {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border-dim, #1e293b);
   border-radius: 9px;
   padding: 10px 12px;
   margin-top: 2px;
@@ -1680,7 +1680,7 @@ hr {
   padding: 5px 0;
   cursor: pointer;
   font-size: 13px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-dim, #1e293b);
   transition: opacity 0.2s;
 }
 .visib-toggle:last-child { border-bottom: none; }
@@ -1758,7 +1758,7 @@ hr {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #1e293b;
+  border: 3px solid var(--border-dim, #1e293b);
   border-top-color: var(--cor-tema, #3b82f6);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
