@@ -91,6 +91,22 @@ async function _carregarCenas() {
   _cenas = StorageCenas.carregar()
 }
 
+// Após carregar cenas e fichas, remove fichaIds que não existem mais
+async function _limparFichasOrfas() {
+  const idsValidos = new Set(_fichasMestre.map(f => f.id))
+  let houveLimpeza = false
+  _cenas = _cenas.map(cena => {
+    const antes = cena.fichaIds?.length ?? 0
+    const fichaIds = (cena.fichaIds ?? []).filter(id => idsValidos.has(id))
+    if (fichaIds.length !== antes) houveLimpeza = true
+    return { ...cena, fichaIds }
+  })
+  if (houveLimpeza) {
+    StorageCenas.salvar(_cenas)
+    if (_logado && estaConfigurado()) await salvarCenasFirestore(_cenas)
+  }
+}
+
 async function _salvarCenas() {
   _setSaveStatus("salvando")
   try {
@@ -799,6 +815,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setUserCenas(u)
     await _bootstrapFirebaseCenas()
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    await _limparFichasOrfas()
     renderListaCenas()
     if (_cenaAtual) { renderCena(); renderSidebar() }
   })
@@ -807,11 +824,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     _logado = false
     setUserCenas(null)
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    await _limparFichasOrfas()
     renderListaCenas()
     if (_cenaAtual) { renderCena(); renderSidebar() }
   })
 
   await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    await _limparFichasOrfas()
   renderListaCenas()
 
   // Recarrega cenas quando o usuário volta para esta aba
@@ -819,6 +838,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Usa window "focus" pois é o evento que dispara ao trocar abas no navegador
   window.addEventListener("focus", async () => {
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    await _limparFichasOrfas()
     renderListaCenas()
     if (_cenaAtual) { renderCena(); renderSidebar() }
   })

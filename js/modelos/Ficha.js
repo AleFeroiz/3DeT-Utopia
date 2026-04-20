@@ -5,6 +5,7 @@
 import { ElementoFicha } from "./Elemento.js"
 import { FonteDePoder  } from "./Fonte.js"
 import { getDadosNivel } from "../dados/niveis.js"
+import { RACAS        } from "../dados/racas.js"
 
 export class Ficha {
   constructor({
@@ -147,6 +148,9 @@ export class Ficha {
     for (const e of this.elementos) gastos += (e.custo ?? 0)
     for (const v of Object.values(this.pericias)) if (v) gastos += 1
     gastos += this.totalMaestrias * 2
+    // Custo da raça (ex: Modificado e Mestiço custam 1 ponto)
+    const raca = RACAS.find(r => r.id === this.racaId)
+    if (raca?.custo) gastos += raca.custo
     this.pontos.gastosAuto   = gastos
     // gastos final = automático + offset manual
     this.pontos.gastos       = gastos + (this.pontos.offsetGastos ?? 0)
