@@ -62,7 +62,7 @@
 }
 
 .ficha-retrato-grande:hover {
-  border-color: #3b82f6;
+  border-color: var(--cor-tema, #3b82f6);
   opacity: 1;
 }
 
@@ -126,8 +126,8 @@
 
 .tab:hover  { background: #334155; }
 .tab.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--cor-tema, #3b82f6);
+  border-color: var(--cor-tema, #3b82f6);
   font-weight: 600;
 }
 
@@ -152,7 +152,7 @@
 
 .section-actions button {
   padding: 8px 14px;
-  background: #3b82f6;
+  background: var(--cor-tema, #3b82f6);
   border: none;
   border-radius: 8px;
   color: white;
@@ -178,8 +178,8 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #3b82f6, #1e3a5f);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  background: radial-gradient(circle at 35% 35%, var(--cor-tema, #3b82f6), var(--cor-tema-dark, #1e3a5f));
+  box-shadow: 0 0 20px var(--cor-tema-mid, rgba(59, 130, 246, 0.3));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,7 +190,7 @@
 }
 
 .circle:hover {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 30px var(--cor-tema-mid, rgba(59, 130, 246, 0.5));
 }
 
 .circle span { opacity: 0.85; }
@@ -231,12 +231,12 @@
   transition: border-color 0.2s;
 }
 
-#listaPericias label:hover { border-color: #3b82f6; }
+#listaPericias label:hover { border-color: var(--cor-tema, #3b82f6); }
 
 #listaPericias input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #3b82f6;
+  accent-color: var(--cor-tema, #3b82f6);
   cursor: pointer;
 }
 
@@ -308,7 +308,7 @@
 .bar input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
 /* Cores das barras */
-#paFill { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+#paFill { background: linear-gradient(90deg, var(--cor-tema-dark, #1d4ed8), var(--cor-tema, #3b82f6)); }
 #pmFill { background: linear-gradient(90deg, #7e22ce, #a855f7); }
 #pvFill { background: linear-gradient(90deg, #991b1b, #ef4444); }
 
@@ -358,7 +358,7 @@
 }
 
 .tab-carac:hover  { background: #475569; }
-.tab-carac.active { background: #3b82f6; font-weight: 600; }
+.tab-carac.active { background: var(--cor-tema, #3b82f6); font-weight: 600; }
 
 .conteudo-carac        { display: none; }
 .conteudo-carac.active { display: block; }
@@ -387,7 +387,7 @@ hr {
   cursor: text;
   min-width: 100px;
 }
-.nome-editavel:focus { border-bottom-color: #3b82f6; }
+.nome-editavel:focus { border-bottom-color: var(--cor-tema, #3b82f6); }
 
 /* ── NÍVEL ───────────────────────────────────────────────── */
 .nivel-bloco {
