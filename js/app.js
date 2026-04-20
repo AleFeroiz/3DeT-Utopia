@@ -933,8 +933,8 @@ function _bindStatusInputs() {
     el.addEventListener("blur", () => {
       const val = parseInt(el.innerText) || 0
       if (val >= 0) {
-        const auto = ficha.status[chave].max  // valor base calculado
-        ficha.status[chave].offsetMax = val - auto
+        const auto = ficha.status[chave].auto  // valor automático base (sem offset)
+        ficha.status[chave].offset = val - auto
         ficha.calcularStatus()
         renderStatus(ficha)
         salvar()
@@ -965,16 +965,32 @@ function _bindStatusInputs() {
     el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
   }
   bindPontos("usado",  "gastos")
-  bindPontos("total",  "offsetTotal")
+
+  // "total" é especial: o usuário digita o valor final, mas salvamos o offset (val - totalAuto)
+  const elTotal = document.getElementById("total")
+  if (elTotal) {
+    elTotal.addEventListener("blur", () => {
+      const val = parseInt(elTotal.innerText) || 0
+      if (val >= 0) {
+        ficha.pontos.offsetTotal = val - (ficha.pontos.totalAuto ?? 0)
+        ficha.pontos.total = val
+        renderPontos(ficha)
+        salvar()
+      } else {
+        elTotal.innerText = ficha.pontos.total ?? 0
+      }
+    })
+    elTotal.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); elTotal.blur() } })
+    elTotal.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
 
   // Maestria limite (contenteditable)
   const mLimite = document.getElementById("maestriaLimite")
   if (mLimite) {
     mLimite.addEventListener("blur", () => {
       const val = parseInt(mLimite.innerText) || 0
-      const base = ficha.maestraLimiteBase ?? ficha.maestraLimite
-      if (!ficha.maestrasCfg) ficha.maestrasCfg = {}
-      ficha.maestrasCfg.offsetLimite = val - base
+      // usa o método do modelo que calcula o offset corretamente a partir do auto do nível
+      ficha.setMaestraLimiteManual(val)
       _renderNivel()
       salvar()
     })
