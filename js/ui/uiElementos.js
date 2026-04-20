@@ -30,7 +30,7 @@ function _htmlVariantesCardIso(c) {
   return `<div style="margin-top:4px">${ha}${hr}</div>`
 }
 
-export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onExpandirFonte }) {
+export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onExpandirFonte }, somenteLeitura = false) {
   const containers = {
     vantagem:    document.getElementById("listaVantagens"),
     desvantagem: document.getElementById("listaDesvantagens"),
@@ -41,15 +41,15 @@ export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onE
 
   for (const e of ficha.elementos) {
     const card = e.tipo === "fonte"
-      ? criarCardFonte(e, onEditarFonte, onExpandirFonte, onRemover)
-      : criarCardSimples(e, onEditar, onRemover)
+      ? criarCardFonte(e, onEditarFonte, onExpandirFonte, onRemover, somenteLeitura)
+      : criarCardSimples(e, onEditar, onRemover, somenteLeitura)
     const alvo = containers[e.tipo]
     if (alvo) alvo.appendChild(card)
   }
 }
 
 // ── CARD SIMPLES ──────────────────────────────────────────
-function criarCardSimples(e, onEditar, onRemover) {
+function criarCardSimples(e, onEditar, onRemover, somenteLeitura = false) {
   const card = document.createElement("div")
   card.className = "card-elemento"
   const custoLabel = e.custo < 0
@@ -65,18 +65,21 @@ function criarCardSimples(e, onEditar, onRemover) {
       <p>${e.descricao}</p>
       <small class="card-notas">${e.notas}</small>
     </div>
+    ${somenteLeitura ? "" : `
     <div class="card-actions">
       <button class="btn-editar">✏️ Editar</button>
       <button class="btn-remover">🗑️ Remover</button>
-    </div>
+    </div>`}
   `
-  card.querySelector(".btn-editar").onclick  = () => onEditar(e.id)
-  card.querySelector(".btn-remover").onclick = () => onRemover(e.id)
+  if (!somenteLeitura) {
+    card.querySelector(".btn-editar").onclick  = () => onEditar(e.id)
+    card.querySelector(".btn-remover").onclick = () => onRemover(e.id)
+  }
   return card
 }
 
 // ── CARD FONTE DE PODER ───────────────────────────────────
-function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover) {
+function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover, somenteLeitura = false) {
   const card = document.createElement("div")
   card.className = "card-elemento card-fonte"
 
@@ -115,14 +118,17 @@ function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover) {
     <div class="lista-caracts" style="margin-top:8px">${listaCaract}</div>
     <div class="card-actions" style="margin-top:10px">
       <button class="btn-expandir">🔍 Expandir</button>
+      ${somenteLeitura ? "" : `
       <button class="btn-editar">✏️ Editar</button>
-      <button class="btn-remover">🗑️ Remover</button>
+      <button class="btn-remover">🗑️ Remover</button>`}
     </div>
   `
 
   card.querySelector(".btn-expandir").onclick = () => onExpandirFonte(fonte.id)
-  card.querySelector(".btn-editar").onclick   = () => onEditarFonte(fonte.id)
-  card.querySelector(".btn-remover").onclick  = () => onRemover(fonte.id)
+  if (!somenteLeitura) {
+    card.querySelector(".btn-editar").onclick  = () => onEditarFonte(fonte.id)
+    card.querySelector(".btn-remover").onclick = () => onRemover(fonte.id)
+  }
   return card
 }
 
@@ -203,7 +209,7 @@ export function renderPericias(ficha, onToggle, onToggleMaestria, somenteLeitura
 }
 
 // ── RENDER CARACTERÍSTICAS ISOLADAS ──────────────────────
-export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
+export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }, somenteLeitura = false) {
   const container = document.getElementById("listaCaracteristicasIsoladas")
   if (!container) return
   container.innerHTML = ""
@@ -279,13 +285,16 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }) {
       ${resumoHTML}
       ${variantesHTML}
       ${c.descricao ? `<p class="carac-descricao">${c.descricao}</p>` : ""}
+      ${somenteLeitura ? "" : `
       <div class="card-actions" style="margin-top:8px">
         <button class="btn-editar">✏️ Editar</button>
         <button class="btn-remover">🗑️ Remover</button>
-      </div>
+      </div>`}
     `
-    card.querySelector(".btn-editar").onclick  = () => onEditar(i)
-    card.querySelector(".btn-remover").onclick = () => onRemover(i)
+    if (!somenteLeitura) {
+      card.querySelector(".btn-editar").onclick  = () => onEditar(i)
+      card.querySelector(".btn-remover").onclick = () => onRemover(i)
+    }
     container.appendChild(card)
   })
 }

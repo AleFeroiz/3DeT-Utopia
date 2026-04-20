@@ -225,6 +225,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   registrarCallbackRacaProf((dados) => {
     Object.assign(ficha, dados)
+    ficha.calcularPontos()
     renderTudo(); salvar()
   })
 
@@ -455,6 +456,7 @@ function _renderCombate() {
 }
 
 function renderTudo() {
+  ficha.calcularPontos()
   renderAtributos(ficha)
   renderStatus(ficha)
   renderPontos(ficha)
@@ -477,12 +479,13 @@ function renderTudo() {
     toastSucesso(ficha.maestrias[id] ? "Maestria aplicada! (2 PT)" : "Maestria removida.")
   }
   renderPericias(ficha, _onTogglePericia, _onToggleMaestria)
+  const _somenteLeitura = !_fichaOwner && !ficha.editPublic
   renderElementos(ficha, {
     onEditar:       (id) => { const el = ficha.encontrarElemento(id); if (el) abrirCriarElemento(el.tipo, el) },
     onRemover:      (id) => { ficha.removerElemento(id); renderTudo(); salvar() },
     onEditarFonte:  (id) => { const f = ficha.encontrarElemento(id); if (f) abrirCriarFonte(f) },
     onExpandirFonte:(id) => { const f = ficha.encontrarElemento(id); if (f) _abrirExpandirFonte(f) }
-  })
+  }, _somenteLeitura)
   renderCaracteristicasIsoladas(ficha, {
     onEditar:  (i) => {
       const c = ficha.caracteristicasIsoladas?.[i]
@@ -492,7 +495,7 @@ function renderTudo() {
       ficha.caracteristicasIsoladas?.splice(i, 1)
       renderTudo(); salvar()
     }
-  })
+  }, _somenteLeitura)
   _renderAnotacoes()
   _renderInventario()
   _atualizarUILogin()
