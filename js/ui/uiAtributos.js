@@ -43,18 +43,6 @@ export function renderStatus(ficha) {
   if (document.activeElement !== pmAtual) pmAtual.value = ficha.status.pm.atual
   if (document.activeElement !== pvAtual) pvAtual.value = ficha.status.pv.atual
 
-  // Hints de offset no atual
-  const _setAtualHint = (hintId, chave) => {
-    const el = document.getElementById(hintId)
-    if (!el) return
-    const off = ficha.status[chave].offsetAtual ?? 0
-    const auto = ficha.status[chave].autoAtual ?? ficha.status[chave].max
-    el.textContent = off !== 0 ? `(base ${auto} ${off > 0 ? "+" : ""}${off})` : ""
-  }
-  _setAtualHint("paAtualOffset", "pa")
-  _setAtualHint("pmAtualOffset", "pm")
-  _setAtualHint("pvAtualOffset", "pv")
-
   atualizarBarras(ficha)
 }
 

@@ -915,20 +915,15 @@ function _abrirCropModal(srcBase64, onConfirm) {
 //  BIND — Inputs de status (paMax, pmMax, pvMax) e campos editáveis
 // ─────────────────────────────────────────────────────────
 function _bindStatusInputs() {
-  // Inputs de atual (pa, pm, pv) — com offset
+  // Inputs de atual (pa, pm, pv)
   const bindAtual = (inputId, chave) => {
     const el = document.getElementById(inputId)
     if (!el) return
     el.addEventListener("change", () => {
       const val = Math.max(0, parseInt(el.value) || 0)
-      // registra o auto original (max) na primeira edição
-      if (ficha.status[chave].autoAtual === undefined) {
-        ficha.status[chave].autoAtual = ficha.status[chave].max
-      }
-      ficha.status[chave].atual       = val
-      ficha.status[chave].offsetAtual = val - ficha.status[chave].autoAtual
+      ficha.status[chave].atual = val
       el.value = val
-      renderStatus(ficha)
+      atualizarBarras(ficha)
       salvar()
     })
   }
@@ -974,7 +969,23 @@ function _bindStatusInputs() {
     el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el.blur() } })
     el.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
   }
-  bindPontos("usado",  "gastos")
+  // "usado" é especial: o usuário digita o valor final, salvamos o offset (val - gastosAuto)
+  const elUsado = document.getElementById("usado")
+  if (elUsado) {
+    elUsado.addEventListener("blur", () => {
+      const val = parseInt(elUsado.innerText) || 0
+      if (val >= 0) {
+        ficha.pontos.offsetGastos = val - (ficha.pontos.gastosAuto ?? 0)
+        ficha.pontos.gastos = val
+        renderPontos(ficha)
+        salvar()
+      } else {
+        elUsado.innerText = ficha.pontos.gastos ?? 0
+      }
+    })
+    elUsado.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); elUsado.blur() } })
+    elUsado.addEventListener("keypress", e => { if (!/[0-9]/.test(e.key)) e.preventDefault() })
+  }
 
   // "total" é especial: o usuário digita o valor final, mas salvamos o offset (val - totalAuto)
   const elTotal = document.getElementById("total")
