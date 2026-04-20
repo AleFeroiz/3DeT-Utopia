@@ -234,6 +234,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   _bindNomeEditavel()
   _bindStatusInputs()
   _bindRetrato()
+  _bindCorTema()
   expor()
   _atualizarUILogin()
   _renderCombate()
@@ -692,6 +693,59 @@ function _bindNomeEditavel() {
     e.preventDefault()
     const texto = e.clipboardData.getData("text/plain")
     document.execCommand("insertText", false, texto)
+  })
+}
+
+// ─────────────────────────────────────────────────────────
+//  BIND — Cor tema da ficha
+// ─────────────────────────────────────────────────────────
+function _aplicarCorTema(cor) {
+  const c = cor || "#3b82f6"
+  // Deriva variações da cor base para uso em gradientes e transparências
+  document.documentElement.style.setProperty("--cor-tema",      c)
+  document.documentElement.style.setProperty("--cor-tema-dark", _darken(c, 0.7))
+  document.documentElement.style.setProperty("--cor-tema-dim",  c + "22")
+  document.documentElement.style.setProperty("--cor-tema-mid",  c + "55")
+}
+
+/** Escurece uma cor hex multiplicando os canais por `factor` (0-1) */
+function _darken(hex, factor) {
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  const d = (v) => Math.round(v * factor).toString(16).padStart(2, "0")
+  return `#${d(r)}${d(g)}${d(b)}`
+}
+
+function _bindCorTema() {
+  const input = document.getElementById("fichaCorInput")
+  const wrap  = document.getElementById("fichaCorWrap")
+  if (!input) return
+
+  // Aplica a cor atual da ficha ao carregar
+  const corAtual = ficha.corTema ?? "#3b82f6"
+  input.value = corAtual
+  _aplicarCorTema(corAtual)
+
+  // Só o dono pode editar
+  if (!_fichaOwner) {
+    input.disabled = true
+    if (wrap) wrap.style.opacity = "0.4"
+    if (wrap) wrap.style.pointerEvents = "none"
+    return
+  }
+
+  // Atualiza em tempo real enquanto arrasta o picker
+  input.addEventListener("input", () => {
+    ficha.corTema = input.value
+    _aplicarCorTema(input.value)
+  })
+
+  // Salva só ao soltar (evita salvar a cada pixel arrastado)
+  input.addEventListener("change", () => {
+    ficha.corTema = input.value
+    _aplicarCorTema(input.value)
+    salvar()
   })
 }
 

@@ -305,6 +305,12 @@ function _criarCard(f, modo) {
   const nivel  = f.nivel ?? 1
   const gastos = f.pontos?.gastos ?? 0
   const total  = f.pontos?.total  ?? 10
+  const cor    = f.corTema ?? "#3b82f6"
+
+  // Aplica a cor tema como CSS variable local do card
+  div.style.setProperty("--cor-tema", cor)
+  div.style.setProperty("--cor-tema-dim", cor + "22")
+  div.style.setProperty("--cor-tema-mid", cor + "55")
 
   // Bug #25: escapa dados do usuário antes de inserir no HTML
   const imgSrc = f.imagemThumb || f.imagemUrl || null
@@ -599,6 +605,7 @@ onLogin(async (user) => {
         racaId: meta.racaId ?? "", profissaoId: meta.profissaoId ?? "",
         pontos: { gastos: 0, total: 10 },
         imagemThumb: meta.imagemThumb ?? null,
+        corTema:     meta.corTema     ?? "#3b82f6",
       }))
       totalFichas += m.fichas.length
     }

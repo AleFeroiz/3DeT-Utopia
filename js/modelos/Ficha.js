@@ -34,7 +34,8 @@ export class Ficha {
     inventario = { itens: [], offsetPeso: 0 },
     combateExtras = {},
     imagemUrl = null,
-    imagemThumb = null
+    imagemThumb = null,
+    corTema = "#3b82f6"
   } = {}) {
     this.id          = id ?? crypto.randomUUID()
     this.nome        = nome
@@ -68,6 +69,7 @@ export class Ficha {
     }
     this.imagemUrl   = imagemUrl   ?? null
     this.imagemThumb = imagemThumb ?? null
+    this.corTema     = corTema     ?? "#3b82f6"
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
       e.tipo === "fonte" ? FonteDePoder.fromJSON(e) : ElementoFicha.fromJSON(e)
@@ -274,6 +276,7 @@ export class Ficha {
       combateExtras: this.combateExtras,
       imagemUrl:   this.imagemUrl   ?? null,
       imagemThumb: this.imagemThumb ?? null,
+      corTema:     this.corTema     ?? "#3b82f6",
     }
   }
 

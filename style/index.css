@@ -164,8 +164,8 @@
   font-size: 20px;
   opacity: 0.3;
 }
-.ficha-card:hover .ficha-retrato { border-color: #3b82f6; }
-.ficha-card:hover  { border-color: #3b82f6; }
+.ficha-card:hover .ficha-retrato { border-color: var(--cor-tema, #3b82f6); }
+.ficha-card:hover  { border-color: var(--cor-tema, #3b82f6); }
 .ficha-card.dragging { opacity: 0.35; box-shadow: none; }
 
 .ficha-info { flex: 1; min-width: 0; }

@@ -255,9 +255,17 @@ function _criarCardFicha(ficha) {
   ficha.calcularStatus()
   if (!ficha._atribCombate) ficha._atribCombate = "poder"
 
+  const cor = ficha.corTema ?? "#3b82f6"
+
   const card = document.createElement("div")
   card.className = "cena-ficha-card"
   card.dataset.fichaId = ficha.id
+  // Injeta a cor tema como variável CSS local do card
+  card.style.setProperty("--cor-tema",      cor)
+  card.style.setProperty("--cor-tema-dark",  _darkenHex(cor, 0.7))
+  card.style.setProperty("--cor-tema-dim",   cor + "22")
+  card.style.setProperty("--cor-tema-mid",   cor + "55")
+  card.style.borderColor = cor + "55"
 
   const retratoHtml = ficha.imagemUrl
     ? `<div class="cfc-retrato" style="background-image:url('${ficha.imagemUrl}')"></div>`
@@ -796,6 +804,15 @@ function _esc(str) {
   return String(str ?? "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+}
+
+function _darkenHex(hex, factor) {
+  if (!hex || hex.length < 7) return hex
+  const r = parseInt(hex.slice(1,3), 16)
+  const g = parseInt(hex.slice(3,5), 16)
+  const b = parseInt(hex.slice(5,7), 16)
+  const d = (v) => Math.round(v * factor).toString(16).padStart(2, "0")
+  return `#${d(r)}${d(g)}${d(b)}`
 }
 
 // ─────────────────────────────────────────────────────────
