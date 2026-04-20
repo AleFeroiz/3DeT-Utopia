@@ -333,12 +333,13 @@ function _criarCard(f, modo) {
 
   // Gera paleta de fundo derivada da matiz da cor tema (mesmo algoritmo do app.js)
   const [h, s] = _hexToHsl(cor)
-  const sat = Math.min(s * 0.35, 25)
-  div.style.setProperty("--bg-card",   `hsl(${h},${sat}%,13%)`)
-  div.style.setProperty("--bg-base",   `hsl(${h},${sat}%,7%)`)
+  const satFundo  = Math.min(s * 0.35, 25)  // saturação sutil para bordas/elementos
+  const satCard   = Math.min(s * 0.55, 40)  // saturação mais visível para o fundo do card
+  div.style.setProperty("--bg-card",   `hsl(${h},${satCard}%,15%)`)
+  div.style.setProperty("--bg-base",   `hsl(${h},${satFundo}%,7%)`)
   div.style.setProperty("--bg-accent", `hsl(${h},${Math.min(s * 0.5, 35)}%,18%)`)
-  div.style.setProperty("--bg-hover",  `hsl(${h},${sat}%,17%)`)
-  div.style.setProperty("--border",    `hsl(${h},${sat}%,20%)`)
+  div.style.setProperty("--bg-hover",  `hsl(${h},${satFundo}%,17%)`)
+  div.style.setProperty("--border",    `hsl(${h},${satFundo}%,20%)`)
 
   // Bug #25: escapa dados do usuário antes de inserir no HTML
   const imgSrc = f.imagemThumb || f.imagemUrl || null
