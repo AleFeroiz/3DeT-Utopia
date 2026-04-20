@@ -43,6 +43,18 @@ export function renderStatus(ficha) {
   if (document.activeElement !== pmAtual) pmAtual.value = ficha.status.pm.atual
   if (document.activeElement !== pvAtual) pvAtual.value = ficha.status.pv.atual
 
+  // Hints de offset no atual
+  const _setAtualHint = (hintId, chave) => {
+    const el = document.getElementById(hintId)
+    if (!el) return
+    const off = ficha.status[chave].offsetAtual ?? 0
+    const auto = ficha.status[chave].autoAtual ?? ficha.status[chave].max
+    el.textContent = off !== 0 ? `(base ${auto} ${off > 0 ? "+" : ""}${off})` : ""
+  }
+  _setAtualHint("paAtualOffset", "pa")
+  _setAtualHint("pmAtualOffset", "pm")
+  _setAtualHint("pvAtualOffset", "pv")
+
   atualizarBarras(ficha)
 }
 
@@ -137,6 +149,13 @@ export function renderPontos(ficha) {
     totalEl.title       = offset !== 0
       ? `Auto (nível ${ficha.nivel}): ${ficha.pontos.totalAuto} ${offset > 0 ? "+" : ""}${offset}`
       : "Clique para editar o total de pontos"
+  }
+
+  // Hint de offset no total (pontosOffset)
+  const pontosOffEl = document.getElementById("pontosOffset")
+  if (pontosOffEl) {
+    const off = ficha.pontos.offsetTotal ?? 0
+    pontosOffEl.textContent = off !== 0 ? `(base ${ficha.pontos.totalAuto} ${off > 0 ? "+" : ""}${off})` : ""
   }
 
   document.getElementById("restante").innerText   = restante

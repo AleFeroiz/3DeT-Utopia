@@ -521,8 +521,13 @@ function _renderNivel() {
   if (mAtual  && document.activeElement !== mAtual)  mAtual.innerText  = ficha.totalMaestrias
   if (mLimite && document.activeElement !== mLimite) {
     const offset = ficha.maestrasCfg?.offsetLimite ?? 0
-    mLimite.innerText  = ficha.maestraLimite
+    mLimite.innerText   = ficha.maestraLimite
     mLimite.style.color = offset !== 0 ? "#fbbf24" : ""
+    const mHint = document.getElementById("maestriaLimiteOffset")
+    if (mHint) {
+      const auto = ficha.dadosNivel.maestriaLimite
+      mHint.textContent = offset !== 0 ? `(base ${auto} ${offset > 0 ? "+" : ""}${offset})` : ""
+    }
   }
 
   // Pontos offset hint
@@ -910,15 +915,20 @@ function _abrirCropModal(srcBase64, onConfirm) {
 //  BIND — Inputs de status (paMax, pmMax, pvMax) e campos editáveis
 // ─────────────────────────────────────────────────────────
 function _bindStatusInputs() {
-  // Inputs de atual (pa, pm, pv)
+  // Inputs de atual (pa, pm, pv) — com offset
   const bindAtual = (inputId, chave) => {
     const el = document.getElementById(inputId)
     if (!el) return
     el.addEventListener("change", () => {
       const val = Math.max(0, parseInt(el.value) || 0)
-      ficha.status[chave].atual = val
+      // registra o auto original (max) na primeira edição
+      if (ficha.status[chave].autoAtual === undefined) {
+        ficha.status[chave].autoAtual = ficha.status[chave].max
+      }
+      ficha.status[chave].atual       = val
+      ficha.status[chave].offsetAtual = val - ficha.status[chave].autoAtual
       el.value = val
-      atualizarBarras(ficha)
+      renderStatus(ficha)
       salvar()
     })
   }
@@ -975,6 +985,7 @@ function _bindStatusInputs() {
         ficha.pontos.offsetTotal = val - (ficha.pontos.totalAuto ?? 0)
         ficha.pontos.total = val
         renderPontos(ficha)
+        _renderNivel()
         salvar()
       } else {
         elTotal.innerText = ficha.pontos.total ?? 0
@@ -992,6 +1003,13 @@ function _bindStatusInputs() {
       // usa o método do modelo que calcula o offset corretamente a partir do auto do nível
       ficha.setMaestraLimiteManual(val)
       _renderNivel()
+      // atualiza hint de offset do limite de maestrias
+      const mHint = document.getElementById("maestriaLimiteOffset")
+      if (mHint) {
+        const off = ficha.maestrasCfg?.offsetLimite ?? 0
+        const auto = ficha.dadosNivel.maestriaLimite
+        mHint.textContent = off !== 0 ? `(base ${auto} ${off > 0 ? "+" : ""}${off})` : ""
+      }
       salvar()
     })
     mLimite.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mLimite.blur() } })
