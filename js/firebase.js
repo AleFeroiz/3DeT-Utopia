@@ -94,13 +94,13 @@ export async function salvarFichaFirestore(fichaObj, modo = "player") {
       const idx = indiceAtual.findIndex(f => f.id === fichaObj.id)
       if (idx !== -1) {
         indiceAtual[idx] = {
-          ...indiceAtual[idx],
+          ...indiceAtual[idx],           // preserva pastaId e outros campos do índice
           nome:         fichaObj.nome         ?? "Sem Nome",
           nivel:        fichaObj.nivel         ?? 1,
           racaId:       fichaObj.racaId        ?? "",
           profissaoId:  fichaObj.profissaoId   ?? "",
-          pastaId:      fichaObj.pastaId       ?? null,
-          imagemThumb:  fichaObj.imagemThumb   ?? null,
+          // pastaId: NÃO sobrescreve — só existe no índice, nunca no doc individual
+          imagemThumb:  fichaObj.imagemThumb   ?? indiceAtual[idx].imagemThumb ?? null,
           corTema:      fichaObj.corTema       ?? "#3b82f6",
           pontosGastos: fichaObj.pontos?.gastos ?? 0,
           pontosTotal:  fichaObj.pontos?.total  ?? 10,
