@@ -641,6 +641,13 @@ onLogin(async (user) => {
         corTema:     meta.corTema     ?? "#3b82f6",
       }))
       totalFichas += m.fichas.length
+
+      // Migração silenciosa: fichas com pontosGastos ausente no índice
+      // têm seus dados reais buscados em background e o card é atualizado
+      const semPontos = indice.filter(meta => meta.pontosGastos == null)
+      if (semPontos.length > 0) {
+        _migrarPontosIndice(semPontos, m, modo)
+      }
     }
 
     // Carrega pastas
@@ -698,6 +705,33 @@ document.getElementById("btnMigrar")?.addEventListener("click", () => {
 // ── Botões de modo (evita onclick inline que quebra com módulos ES6) ──
 document.getElementById("btnModoPlayer").addEventListener("click", () => setModo("player"))
 document.getElementById("btnModoMestre").addEventListener("click", () => setModo("mestre"))
+
+// ── Migração silenciosa de pontos no índice ────────────────
+async function _migrarPontosIndice(fichasSemPontos, m, modo) {
+  // Busca todos os docs em paralelo
+  const docs = await Promise.all(
+    fichasSemPontos.map(meta =>
+      carregarFichaFirestore(meta.id, modo).catch(() => null)
+    )
+  )
+  let algumAtualizado = false
+  docs.forEach((doc, i) => {
+    if (!doc?.pontos) return
+    const fichaCard = m.fichas.find(f => f.id === fichasSemPontos[i].id)
+    if (!fichaCard) return
+    fichaCard.pontos = {
+      gastos: doc.pontos.gastos ?? 0,
+      total:  doc.pontos.total  ?? 10,
+    }
+    algumAtualizado = true
+  })
+  if (algumAtualizado) {
+    renderizar("player")
+    renderizar("mestre")
+    // Persiste o índice corrigido para não repetir a migração
+    await salvarIndiceFichasFirestore(m.fichas, modo).catch(() => {})
+  }
+}
 
 // ── Sistema de Viagem ──────────────────────────────────────
 document.getElementById("btnGerarViagem").addEventListener("click", () => {
