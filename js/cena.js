@@ -578,15 +578,105 @@ function _htmlElementos(ficha, tipo) {
     </div>`).join("")
 }
 
+// ─────────────────────────────────────────────────────────
+//  HELPER — Resumo da tabela de uma característica
+//  (replicado de uiElementos.js para uso no contexto da cena)
+// ─────────────────────────────────────────────────────────
+const _LABELS_CARAC = {
+  potencia: "Potência", pressao: "Pressão", execucao: "Execução",
+  alcance: "Alcance", duracao: "Duração", area: "Área",
+  alvos: "Alvos Adicionais", condicoes: "Condições", descontos: "Descontos"
+}
+const _BASES_PADRAO = {
+  execucao: "Padrão", alcance: "Pessoal", duracao: "Instantânea", area: "1 alvo", alvos: "1 alvo"
+}
+
+function _htmlResumoCarac(c) {
+  const escolhas = c.escolhas ?? {}
+  const linhas = []
+  const chaves = new Set([...Object.keys(escolhas), ...Object.keys(_BASES_PADRAO)])
+
+  for (const chave of chaves) {
+    const lista = escolhas[chave] ?? []
+    const itens = lista.filter(i => !i.gratuita)
+    if (!itens.length) {
+      if (_BASES_PADRAO[chave]) {
+        linhas.push(`<div class="cfc-carac-resumo-row">
+          <span class="cfc-carac-resumo-label">${_LABELS_CARAC[chave] ?? chave}:</span>
+          <span style="opacity:0.4;font-style:italic">${_BASES_PADRAO[chave]}</span>
+        </div>`)
+      }
+      continue
+    }
+    const contagem = {}
+    let total = 0
+    for (const item of itens) {
+      const k = item.nome ?? `+${item.valor}`
+      contagem[k] = (contagem[k] ?? 0) + 1
+      if (item.valor !== undefined) total += item.valor * 1
+    }
+    const valStr = Object.entries(contagem)
+      .map(([n, q]) => q > 1 ? `${n} ×${q}` : n).join(", ")
+    const totalStr = total > 0
+      ? ` <span style="opacity:0.4">= ${total}</span>` : ""
+    linhas.push(`<div class="cfc-carac-resumo-row">
+      <span class="cfc-carac-resumo-label">${_LABELS_CARAC[chave] ?? chave}:</span>
+      <span>${valStr}${totalStr}</span>
+    </div>`)
+  }
+
+  // Variantes amplificada / reduzida
+  const renderV = (v, tipo) => {
+    if (!v) return ""
+    const amp   = tipo === "amplificada"
+    const cor   = amp ? "#f59e0b" : "#60a5fa"
+    const icone = amp ? "⬆️" : "⬇️"
+    const label = amp ? "Amplificada" : "Reduzida"
+    const detalhe = v.label && v.valor
+      ? `<span style="font-size:10px;opacity:0.7;margin-left:6px">${v.label}: ${v.valor}</span>` : ""
+    return `<div style="border:1px solid ${cor}44;border-radius:5px;padding:4px 7px;
+                        margin-top:4px;background:${amp ? "rgba(245,158,11,0.06)" : "rgba(96,165,250,0.06)"}">
+      <span style="font-size:11px;font-weight:600;color:${cor}">${icone} ${label} — ${v.custoPM} PM</span>
+      ${detalhe}
+    </div>`
+  }
+  const variantes = (renderV(c.amplificada, "amplificada") || "") +
+                    (renderV(c.reduzida,    "reduzida")    || "")
+
+  const descricao = c.descricao
+    ? `<p class="cfc-item-desc" style="margin-top:6px;border-top:1px solid #1a3050;padding-top:6px">${_esc(c.descricao)}</p>`
+    : ""
+
+  return `
+    <div class="cfc-carac-resumo">${linhas.join("") || "<span class='cfc-vazio'>Sem tabela</span>"}</div>
+    ${variantes ? `<div style="margin-top:4px">${variantes}</div>` : ""}
+    ${descricao}`
+}
+
+/** Uma característica como item de gaveta expansível */
+function _htmlCaracItem(c) {
+  const custoPM = c.custoPM != null ? `${c.custoPM} PM` : ""
+  const escala  = c.escala  != null ? `E${c.escala}`    : ""
+  return `
+    <div class="cfc-item cfc-item-carac" data-item-id="${c.id ?? _esc(c.nome)}">
+      <div class="cfc-item-header">
+        <span class="cfc-item-nome">⚡ ${_esc(c.nome)}</span>
+        <span class="cfc-item-custo" style="color:#a78bfa">${escala}</span>
+        <span class="cfc-item-custo" style="color:#818cf8;margin-left:2px">${custoPM}</span>
+        <span class="cfc-item-seta">▾</span>
+      </div>
+      <div class="cfc-item-detalhe">
+        ${_htmlResumoCarac(c)}
+      </div>
+    </div>`
+}
+
 function _htmlFontes(ficha) {
   const fontes = ficha.elementos.filter(e => e.tipo === "fonte")
   if (!fontes.length) return `<span class="cfc-vazio">Nenhuma fonte</span>`
   return fontes.map(f => {
-    const caracts = (f.caracteristicas ?? []).map(c =>
-      `<div class="cfc-carac-mini">
-        <span class="cfc-carac-mini-nome">⚡ ${_esc(c.nome)} <em style="opacity:0.4;font-size:10px">E${c.escala}</em></span>
-        <span class="cfc-carac-mini-pm">${c.custoPM}PM</span>
-      </div>`).join("")
+    // Características da fonte como itens expansíveis
+    const caracts = (f.caracteristicas ?? []).map(c => _htmlCaracItem(c)).join("")
     return `
       <div class="cfc-item" data-item-id="${f.id}">
         <div class="cfc-item-header">
@@ -595,7 +685,7 @@ function _htmlFontes(ficha) {
           <span class="cfc-item-seta">▾</span>
         </div>
         <div class="cfc-item-detalhe">
-          <p class="cfc-item-desc" style="color:#a78bfa;font-style:italic;margin-bottom:4px">
+          <p class="cfc-item-desc" style="color:#a78bfa;font-style:italic;margin-bottom:6px">
             ${_esc(f.tema || "Sem tema")} · ${_esc(f.subtipo ?? "geral")}
           </p>
           ${caracts || `<span class="cfc-vazio">Sem características</span>`}
@@ -607,18 +697,7 @@ function _htmlFontes(ficha) {
 function _htmlIsoladas(ficha) {
   const lista = ficha.caracteristicasIsoladas ?? []
   if (!lista.length) return `<span class="cfc-vazio">Nenhuma</span>`
-  return lista.map(c => `
-    <div class="cfc-item" data-item-id="${c.id}">
-      <div class="cfc-item-header">
-        <span class="cfc-item-nome">${_esc(c.nome)}</span>
-        <span class="cfc-item-custo" style="color:#a78bfa">E${c.escala ?? 1}</span>
-        <span class="cfc-item-seta">▾</span>
-      </div>
-      <div class="cfc-item-detalhe">
-        <p class="cfc-item-desc">${_esc(c.descricao || c.nome)}</p>
-        ${c.custoPM ? `<span class="cfc-item-notas">${c.custoPM} PM</span>` : ""}
-      </div>
-    </div>`).join("")
+  return lista.map(c => _htmlCaracItem(c)).join("")
 }
 
 function _bindGavetas(card, ficha) {

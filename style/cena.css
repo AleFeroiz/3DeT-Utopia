@@ -538,21 +538,50 @@
   display: block;
 }
 
-/* ── CARACTERÍSTICAS DENTRO DE FONTE ─────────────────────── */
-.cfc-carac-mini {
+/* ── CARACTERÍSTICAS EXPANSÍVEIS ─────────────────────────── */
+
+/* Item de característica — herda .cfc-item, pequeno destaque lateral */
+.cfc-item-carac > .cfc-item-header {
+  padding-left: 10px;
+  border-left: 2px solid #7c3aed44;
+}
+.cfc-item-carac.aberto > .cfc-item-header {
+  border-left-color: #a78bfa;
+}
+.cfc-item-carac > .cfc-item-detalhe {
+  margin-left: 10px;
+  border-left: 2px solid #7c3aed33;
+  padding-left: 10px;
+}
+
+/* Tabela de resumo dentro do detalhe */
+.cfc-carac-resumo {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 0;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 2px;
 }
-.cfc-carac-mini-nome {
+
+.cfc-carac-resumo-row {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
   font-size: 11px;
-  color: #c4b5fd;
-  flex: 1;
+  line-height: 1.4;
 }
-.cfc-carac-mini-pm {
-  font-size: 10px;
+
+.cfc-carac-resumo-label {
   color: #64748b;
+  font-weight: 600;
+  min-width: 72px;
+  flex-shrink: 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cfc-carac-resumo-row span:not(.cfc-carac-resumo-label) {
+  color: #cbd5e1;
 }
 
 /* ── PERÍCIAS ─────────────────────────────────────────────── */
