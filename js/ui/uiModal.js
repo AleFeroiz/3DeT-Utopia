@@ -969,7 +969,7 @@ export function confirmarCaracIsolada() {
     custoPM:     _calcularPMIsolada()
   })
 
-  _onSalvarIsolada?.(c, _isoladaEditIndex)
+  _onSalvarIsolada?.(c.toJSON(), _isoladaEditIndex)
   fecharModal("modalCaracIsolada")
   toastSucesso(_isoladaEditIndex !== null ? "Característica atualizada!" : "Característica isolada criada!")
 }

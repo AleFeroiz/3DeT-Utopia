@@ -85,6 +85,33 @@ export async function salvarFichaFirestore(fichaObj, modo = "player") {
   if (!_ok() || !fichaObj?.id) return false
   try {
     await _firebaseFns.setDoc(_firebaseFns.doc(_db, "users", _user.uid, _colFicha(modo), fichaObj.id), { ...fichaObj, _ownerUid: _user.uid, _updatedAt: new Date().toISOString() })
+
+    // Atualiza a entrada desta ficha no índice com os metadados mais recentes
+    // (pontos, nome, nível, etc.) sem reescrever o índice inteiro
+    const snapIndice = await _firebaseFns.getDoc(_firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo)))
+    if (snapIndice.exists()) {
+      const indiceAtual = snapIndice.data().fichas ?? []
+      const idx = indiceAtual.findIndex(f => f.id === fichaObj.id)
+      if (idx !== -1) {
+        indiceAtual[idx] = {
+          ...indiceAtual[idx],
+          nome:         fichaObj.nome         ?? "Sem Nome",
+          nivel:        fichaObj.nivel         ?? 1,
+          racaId:       fichaObj.racaId        ?? "",
+          profissaoId:  fichaObj.profissaoId   ?? "",
+          pastaId:      fichaObj.pastaId       ?? null,
+          imagemThumb:  fichaObj.imagemThumb   ?? null,
+          corTema:      fichaObj.corTema       ?? "#3b82f6",
+          pontosGastos: fichaObj.pontos?.gastos ?? 0,
+          pontosTotal:  fichaObj.pontos?.total  ?? 10,
+        }
+        await _firebaseFns.setDoc(
+          _firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo)),
+          { fichas: indiceAtual, updatedAt: new Date().toISOString() }
+        )
+      }
+    }
+
     return true
   } catch(e) { console.error("[Firestore] salvar ficha:", e); return false }
 }
