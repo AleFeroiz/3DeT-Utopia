@@ -31,17 +31,14 @@ export async function inicializarFirebase() {
   if (!FIREBASE_CONFIGURED) { _authReadyResolve(null); return false }
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
-    const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } =
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
     const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
-
-    // Fix mobile: processa resultado do redirect de volta ao app (login via redirect no celular)
-    _firebaseFns.getRedirectResult(_auth).catch(e => console.warn("[Firebase] getRedirectResult:", e))
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
     onAuthStateChanged(_auth, (user) => {
       _user = user
@@ -55,14 +52,7 @@ export async function inicializarFirebase() {
 
 export const loginGoogle = async () => {
   if (!_auth || !_firebaseFns) return
-  const provider = new _firebaseFns.GoogleAuthProvider()
-  // Fix mobile: popups são bloqueados em browsers mobile — usa redirect no celular
-  const isMobile = /Android|iPhone|iPad|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  if (isMobile) {
-    await _firebaseFns.signInWithRedirect(_auth, provider)
-  } else {
-    await _firebaseFns.signInWithPopup(_auth, provider)
-  }
+  await _firebaseFns.signInWithPopup(_auth, new _firebaseFns.GoogleAuthProvider())
 }
 export const logout = async () => { if (_auth && _firebaseFns) await _firebaseFns.signOut(_auth) }
 
