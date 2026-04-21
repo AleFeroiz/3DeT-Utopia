@@ -1292,6 +1292,10 @@ onLogin(async (user) => {
   }
 })
 onLogout(() => {
+  // Fix GitHub Pages redirect: ignora o flash de user=null que o Firebase emite
+  // enquanto processa o token de retorno do signInWithRedirect (ocorre nos
+  // primeiros segundos após o redirecionamento de volta ao site)
+  if (performance.now() < 8000) return
   _atualizarUILogin()
   toastInfo("Você saiu.")
   window.location.href = "index.html"

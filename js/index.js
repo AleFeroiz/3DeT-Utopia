@@ -661,6 +661,9 @@ onLogin(async (user) => {
 
 // Bug #7: ao deslogar, limpa tela e volta ao cache local
 onLogout(() => {
+  // Fix GitHub Pages redirect: ignora o flash de user=null que o Firebase emite
+  // enquanto processa o token de retorno do signInWithRedirect
+  if (performance.now() < 8000) return
   _logado = false
   _atualizarUILogin()
   // Limpa dados da nuvem da tela

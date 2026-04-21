@@ -5,7 +5,7 @@
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB0SVvvQIrpy4w1cotLkFnl8VUVYoddxdg",
   authDomain: "site-ficha-3det-utopia.firebaseapp.com",
-  projectId: "site-ficha-3det-utopia.firebaseapp.com",
+  projectId: "site-ficha-3det-utopia",
   storageBucket: "site-ficha-3det-utopia.firebasestorage.app",
   messagingSenderId: "77965862037",
   appId: "1:77965862037:web:e31028b5264f868bfde79c"
@@ -31,16 +31,31 @@ export async function inicializarFirebase() {
   if (!FIREBASE_CONFIGURED) { _authReadyResolve(null); return false }
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
-    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
     const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
-    onAuthStateChanged(_auth, (user) => {
+    // Fix GitHub Pages: processa o resultado do redirect antes de propagar auth.
+    // O GitHub Pages envia headers COOP que bloqueiam signInWithPopup — usamos
+    // signInWithRedirect em todos os browsers. O getRedirectResult precisa ser
+    // chamado logo no init para capturar o login quando o usuário volta ao site.
+    let _redirectProcessado = false
+    const _redirectPromise = _firebaseFns.getRedirectResult(_auth)
+      .then(result => {
+        if (result?.user) console.info("[Firebase] redirect login ok:", result.user.email)
+      })
+      .catch(e => console.warn("[Firebase] getRedirectResult:", e))
+      .finally(() => { _redirectProcessado = true })
+
+    onAuthStateChanged(_auth, async (user) => {
+      // Aguarda o redirect terminar antes de propagar qualquer estado
+      // Evita o flash de user=null que dispararia onLogout() prematuramente
+      if (!_redirectProcessado) await _redirectPromise
       _user = user
       _authReadyResolve(user)  // resolve na primeira chamada
       if (user) _loginCbs.forEach(fn => fn(user))
@@ -50,9 +65,13 @@ export async function inicializarFirebase() {
   } catch(e) { console.error("[Firebase]", e); _authReadyResolve(null); return false }
 }
 
+// Fix GitHub Pages: usa sempre signInWithRedirect.
+// O signInWithPopup é bloqueado pelo header Cross-Origin-Opener-Policy
+// que o GitHub Pages envia em todas as páginas, impedindo o popup de
+// se comunicar de volta com a janela pai após o login do Google.
 export const loginGoogle = async () => {
   if (!_auth || !_firebaseFns) return
-  await _firebaseFns.signInWithPopup(_auth, new _firebaseFns.GoogleAuthProvider())
+  await _firebaseFns.signInWithRedirect(_auth, new _firebaseFns.GoogleAuthProvider())
 }
 export const logout = async () => { if (_auth && _firebaseFns) await _firebaseFns.signOut(_auth) }
 
@@ -150,10 +169,6 @@ export async function carregarPastasFirestore(modo = "player") {
 }
 
 // ─── Índice público (resolução ownerUid a partir de fichaId) ─
-// Estrutura: public_index/{fichaId} → { ownerUid, modo }
-// Só existe enquanto a ficha tiver isPublic=true.
-// NÃO duplica dados — a ficha real continua em users/{uid}/fichas_player/{id}
-
 export async function registrarIndicePublico(fichaId, ownerUid, modo = "player") {
   if (!_okPub() || !fichaId || !ownerUid) return false
   try {
@@ -173,14 +188,9 @@ export async function removerIndicePublico(fichaId) {
   } catch(e) { console.error("[Firestore] remover índice público:", e); return false }
 }
 
-// Carrega ficha pública de terceiro:
-// 1. Lê public_index para descobrir ownerUid + modo
-// 2. Lê a ficha REAL de users/{ownerUid}/fichas_{modo}/{fichaId}
-// 3. Retorna null se não existir ou não for pública
 export async function carregarFichaDeOutroUsuario(fichaId) {
   if (!_okPub()) return null
   try {
-    // Passo 1: resolve dono
     const idxSnap = await _firebaseFns.getDoc(
       _firebaseFns.doc(_db, "public_index", fichaId)
     )
@@ -188,7 +198,6 @@ export async function carregarFichaDeOutroUsuario(fichaId) {
     const { ownerUid, modo } = idxSnap.data()
     if (!ownerUid) return null
 
-    // Passo 2: lê ficha real do dono
     const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
     const fichaSnap = await _firebaseFns.getDoc(
       _firebaseFns.doc(_db, "users", ownerUid, col, fichaId)
@@ -196,21 +205,15 @@ export async function carregarFichaDeOutroUsuario(fichaId) {
     if (!fichaSnap.exists()) return null
     const data = fichaSnap.data()
 
-    // Só retorna se ainda estiver marcada como pública
     return data.isPublic ? { ...data, _ownerUid: ownerUid, _modo: modo } : null
   } catch(e) { console.error("[Firestore] carregar ficha de outro usuário:", e); return null }
 }
 
-// Salva edição de um editor externo direto na ficha do dono
-// Requer que editPublic=true nas regras do Firestore
 export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player") {
   if (!_okPub() || !fichaObj?.id || !ownerUid) return false
   try {
     const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
     const ref = _firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id)
-    // Usa updateDoc (não cria — só edita documento existente)
-    // Casa com a regra "allow update" do Firestore para editores externos
-    // Remove campos internos que o editor não deve sobrescrever
     const { _ownerUid: _o, isPublic, editPublic, ...dadosEditaveis } = fichaObj
     await _firebaseFns.updateDoc(ref, {
       ...dadosEditaveis,
@@ -221,9 +224,6 @@ export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player")
 }
 
 // ─── Listener realtime ───────────────────────────────────
-// Escuta mudanças em tempo real numa ficha do Firestore.
-// Retorna função unsubscribe para parar a escuta.
-// ownerUid + modo: para fichas de terceiros (editor externo ou dono).
 export function escutarFicha(fichaId, modo = "player", ownerUid = null, callback) {
   if (!_db || !_firebaseFns?.onSnapshot) return () => {}
   const uid = ownerUid ?? _user?.uid
