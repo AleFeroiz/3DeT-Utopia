@@ -76,7 +76,7 @@ export async function carregarIndiceFichasFirestore(modo = "player") {
 export async function salvarIndiceFichasFirestore(fichas, modo = "player") {
   if (!_ok()) return false
   try {
-    const indice = fichas.map(f => ({ id: f.id, nome: f.nome ?? "Sem Nome", pastaId: f.pastaId ?? null, nivel: f.nivel ?? 1, racaId: f.racaId ?? "", profissaoId: f.profissaoId ?? "", imagemThumb: f.imagemThumb ?? null, corTema: f.corTema ?? "#3b82f6" }))
+    const indice = fichas.map(f => ({ id: f.id, nome: f.nome ?? "Sem Nome", pastaId: f.pastaId ?? null, nivel: f.nivel ?? 1, racaId: f.racaId ?? "", profissaoId: f.profissaoId ?? "", imagemThumb: f.imagemThumb ?? null, corTema: f.corTema ?? "#3b82f6", pontosGastos: f.pontos?.gastos ?? 0, pontosTotal: f.pontos?.total ?? 10 }))
     await _firebaseFns.setDoc(_firebaseFns.doc(_db, "users", _user.uid, "dados", _chaveIndice(modo)), { fichas: indice, updatedAt: new Date().toISOString() })
     return true
   } catch(e) { console.error("[Firestore] salvar índice:", e); return false }

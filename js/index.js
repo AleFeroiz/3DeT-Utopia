@@ -636,7 +636,7 @@ onLogin(async (user) => {
         id: meta.id, nome: meta.nome ?? "Sem Nome",
         pastaId: meta.pastaId ?? null, nivel: meta.nivel ?? 1,
         racaId: meta.racaId ?? "", profissaoId: meta.profissaoId ?? "",
-        pontos: { gastos: 0, total: 10 },
+        pontos: { gastos: meta.pontosGastos ?? 0, total: meta.pontosTotal ?? 10 },
         imagemThumb: meta.imagemThumb ?? null,
         corTema:     meta.corTema     ?? "#3b82f6",
       }))
