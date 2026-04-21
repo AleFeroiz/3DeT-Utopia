@@ -661,12 +661,6 @@ onLogin(async (user) => {
 
 // Bug #7: ao deslogar, limpa tela e volta ao cache local
 onLogout(() => {
-  // Fix mobile: ignora o flash de user=null que o Firebase emite enquanto processa
-  // o token de retorno do Google redirect (ocorre nos primeiros segundos do carregamento)
-  if (performance.now() < 5000) {
-    console.info("[Auth] onLogout ignorado no index (possível flash de redirect)")
-    return
-  }
   _logado = false
   _atualizarUILogin()
   // Limpa dados da nuvem da tela

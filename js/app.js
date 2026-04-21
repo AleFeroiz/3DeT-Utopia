@@ -1293,14 +1293,6 @@ onLogin(async (user) => {
 })
 onLogout(() => {
   _atualizarUILogin()
-  // Fix mobile: não redireciona se a página acabou de carregar (pode ser o flash
-  // de user=null que o Firebase emite enquanto processa o token do redirect do Google)
-  const tempoCarregamento = performance.now()
-  if (tempoCarregamento < 5000) {
-    // Dentro dos primeiros 5s: provavelmente é o flash de redirect, não um logout real
-    console.info("[Auth] onLogout ignorado (possível flash de redirect, t=", Math.round(tempoCarregamento), "ms)")
-    return
-  }
   toastInfo("Você saiu.")
   window.location.href = "index.html"
 })

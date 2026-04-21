@@ -4,7 +4,7 @@
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB0SVvvQIrpy4w1cotLkFnl8VUVYoddxdg",
-  authDomain: "t-utopia.firebaseapp.com",
+  authDomain: "site-ficha-3det-utopia.firebaseapp.com",
   projectId: "site-ficha-3det-utopia",
   storageBucket: "site-ficha-3det-utopia.firebasestorage.app",
   messagingSenderId: "77965862037",
@@ -40,18 +40,10 @@ export async function inicializarFirebase() {
     _db   = getFirestore()
     _firebaseFns = { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
-    // Fix mobile Bug 2: aguarda o resultado do redirect ANTES de deixar
-    // onAuthStateChanged disparar callbacks — sem isso, quando a página recarrega
-    // após o redirect do Google, o Firebase emite user=null por um instante e
-    // o onLogout limpa tudo antes do login completar.
-    let _redirectPendente = true
-    _firebaseFns.getRedirectResult(_auth)
-      .catch(e => console.warn("[Firebase] getRedirectResult:", e))
-      .finally(() => { _redirectPendente = false })
+    // Fix mobile: processa resultado do redirect de volta ao app (login via redirect no celular)
+    _firebaseFns.getRedirectResult(_auth).catch(e => console.warn("[Firebase] getRedirectResult:", e))
 
     onAuthStateChanged(_auth, (user) => {
-      // Ignora o disparo inicial de user=null enquanto o redirect ainda está resolvendo
-      if (!user && _redirectPendente) return
       _user = user
       _authReadyResolve(user)  // resolve na primeira chamada
       if (user) _loginCbs.forEach(fn => fn(user))
