@@ -24,26 +24,27 @@ export const onLogin  = (fn) => _loginCbs.push(fn)
 export const onLogout = (fn) => _logoutCbs.push(fn)
 export const getUser          = () => _user
 export const estaConfigurado  = () => FIREBASE_CONFIGURED
-export const aguardarAuth     = () => _authReady   // Bug #3: await antes de usar getUser()
+export const aguardarAuth     = () => _authReady
 
 export async function inicializarFirebase() {
-  if (_auth) return true  // Bug #6: idempotente
+  if (_auth) return true
   if (!FIREBASE_CONFIGURED) { _authReadyResolve(null); return false }
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
-    const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } =
+    const { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
     const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
+    _firebaseFns = { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
-    // Fix GitHub Pages: processa o resultado do redirect antes de propagar auth.
-    // O GitHub Pages envia headers COOP que bloqueiam signInWithPopup — usamos
-    // signInWithRedirect em todos os browsers. O getRedirectResult precisa ser
-    // chamado logo no init para capturar o login quando o usuário volta ao site.
+    // Processa o resultado do redirect ANTES de reagir ao onAuthStateChanged.
+    // Quando o usuário volta ao site após o Google redirect, o Firebase dispara
+    // onAuthStateChanged(null) primeiro e só depois onAuthStateChanged(user).
+    // Se resolvermos _authReady no null, o site renderiza sem login.
+    // A solução: aguardar getRedirectResult terminar antes de resolver _authReady.
     let _redirectProcessado = false
     const _redirectPromise = _firebaseFns.getRedirectResult(_auth)
       .then(result => {
@@ -52,23 +53,35 @@ export async function inicializarFirebase() {
       .catch(e => console.warn("[Firebase] getRedirectResult:", e))
       .finally(() => { _redirectProcessado = true })
 
+    let _authResolved = false
     onAuthStateChanged(_auth, async (user) => {
-      // Aguarda o redirect terminar antes de propagar qualquer estado
-      // Evita o flash de user=null que dispararia onLogout() prematuramente
+      // Aguarda redirect terminar antes de qualquer coisa
       if (!_redirectProcessado) await _redirectPromise
+
       _user = user
-      _authReadyResolve(user)  // resolve na primeira chamada
-      if (user) _loginCbs.forEach(fn => fn(user))
-      else      _logoutCbs.forEach(fn => fn())
+
+      // Resolve _authReady apenas uma vez:
+      // - se há usuário logado, resolve imediatamente
+      // - se não há usuário e redirect já processou, é logout real — resolve
+      // Isso evita resolver com null durante o flash do redirect
+      if (!_authResolved && (user || _redirectProcessado)) {
+        _authResolved = true
+        _authReadyResolve(user)
+      }
+
+      // Só dispara callbacks após redirect processado para evitar onLogout espúrio
+      if (user) {
+        _loginCbs.forEach(fn => fn(user))
+      } else if (_redirectProcessado) {
+        _logoutCbs.forEach(fn => fn())
+      }
     })
     return true
   } catch(e) { console.error("[Firebase]", e); _authReadyResolve(null); return false }
 }
 
 // Fix GitHub Pages: usa sempre signInWithRedirect.
-// O signInWithPopup é bloqueado pelo header Cross-Origin-Opener-Policy
-// que o GitHub Pages envia em todas as páginas, impedindo o popup de
-// se comunicar de volta com a janela pai após o login do Google.
+// signInWithPopup é bloqueado pelo header Cross-Origin-Opener-Policy do GitHub Pages.
 export const loginGoogle = async () => {
   if (!_auth || !_firebaseFns) return
   await _firebaseFns.signInWithRedirect(_auth, new _firebaseFns.GoogleAuthProvider())
@@ -78,12 +91,9 @@ export const logout = async () => { if (_auth && _firebaseFns) await _firebaseFn
 // ─── helpers internos ────────────────────────────────────
 const _ok = () => _db && _user && _firebaseFns
 const _okPub = () => _db && _firebaseFns
-const _colFicha = (modo) => modo === "mestre" ? "fichas_mestre" : "fichas_player"  // Bug #10
+const _colFicha = (modo) => modo === "mestre" ? "fichas_mestre" : "fichas_player"
 const _chaveIndice = (modo) => modo === "mestre" ? "indice_mestre" : "indice_player"
 const _chavePastas = (modo) => modo === "mestre" ? "pastas_mestre" : "pastas_player"
-
-// ─── Índice de fichas (metadados leves) ──────────────────
-// Bug #9: função renomeada e aceita modo, sem parâmetro ignorado
 
 export async function carregarIndiceFichasFirestore(modo = "player") {
   if (!_ok()) return null
@@ -113,7 +123,6 @@ export async function salvarIndiceFichasFirestore(fichas, modo = "player") {
   } catch(e) { console.error("[Firestore] salvar índice:", e); return false }
 }
 
-// ─── Ficha individual ─────────────────────────────────────
 export async function salvarFichaFirestore(fichaObj, modo = "player") {
   if (!_ok() || !fichaObj?.id) return false
   try {
@@ -135,7 +144,6 @@ export async function carregarFichaFirestore(fichaId, modo = "player") {
   } catch(e) { console.error("[Firestore] carregar ficha:", e); return null }
 }
 
-// Bug #21: deletar doc individual do Firestore
 export async function removerFichaFirestore(fichaId, modo = "player") {
   if (!_ok()) return false
   try {
@@ -146,7 +154,6 @@ export async function removerFichaFirestore(fichaId, modo = "player") {
   } catch(e) { console.error("[Firestore] remover ficha:", e); return false }
 }
 
-// ─── Pastas ───────────────────────────────────────────────
 export async function salvarPastasFirestore(pastas, modo = "player") {
   if (!_ok()) return false
   try {
@@ -168,7 +175,6 @@ export async function carregarPastasFirestore(modo = "player") {
   } catch(e) { console.error("[Firestore] carregar pastas:", e); return null }
 }
 
-// ─── Índice público (resolução ownerUid a partir de fichaId) ─
 export async function registrarIndicePublico(fichaId, ownerUid, modo = "player") {
   if (!_okPub() || !fichaId || !ownerUid) return false
   try {
@@ -197,14 +203,12 @@ export async function carregarFichaDeOutroUsuario(fichaId) {
     if (!idxSnap.exists()) return null
     const { ownerUid, modo } = idxSnap.data()
     if (!ownerUid) return null
-
     const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
     const fichaSnap = await _firebaseFns.getDoc(
       _firebaseFns.doc(_db, "users", ownerUid, col, fichaId)
     )
     if (!fichaSnap.exists()) return null
     const data = fichaSnap.data()
-
     return data.isPublic ? { ...data, _ownerUid: ownerUid, _modo: modo } : null
   } catch(e) { console.error("[Firestore] carregar ficha de outro usuário:", e); return null }
 }
@@ -223,7 +227,6 @@ export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player")
   } catch(e) { console.error("[Firestore] salvar como editor:", e); return false }
 }
 
-// ─── Listener realtime ───────────────────────────────────
 export function escutarFicha(fichaId, modo = "player", ownerUid = null, callback) {
   if (!_db || !_firebaseFns?.onSnapshot) return () => {}
   const uid = ownerUid ?? _user?.uid
