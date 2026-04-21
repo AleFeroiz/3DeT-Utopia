@@ -35,8 +35,10 @@ export async function inicializarFirebase() {
     const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
-    _auth = getAuth(initializeApp(FIREBASE_CONFIG))
-    _db   = getFirestore()
+    // DEPOIS (correto)
+    const _app = initializeApp(FIREBASE_CONFIG)
+    _auth = getAuth(_app)
+    _db   = getFirestore(_app)
     _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
     onAuthStateChanged(_auth, (user) => {
