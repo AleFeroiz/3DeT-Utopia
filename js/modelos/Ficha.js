@@ -270,7 +270,7 @@ export class Ficha {
       elementos:   this.elementos.map(e => e.toJSON ? e.toJSON() : { ...e }),
       status:      this.status,
       pontos:      this.pontos,
-      caracteristicasIsoladas: this.caracteristicasIsoladas ?? [],
+      caracteristicasIsoladas: (this.caracteristicasIsoladas ?? []).map(c => c.toJSON ? c.toJSON() : { ...c }),
       anotacoes:   this.anotacoes,
       inventario:  this.inventario,
       combateExtras: this.combateExtras,
