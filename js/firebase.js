@@ -1,5 +1,5 @@
 // ============================================================
-//  firebase.js — Firebase Auth + Firestore  v2  [DEBUG]
+//  firebase.js — Firebase Auth + Firestore  v2
 // ============================================================
 
 const FIREBASE_CONFIG = {
@@ -29,53 +29,21 @@ export async function inicializarFirebase() {
   if (_auth) return true
   if (!FIREBASE_CONFIGURED) { _authReadyResolve(null); return false }
   try {
-    console.log("[DEBUG] 1 - importando Firebase...")
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
-    const { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } =
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
     const { getFirestore, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot } =
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
 
-    console.log("[DEBUG] 2 - inicializando app...")
     _auth = getAuth(initializeApp(FIREBASE_CONFIG))
     _db   = getFirestore()
-    _firebaseFns = { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
+    _firebaseFns = { GoogleAuthProvider, signInWithPopup, signOut, doc, setDoc, updateDoc, getDoc, deleteDoc, onSnapshot }
 
-    console.log("[DEBUG] 3 - chamando getRedirectResult...")
-    let _redirectProcessado = false
-    const _redirectPromise = _firebaseFns.getRedirectResult(_auth)
-      .then(result => {
-        console.log("[DEBUG] 4 - getRedirectResult retornou:", result ? `user=${result.user?.email}` : "null (sem redirect pendente)")
-      })
-      .catch(e => {
-        console.error("[DEBUG] 4 - getRedirectResult ERRO:", e.code, e.message)
-      })
-      .finally(() => {
-        _redirectProcessado = true
-        console.log("[DEBUG] 5 - redirect processado")
-      })
-
-    let _authResolved = false
-    onAuthStateChanged(_auth, async (user) => {
-      console.log("[DEBUG] onAuthStateChanged disparou — user:", user ? user.email : "null", "| redirectProcessado:", _redirectProcessado)
-      if (!_redirectProcessado) {
-        console.log("[DEBUG] aguardando redirect terminar...")
-        await _redirectPromise
-        console.log("[DEBUG] redirect terminou, continuando com user:", _user?.email ?? "null")
-      }
+    onAuthStateChanged(_auth, (user) => {
       _user = user
-      if (!_authResolved && (user || _redirectProcessado)) {
-        _authResolved = true
-        console.log("[DEBUG] resolvendo _authReady com:", user ? user.email : "null")
-        _authReadyResolve(user)
-      }
-      if (user) {
-        console.log("[DEBUG] disparando onLogin callbacks")
-        _loginCbs.forEach(fn => fn(user))
-      } else if (_redirectProcessado) {
-        console.log("[DEBUG] disparando onLogout callbacks")
-        _logoutCbs.forEach(fn => fn())
-      }
+      _authReadyResolve(user)
+      if (user) _loginCbs.forEach(fn => fn(user))
+      else      _logoutCbs.forEach(fn => fn())
     })
     return true
   } catch(e) { console.error("[Firebase]", e); _authReadyResolve(null); return false }
@@ -83,8 +51,10 @@ export async function inicializarFirebase() {
 
 export const loginGoogle = async () => {
   if (!_auth || !_firebaseFns) return
-  console.log("[DEBUG] iniciando signInWithRedirect...")
-  await _firebaseFns.signInWithRedirect(_auth, new _firebaseFns.GoogleAuthProvider())
+  const provider = new _firebaseFns.GoogleAuthProvider()
+  // Fix GitHub Pages COOP: abre o popup manualmente antes do Firebase tentar,
+  // isso evita o bloqueio do Cross-Origin-Opener-Policy
+  await _firebaseFns.signInWithPopup(_auth, provider)
 }
 export const logout = async () => { if (_auth && _firebaseFns) await _firebaseFns.signOut(_auth) }
 
