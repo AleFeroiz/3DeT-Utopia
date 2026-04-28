@@ -211,17 +211,17 @@ export class Ficha {
     return Math.max(0, total)
   }
 
-  // Soma bônus de ataque de todos os equipamentos marcados
+  // Soma bônus de ataque dos equipamentos atualmente equipados para ataque
   get bonusAtaqueEquipamentos() {
     return (this.inventario.itens ?? [])
-      .filter(i => i.categoria === 'equipamento' && i.usadoAtaque)
+      .filter(i => i.categoria === 'equipamento' && i.usadoAtaque && i.equipadoAtaque)
       .reduce((s, i) => s + (Number(i.bonusAtaque) || 0), 0)
   }
 
-  // Soma bônus de defesa de todos os equipamentos marcados
+  // Soma bônus de defesa dos equipamentos atualmente equipados para defesa
   get bonusDefesaEquipamentos() {
     return (this.inventario.itens ?? [])
-      .filter(i => i.categoria === 'equipamento' && i.usadoDefesa)
+      .filter(i => i.categoria === 'equipamento' && i.usadoDefesa && i.equipadoDefesa)
       .reduce((s, i) => s + (Number(i.bonusDefesa) || 0), 0)
   }
 

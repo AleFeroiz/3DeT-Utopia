@@ -394,10 +394,10 @@ function _renderInventario() {
     const card = document.createElement("div")
     card.className = "inv-item-card" + (item.categoria === "equipamento" ? " inv-item-equip" : "")
 
-    // Badges de bônus (só mostram quando em uso)
-    const badgeAtk = (item.categoria === "equipamento" && item.usadoAtaque)
+    // Badges de bônus (só mostram quando CAN usar E está equipado)
+    const badgeAtk = (item.categoria === "equipamento" && item.usadoAtaque && item.equipadoAtaque)
       ? `<span class="inv-badge inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
-    const badgeDef = (item.categoria === "equipamento" && item.usadoDefesa)
+    const badgeDef = (item.categoria === "equipamento" && item.usadoDefesa && item.equipadoDefesa)
       ? `<span class="inv-badge inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
     const badgeCat = item.categoria === "equipamento"
       ? `<span class="inv-badge inv-badge-equip">Equip.</span>` : ""
@@ -405,15 +405,15 @@ function _renderInventario() {
     const badgePericia = pericia
       ? `<span class="inv-badge inv-badge-pericia" title="Perícia: ${pericia.nome}">${pericia.emoji} ${pericia.nome}</span>` : ""
 
-    // Checkboxes de "em uso" — aparecem apenas em equipamentos, somente se o campo correspondente for ativo
-    const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && !_invSomenteLeitura)
+    // Checkboxes de "em uso" — aparecem só se o equipamento PODE ser usado para ataque/defesa E está equipado
+    const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && item.equipadoAtaque && !_invSomenteLeitura)
       ? `<label class="inv-check-uso" title="Usando para ataque">
-           <input type="checkbox" ${item.usadoAtaque ? "checked" : ""} onchange="toggleEquipado('${item.id}','ataque',this.checked)">
+           <input type="checkbox" checked onchange="toggleEquipado('${item.id}','ataque',this.checked)">
            ⚔️
          </label>` : ""
-    const checkDef = (item.categoria === "equipamento" && item.usadoDefesa && !_invSomenteLeitura)
+    const checkDef = (item.categoria === "equipamento" && item.usadoDefesa && item.equipadoDefesa && !_invSomenteLeitura)
       ? `<label class="inv-check-uso" title="Usando para defesa">
-           <input type="checkbox" ${item.usadoDefesa ? "checked" : ""} onchange="toggleEquipado('${item.id}','defesa',this.checked)">
+           <input type="checkbox" checked onchange="toggleEquipado('${item.id}','defesa',this.checked)">
            🛡️
          </label>` : ""
 
@@ -1869,8 +1869,8 @@ function expor() {
   window.toggleEquipado = (id, tipo, valor) => {
     const item = ficha.inventario.itens.find(i => i.id === id)
     if (!item) return
-    if (tipo === 'ataque') item.usadoAtaque = valor
-    else                   item.usadoDefesa = valor
+    if (tipo === 'ataque') item.equipadoAtaque = valor
+    else                   item.equipadoDefesa = valor
     _renderInventario()
     salvar()
   }
@@ -1949,16 +1949,21 @@ function expor() {
     const cat     = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? "item"
     const usaAtk  = cat === "equipamento" && document.getElementById("itemUsadoAtaque").checked
     const usaDef  = cat === "equipamento" && document.getElementById("itemUsadoDefesa").checked
+    // Preserva estado equipado atual se editando; inicializa como true em itens novos
+    const itemAtual = _itemEditandoId ? ficha.inventario.itens.find(i => i.id === _itemEditandoId) : null
     const item = {
       nome,
       pericia,
-      descricao:   document.getElementById("itemDescricao").value.trim(),
-      peso:        +document.getElementById("itemPeso").value || 0,
-      categoria:   cat,
-      usadoAtaque: usaAtk,
-      usadoDefesa: usaDef,
-      bonusAtaque: usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
-      bonusDefesa: usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
+      descricao:      document.getElementById("itemDescricao").value.trim(),
+      peso:           +document.getElementById("itemPeso").value || 0,
+      categoria:      cat,
+      usadoAtaque:    usaAtk,
+      usadoDefesa:    usaDef,
+      bonusAtaque:    usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
+      bonusDefesa:    usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
+      // equipadoAtaque/Defesa: se era item existente preserva; se novo inicializa como true (se tiver o bônus)
+      equipadoAtaque: usaAtk ? (itemAtual ? (itemAtual.equipadoAtaque ?? true) : true) : false,
+      equipadoDefesa: usaDef ? (itemAtual ? (itemAtual.equipadoDefesa ?? true) : true) : false,
     }
     if (_itemEditandoId) {
       ficha.editarItem(_itemEditandoId, item)
