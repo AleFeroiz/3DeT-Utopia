@@ -48,113 +48,173 @@ export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onE
   }
 }
 
-// ── PARSER DE DESCRIÇÃO (formato livro) ──────────────────
-/**
- * Converte uma descrição raw em HTML estruturado com seções tipo livro.
- * Detecta headers como "Efeito e Custo", "Passivo", "Limite:", etc.
- */
-function _parsearDescricao(descricao) {
+// ── PARSER DE DESCRIÇÃO (formato livro) ─────────────────────────────────────
+export function _parsearDescricao(descricao) {
   if (!descricao) return ''
 
-  const SECAO_PATTERNS = [
-    { regex: /^(Efeitos? e Custos?|Funções? e Custos?)$/i, tipo: 'tipo-efeito', icone: '✦', label: null },
-    { regex: /^(Efeitos?)$/i,                             tipo: 'tipo-efeito', icone: '✦', label: null },
-    { regex: /^(Custos?)$/i,                              tipo: 'tipo-custo',  icone: '◈', label: null },
-    { regex: /^(Passivo[s]?)$/i,                          tipo: 'tipo-passivo',icone: '◉', label: null },
-    { regex: /^Limite[:\s]/i,                             tipo: 'tipo-limite', icone: '⚠', label: 'Limite' },
-    { regex: /^Condição de Reset[:\s]/i,                  tipo: 'tipo-reset',  icone: '↺', label: 'Condição de Reset' },
-    { regex: /^\(Nota[:\s]/i,                             tipo: 'tipo-nota',   icone: 'ℹ', label: 'Nota' },
-    { regex: /^Nota[:\s]/i,                               tipo: 'tipo-nota',   icone: 'ℹ', label: 'Nota' },
+  // Headers de seção — match exato (ou prefixo) da linha
+  const SECAO_MAP = [
+    ['tipo-efeito', /^(Efeitos? e Custos?|Efeitos? e Punição|Efeito e Custo|Efeito e Condição|Efeito e Punição|Efeito e Descoberta|Efeitos?|Custos?)$/i],
+    ['tipo-funcao', /^(Funções? e Custos?|Gatilhos?,?\s*Efeitos?|Insanidades?\s+Disponíveis?).*$/i],
+    ['tipo-limite', /^(Níveis?\s+de\s+Frequência.*|Níveis?\s+da\s+Maldição|Efeitos?\s+por\s+Nível)$/i],
+    ['tipo-nota',   /^(Regra\s+Geral|Definição\s+e\s+Efeito)$/i],
   ]
 
-  const linhas = descricao.split('\n')
-  let html = ''
-  let intro = ''
-  let secaoAtual = null
-  let itensSecao = []
-  let textoSecao = []
+  // Sub-labels inline que geram bloco colorido próprio
+  const SUBLABEL_MAP = [
+    ['tipo-limite', /^Limite\s*:/i,              'Limite'],
+    ['tipo-reset',  /^Condição\s+de\s+Reset\s*:/i,'Condição de Reset'],
+    ['tipo-nota',   /^Atenção\s*:/i,             'Atenção'],
+  ]
 
-  // A primeira linha(s) antes de qualquer header é a intro
-  let modoIntro = true
-
-  function fecharSecao() {
-    if (!secaoAtual) return
-    let bodyHTML = ''
-    if (itensSecao.length) {
-      bodyHTML = itensSecao.map(item => {
-        // Item com nome em negrito: "Nome: texto"
-        const m = item.match(/^([^:]{2,40}):\s*(.+)$/s)
-        if (m && m[1].length < 50 && !m[1].match(/^\d/)) {
-          return `<div class="card-secao-item"><span><span class="card-item-nome">${m[1]}:</span> ${m[2]}</span></div>`
-        }
-        return `<div class="card-secao-item"><span>${item}</span></div>`
-      }).join('')
-    } else if (textoSecao.length) {
-      bodyHTML = `<div class="card-secao-body">${textoSecao.join('<br>')}</div>`
-    }
-    if (bodyHTML) {
-      html += `<div class="card-secao">
-        <div class="card-secao-header ${secaoAtual.tipo}">${secaoAtual.icone} ${secaoAtual.labelFinal}</div>
-        ${itensSecao.length ? `<div class="card-secao-body">${bodyHTML}</div>` : bodyHTML}
-      </div>`
-    }
-    secaoAtual = null
-    itensSecao = []
-    textoSecao = []
+  function _esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }
+  function _fmt(s) {
+    return _esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
   }
 
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i].trim()
+  function renderItem(nome, texto) {
+    if (nome) return `<div class="card-secao-item"><span><span class="card-item-nome">${_fmt(nome)}</span>&nbsp;${_fmt(texto)}</span></div>`
+    return `<div class="card-secao-item"><span>${_fmt(texto)}</span></div>`
+  }
+
+  function renderSubLabel(tipo, label, texto) {
+    return `<div class="card-sublabel ${tipo}"><span class="card-sublabel-nome">${_esc(label)}:</span> <span>${_fmt(texto)}</span></div>`
+  }
+
+  // Estado
+  const linhas = descricao.split('\n').map(l => l.trim())
+  let intro = []
+  let secaoTipo = null
+  let secaoLabel = ''
+  let corpo = []          // array de strings HTML já renderizadas
+  let textoAcum = []      // texto corrido antes de itens, a ser fechado antes de bullets
+  let modoIntro = true
+  let resultHTML = ''
+
+  function flushTexto() {
+    if (!textoAcum.length) return
+    corpo.push(`<div class="card-secao-body">${textoAcum.map(_fmt).join('<br>')}</div>`)
+    textoAcum = []
+  }
+
+  function fecharSecao() {
+    flushTexto()
+    if (!secaoTipo && !corpo.length) return
+    const bodyHTML = corpo.join('')
+    if (!bodyHTML) { secaoTipo = null; secaoLabel = ''; corpo = []; return }
+    if (secaoTipo) {
+      resultHTML += `<div class="card-secao"><div class="card-secao-header ${secaoTipo}">${_esc(secaoLabel)}</div>${bodyHTML}</div>`
+    } else {
+      resultHTML += `<div class="card-secao card-secao-sem-header">${bodyHTML}</div>`
+    }
+    secaoTipo = null; secaoLabel = ''; corpo = []
+  }
+
+  for (const linha of linhas) {
     if (!linha) continue
 
-    // Detectar header de seção
-    let match = null
-    for (const p of SECAO_PATTERNS) {
-      if (p.regex.test(linha)) { match = p; break }
-    }
-
-    // Linhas especiais inline (Limite: / Condição de Reset: com conteúdo na mesma linha)
-    if (!match) {
-      for (const p of SECAO_PATTERNS) {
-        if (p.label && linha.toLowerCase().startsWith(p.label.toLowerCase() + ':') && linha.length > p.label.length + 1) {
-          match = p; break
-        }
+    // ── Header de seção? ──────────────────────────────────────────────────
+    let ehHeader = false
+    for (const [tipo, re] of SECAO_MAP) {
+      if (re.test(linha)) {
+        fecharSecao()
+        modoIntro = false
+        secaoTipo = tipo
+        secaoLabel = linha
+        ehHeader = true
+        break
       }
     }
+    if (ehHeader) continue
 
-    if (match) {
-      fecharSecao()
-      modoIntro = false
-      const conteudoInline = linha.replace(match.regex, '').replace(/^[:\s]+/, '').trim()
-      secaoAtual = { ...match, labelFinal: match.label || linha }
-      if (conteudoInline) textoSecao.push(conteudoInline)
+    // ── Modo intro ─────────────────────────────────────────────────────────
+    if (modoIntro) {
+      if (/^\(/.test(linha) && /\)\.?$/.test(linha)) {
+        intro.push(`<em class="card-intro-nota">${_fmt(linha)}</em>`)
+      } else {
+        intro.push(_fmt(linha))
+      }
       continue
     }
 
-    if (modoIntro) {
-      intro += (intro ? ' ' : '') + linha
-    } else if (secaoAtual) {
-      // Item numerado (1º, 2º, etc.) ou com prefixo
-      if (/^[\d]+[ºª°]/.test(linha) || /^\./.test(linha) || /^…/.test(linha)) {
-        itensSecao.push(linha.replace(/^\.\.\.|^\./, '').trim())
-      } else if (linha.match(/^[A-ZÁÉÍÓÚ][^:]{0,40}:\s*.+/)) {
-        itensSecao.push(linha)
-      } else {
-        if (itensSecao.length > 0) {
-          // Continua o último item
-          itensSecao[itensSecao.length - 1] += ' ' + linha
-        } else {
-          textoSecao.push(linha)
-        }
+    // ── Dentro de seção ────────────────────────────────────────────────────
+
+    // Sub-label: "Limite:", "Condição de Reset:", "Atenção:"
+    let ehSub = false
+    for (const [tipo, re, nome] of SUBLABEL_MAP) {
+      if (re.test(linha)) {
+        flushTexto()
+        const conteudo = linha.replace(re, '').replace(/^[\s:]+/, '').trim()
+        corpo.push(renderSubLabel(tipo, nome, conteudo))
+        ehSub = true
+        break
       }
     }
+    if (ehSub) continue
+
+    // Nota entre parênteses dentro de seção
+    if (/^\(/.test(linha) && /\)\.?$/.test(linha)) {
+      flushTexto()
+      corpo.push(`<div class="card-nota-inline">${_fmt(linha)}</div>`)
+      continue
+    }
+
+    // Item "–N PT: texto" ou "–N PT — Nome: texto"
+    const mCustoNeg = linha.match(/^(–\s*\d+\s*PT)\s*[:\s—–]\s*(.+)/i)
+    if (mCustoNeg) {
+      flushTexto()
+      corpo.push(`<div class="card-secao-item card-item-custo-var"><span class="card-item-badge-custo">${_esc(mCustoNeg[1])}</span><span>${_fmt(mCustoNeg[2].trim())}</span></div>`)
+      continue
+    }
+
+    // Item "+N PT — Nome:" ou "N PT — Nome:" (Expansão)
+    const mCustoPos = linha.match(/^(\+?\d+\s*PT\s*[—–]\s*)(.+)/)
+    if (mCustoPos) {
+      flushTexto()
+      corpo.push(`<div class="card-secao-item card-item-custo-var"><span class="card-item-badge-custo positivo">${_fmt(mCustoPos[1].trim())}</span><span>${_fmt(mCustoPos[2].trim())}</span></div>`)
+      continue
+    }
+
+    // Item "1º/2º/..." texto
+    if (/^\d+[ºª°]/.test(linha)) {
+      flushTexto()
+      corpo.push(renderItem(null, linha))
+      continue
+    }
+
+    // Item "...e assim por diante."
+    if (/^\.\.\./.test(linha)) {
+      flushTexto()
+      corpo.push(`<div class="card-secao-item card-item-continuacao"><span>${_fmt(linha)}</span></div>`)
+      continue
+    }
+
+    // Item "Nome (XPM): texto" ou "Nome: texto" com nome ≤ 6 palavras
+    // Evitar false-positives com linhas longas
+    const mItem = linha.match(/^([^:\n]{1,60}?)\s*:\s*(.+)/s)
+    if (mItem) {
+      const nome = mItem[1].trim()
+      const texto = mItem[2].trim()
+      const palavrasNome = nome.split(/\s+/).length
+      // É um item se: nome curto E texto não está vazio E nome não começa com pronome de frase longa
+      if (palavrasNome <= 7 && texto.length > 0 && !/^(Você|Ao|Quando|Se |O |A |Em |No |Na |Que |Qualquer|Sempre|Apenas|Para |Por |Toda|Todo|Com |Sem |Tente|Pode |Faça|Este|Essa)/.test(nome)) {
+        flushTexto()
+        corpo.push(renderItem(nome, texto))
+        continue
+      }
+    }
+
+    // Tudo mais → texto corrido
+    textoAcum.push(linha)
   }
 
   fecharSecao()
 
   let result = ''
-  if (intro) result += `<div class="card-intro">${intro}</div>`
-  result += html
+  if (intro.length) result += `<div class="card-intro">${intro.join(' ')}</div>`
+  result += resultHTML
   return result
 }
 

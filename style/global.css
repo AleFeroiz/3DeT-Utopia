@@ -450,6 +450,93 @@ a { color: inherit; text-decoration: none; }
 .btn-editar  { background: var(--bg-accent, #1e3a5f) !important; }
 .card-actions button:hover { filter: brightness(1.25); }
 
+/* ── ELEMENTOS EXTRA DO PARSER ───────────────────────────── */
+
+.card-secao-sem-header {
+  margin: 6px 10px 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-dim, #1e293b);
+  border-radius: 6px;
+}
+
+/* Sub-labels: Limite, Condição de Reset, Atenção */
+.card-sublabel {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 5px 10px;
+  margin: 2px 0;
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.card-sublabel.tipo-limite  { background: rgba(251,146,60,0.08); border-left: 2px solid #fb923c; }
+.card-sublabel.tipo-reset   { background: rgba(248,113,113,0.08); border-left: 2px solid #f87171; }
+.card-sublabel.tipo-nota    { background: rgba(148,163,184,0.06); border-left: 2px solid #475569; }
+
+.card-sublabel-nome {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.card-sublabel.tipo-limite .card-sublabel-nome  { color: #fb923c; }
+.card-sublabel.tipo-reset .card-sublabel-nome   { color: #f87171; }
+.card-sublabel.tipo-nota .card-sublabel-nome    { color: #94a3b8; }
+
+/* Nota inline (parênteses) */
+.card-nota-inline {
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255,255,255,0.45);
+  padding: 3px 10px 5px;
+}
+
+/* Badge de custo variável: –1 PT, –2 PT, 1 PT — X */
+.card-item-badge-custo {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(248,113,113,0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(248,113,113,0.3);
+  margin-top: 1px;
+}
+
+.card-item-badge-custo.positivo {
+  background: rgba(96,165,250,0.12);
+  color: #93c5fd;
+  border-color: rgba(96,165,250,0.25);
+}
+
+.card-item-continuacao {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.card-item-continuacao::before { content: none !important; }
+
+/* Intro com nota em itálico */
+.card-intro-nota {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 3px;
+}
+
+
 .carac-item {
   display: flex;
   justify-content: space-between;

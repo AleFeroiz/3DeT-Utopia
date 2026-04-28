@@ -8,6 +8,7 @@ import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js?
 import { resumoEscolhas as _resumoEscolhas } from "./uiResumoEscolhas.js"
 import { computarVarianteAba, abasDisponiveis } from "../dados/amplificacao.js"
 import { ElementoFicha                } from "../modelos/Elemento.js"
+import { _parsearDescricao            } from "./uiElementos.js"
 import { FonteDePoder, PC_POR_ESCALA  } from "../modelos/Fonte.js"
 import { Caracteristica               } from "../modelos/Caracteristica.js"
 
@@ -66,28 +67,14 @@ export function abrirListaLivro(tipo) {
     div.className = "item-lista"
     const negativo = item.custo < 0
     const custoStr = `${item.custo > 0 ? "+" : ""}${item.custo} PT`
-    // Extrair intro (antes do primeiro header de seção)
-    const desc = item.descricao ?? ""
-    const linhas = desc.split("\n")
-    let intro = ""
-    let resto = ""
-    let foundHeader = false
-    const HEADER_RE = /^(Efeitos?|Custos?|Efeitos? e Custos?|Funções? e Custos?|Passivo|Limite[:\s]|Condição de Reset|Nota[:\s])/i
-    for (const l of linhas) {
-      if (!foundHeader && HEADER_RE.test(l.trim())) { foundHeader = true }
-      if (!foundHeader) {
-        if (l.trim()) intro += (intro ? " " : "") + l.trim()
-      } else {
-        if (l.trim()) resto += l.trim() + "\n"
-      }
-    }
+    // Usa o mesmo parser das fichas para consistência visual
+    const descHTML = _parsearDescricao(item.descricao ?? "")
     div.innerHTML = `
       <div class="item-lista-header">
         <strong>${item.nome}</strong>
         <span class="item-lista-custo ${negativo ? "negativo" : ""}">${custoStr}</span>
       </div>
-      ${intro ? `<p class="item-lista-intro">${intro}</p>` : ""}
-      ${resto ? `<div class="item-lista-secoes"><div class="item-lista-secao-titulo">Efeitos & Regras</div>${resto.trim().replace(/\n/g, "<br>")}</div>` : ""}
+      ${descHTML}
     `
     div.onclick = () => { _onSalvarElemento?.(new ElementoFicha({ ...item, id: crypto.randomUUID() })); fecharModal("modal") }
     lista.appendChild(div)
