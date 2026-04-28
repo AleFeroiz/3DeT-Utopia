@@ -566,6 +566,7 @@ hr {
   opacity: 0.65;
   margin: 4px 0 0;
   font-style: italic;
+  white-space: pre-wrap;
 }
 .carac-header-row {
   display: flex;
