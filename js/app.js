@@ -1992,6 +1992,55 @@ function expor() {
     salvar()
   }
 
+  // Versatilidade de Profissão
+  window.confirmarVersatilidade = (slotKey, tipo) => {
+    const sel = document.getElementById(`versSelect_${slotKey}`)
+    if (!ficha.versatilidade) ficha.versatilidade = { slot1: null, slot2: null }
+    const v = ficha.versatilidade
+
+    if (tipo === 'nivel5') {
+      // Aprofundar: usa a profissão do slot1 no slot2
+      const prof1 = v.slot1?.profissaoId
+      if (!prof1) { toastErro("Slot 1 precisa estar preenchido para aprofundar."); return }
+      v.slot2 = { profissaoId: prof1, nivel: 5 }
+    } else {
+      // Expandir: nivel 1 de nova profissão
+      const profId = sel?.value
+      if (!profId) { toastErro("Selecione uma profissão."); return }
+      v[slotKey] = { profissaoId: profId, nivel: 1 }
+    }
+    renderAbaProfissao(ficha)
+    salvar()
+    toastSucesso("Versatilidade salva!")
+  }
+
+  window.converterVersatilidadeEmPT = (slotKey) => {
+    if (!ficha.versatilidade) ficha.versatilidade = { slot1: null, slot2: null }
+    ficha.versatilidade[slotKey] = { convertido: true }
+    // Adiciona +1 PT de ficha
+    ficha.pontos.offsetTotal = (ficha.pontos.offsetTotal ?? 0) + 1
+    ficha._sincronizarNivel()
+    ficha.calcularPontos()
+    renderTudo()
+    salvar()
+    toastSucesso("+1 PT de ficha adicionado!")
+  }
+
+  window.resetarVersatilidade = (slotKey) => {
+    if (!confirm(`Resetar o ${slotKey === 'slot1' ? 'Slot 1' : 'Slot 2'} de Versatilidade? ${ficha.versatilidade?.[slotKey]?.convertido ? "O +1 PT de ficha será removido." : ""}`)) return
+    if (!ficha.versatilidade) ficha.versatilidade = { slot1: null, slot2: null }
+    // Se era convertido em PT, desfaz
+    if (ficha.versatilidade[slotKey]?.convertido) {
+      ficha.pontos.offsetTotal = (ficha.pontos.offsetTotal ?? 0) - 1
+      ficha._sincronizarNivel()
+      ficha.calcularPontos()
+    }
+    ficha.versatilidade[slotKey] = null
+    renderTudo()
+    salvar()
+    toastAviso("Versatilidade resetada.")
+  }
+
   // Combate toggle e extras
   window.setAtribCombate = (atrib) => {
     _atribCombate = atrib

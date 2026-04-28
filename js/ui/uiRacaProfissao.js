@@ -256,7 +256,7 @@ export function renderAbaProfissao(ficha) {
   }
   const prof = PROFISSOES.find(p => p.id === ficha.profissaoId)
   if (!prof) return
-  const nivelFicha   = ficha.nivel ?? 1
+  const nivelFicha    = ficha.nivel ?? 1
   const habilsDesbloq = prof.habilidades.filter(h => h.nivel <= nivelFicha)
   const habilsBloc    = prof.habilidades.filter(h => h.nivel >  nivelFicha)
   const renderHab = (h, desbloqueada) => `
@@ -267,6 +267,7 @@ export function renderAbaProfissao(ficha) {
       </div>
       <p>${h.desc}</p>
     </div>`
+
   container.innerHTML = `
     <div class="raca-header">
       <span class="raca-emoji">${prof.emoji}</span>
@@ -279,5 +280,172 @@ export function renderAbaProfissao(ficha) {
     <div class="secao-info"><h3>✅ Habilidades desbloqueadas</h3>
       ${habilsDesbloq.map(h => renderHab(h, true)).join("")}
       ${habilsBloc.length ? `<h3 style="margin-top:12px;opacity:0.6">🔒 Próximas</h3>${habilsBloc.map(h => renderHab(h, false)).join("")}` : ""}
+    </div>
+    <div id="secaoVersatilidade"></div>`
+
+  _renderVersatilidade(ficha)
+}
+
+// ─── Versatilidade de Profissão ───────────────────────────
+function _renderVersatilidade(ficha) {
+  const container = document.getElementById("secaoVersatilidade")
+  if (!container) return
+
+  const nivel = ficha.nivel ?? 1
+  const v     = ficha.versatilidade ?? { slot1: null, slot2: null }
+  const NIVEL_SLOT1 = 7
+  const NIVEL_SLOT2 = 14
+
+  // Slot bloqueado (antes do nível mínimo)
+  const renderBloqueado = (nivelReq) => `
+    <div class="vers-slot vers-bloqueado">
+      <div class="vers-slot-header">
+        <span class="vers-icone">⚗️</span>
+        <div>
+          <strong>Versatilidade</strong>
+          <span class="vers-requisito">🔒 Disponível no nível ${nivelReq}</span>
+        </div>
+      </div>
+      <p class="vers-desc">Ao atingir o nível ${nivelReq}, você poderá escolher uma habilidade de nível 1 de outra profissão.</p>
     </div>`
+
+  // Slot disponível mas vazio
+  const renderVazio = (slotKey, opcoes) => {
+    const optsHtml = opcoes.map(p =>
+      `<option value="${p.id}">${p.emoji} ${p.nome}</option>`
+    ).join("")
+    return `
+      <div class="vers-slot vers-disponivel">
+        <div class="vers-slot-header">
+          <span class="vers-icone">⚗️</span>
+          <div>
+            <strong>Versatilidade — Slot disponível</strong>
+            <span class="vers-requisito vers-ok">✅ Desbloqueado no nível ${slotKey === "slot1" ? NIVEL_SLOT1 : NIVEL_SLOT2}</span>
+          </div>
+        </div>
+        <p class="vers-desc">Escolha o nível 1 de uma profissão diferente da sua, ou converta este ponto em +1 PT de ficha.</p>
+        <div class="vers-acoes">
+          <select class="vers-select" id="versSelect_${slotKey}">
+            <option value="">— escolha uma profissão —</option>
+            ${optsHtml}
+          </select>
+          <button class="btn-acao vers-btn-confirmar" onclick="confirmarVersatilidade('${slotKey}','nivel1')">
+            Expandir (Nível 1)
+          </button>
+          <button class="btn-acao vers-btn-pt" onclick="converterVersatilidadeEmPT('${slotKey}')">
+            🎲 +1 PT de Ficha
+          </button>
+        </div>
+      </div>`
+  }
+
+  // Slot 2 com opção de aprofundar (se slot1 existe)
+  const renderVazio2ComAprofundar = (slot1Prof) => {
+    const profSlot1 = PROFISSOES.find(p => p.id === slot1Prof?.profissaoId)
+    const podeAprofundar = !!(slot1Prof && profSlot1)
+    // Profissões disponíveis: todas exceto a principal e a do slot1
+    const opcoes = PROFISSOES.filter(p => p.id !== ficha.profissaoId && p.id !== slot1Prof?.profissaoId)
+    const optsHtml = opcoes.map(p =>
+      `<option value="${p.id}">${p.emoji} ${p.nome}</option>`
+    ).join("")
+    const aprofundarBtn = podeAprofundar ? `
+      <button class="btn-acao vers-btn-aprofundar" onclick="confirmarVersatilidade('slot2','nivel5')">
+        ⬆️ Aprofundar ${profSlot1.emoji} ${profSlot1.nome} (Nível 5)
+      </button>` : ""
+    return `
+      <div class="vers-slot vers-disponivel">
+        <div class="vers-slot-header">
+          <span class="vers-icone">⚗️</span>
+          <div>
+            <strong>Versatilidade — Slot 2 disponível</strong>
+            <span class="vers-requisito vers-ok">✅ Desbloqueado no nível ${NIVEL_SLOT2}</span>
+          </div>
+        </div>
+        <p class="vers-desc">Expanda para outra profissão (Nível 1), aprofunde a profissão do Slot 1 (Nível 5), ou converta em +1 PT.</p>
+        <div class="vers-acoes">
+          <select class="vers-select" id="versSelect_slot2">
+            <option value="">— escolha uma profissão —</option>
+            ${optsHtml}
+          </select>
+          <button class="btn-acao vers-btn-confirmar" onclick="confirmarVersatilidade('slot2','nivel1')">
+            Expandir (Nível 1)
+          </button>
+          ${aprofundarBtn}
+          <button class="btn-acao vers-btn-pt" onclick="converterVersatilidadeEmPT('slot2')">
+            🎲 +1 PT de Ficha
+          </button>
+        </div>
+      </div>`
+  }
+
+  // Slot preenchido
+  const renderPreenchido = (slotKey, slot) => {
+    const profVers = PROFISSOES.find(p => p.id === slot.profissaoId)
+    if (!profVers) return ""
+    const hab = profVers.habilidades.find(h => h.nivel === slot.nivel)
+    return `
+      <div class="vers-slot vers-preenchido">
+        <div class="vers-slot-header">
+          <span class="vers-icone">⚗️</span>
+          <div>
+            <strong>Versatilidade — ${slotKey === "slot1" ? "Slot 1" : "Slot 2"}</strong>
+            <span class="vers-requisito vers-ok">✅ ${profVers.emoji} ${profVers.nome} — Nível ${slot.nivel}</span>
+          </div>
+          <button class="btn-trocar" onclick="resetarVersatilidade('${slotKey}')">Resetar</button>
+        </div>
+        ${hab ? `<div class="card-info desbloqueado" style="margin-top:8px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <span class="badge-nivel">Nível de Prof. ${hab.nivel}</span>
+            <strong>${hab.nome}</strong>
+          </div>
+          <p>${hab.desc}</p>
+        </div>` : ""}
+      </div>`
+  }
+
+  // Profissões disponíveis para slot1: todas exceto a principal
+  const opcoes1 = PROFISSOES.filter(p => p.id !== ficha.profissaoId)
+
+  let html = `<div class="secao-info"><h3>⚗️ Versatilidade de Profissão</h3>`
+
+  // Slot 1
+  if (nivel < NIVEL_SLOT1) {
+    html += renderBloqueado(NIVEL_SLOT1)
+  } else if (!v.slot1 || v.slot1.convertido) {
+    if (v.slot1?.convertido) {
+      html += `<div class="vers-slot vers-convertido">
+        <div class="vers-slot-header"><span class="vers-icone">🎲</span>
+          <div><strong>Versatilidade Slot 1</strong>
+            <span class="vers-requisito vers-ok">Convertido em +1 PT de ficha</span>
+          </div>
+          <button class="btn-trocar" onclick="resetarVersatilidade('slot1')">Resetar</button>
+        </div></div>`
+    } else {
+      html += renderVazio("slot1", opcoes1)
+    }
+  } else {
+    html += renderPreenchido("slot1", v.slot1)
+  }
+
+  // Slot 2
+  if (nivel < NIVEL_SLOT2) {
+    html += renderBloqueado(NIVEL_SLOT2)
+  } else if (!v.slot2 || v.slot2.convertido) {
+    if (v.slot2?.convertido) {
+      html += `<div class="vers-slot vers-convertido">
+        <div class="vers-slot-header"><span class="vers-icone">🎲</span>
+          <div><strong>Versatilidade Slot 2</strong>
+            <span class="vers-requisito vers-ok">Convertido em +1 PT de ficha</span>
+          </div>
+          <button class="btn-trocar" onclick="resetarVersatilidade('slot2')">Resetar</button>
+        </div></div>`
+    } else {
+      html += renderVazio2ComAprofundar(v.slot1)
+    }
+  } else {
+    html += renderPreenchido("slot2", v.slot2)
+  }
+
+  html += `</div>`
+  container.innerHTML = html
 }

@@ -35,7 +35,8 @@ export class Ficha {
     combateExtras = {},
     imagemUrl = null,
     imagemThumb = null,
-    corTema = "#3b82f6"
+    corTema = "#3b82f6",
+    versatilidade = { slot1: null, slot2: null }
   } = {}) {
     this.id          = id ?? crypto.randomUUID()
     this.nome        = nome
@@ -70,6 +71,10 @@ export class Ficha {
     this.imagemUrl   = imagemUrl   ?? null
     this.imagemThumb = imagemThumb ?? null
     this.corTema     = corTema     ?? "#3b82f6"
+    this.versatilidade = {
+      slot1: versatilidade?.slot1 ?? null,
+      slot2: versatilidade?.slot2 ?? null,
+    }
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
       e.tipo === "fonte" ? FonteDePoder.fromJSON(e) : ElementoFicha.fromJSON(e)
@@ -277,6 +282,7 @@ export class Ficha {
       imagemUrl:   this.imagemUrl   ?? null,
       imagemThumb: this.imagemThumb ?? null,
       corTema:     this.corTema     ?? "#3b82f6",
+      versatilidade: this.versatilidade ?? { slot1: null, slot2: null },
     }
   }
 
