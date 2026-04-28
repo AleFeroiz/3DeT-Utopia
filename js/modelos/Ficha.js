@@ -158,6 +158,14 @@ export class Ficha {
     // Custo da raça (ex: Modificado e Mestiço custam 1 ponto)
     const raca = RACAS.find(r => r.id === this.racaId)
     if (raca?.custo) gastos += raca.custo
+    // Custo dos encantamentos dos equipamentos
+    for (const item of (this.inventario?.itens ?? [])) {
+      if (item.categoria === 'equipamento') {
+        for (const enc of (item.encantamentos ?? [])) {
+          gastos += (enc.custo ?? 0)
+        }
+      }
+    }
     this.pontos.gastosAuto   = gastos
     // gastos final = automático + offset manual
     this.pontos.gastos       = gastos + (this.pontos.offsetGastos ?? 0)

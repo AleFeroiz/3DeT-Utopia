@@ -2093,44 +2093,140 @@ function expor() {
 
   const ENCANTAMENTOS_LISTA = [
     { id:"abencado",   emoji:"✨", nome:"Abençoado",   custo:1, repetivel:false, incompativel:[],
-      desc:"Protege contra Paralisia e condições negativas. Ganho em Defesa e Resistência contra eles." },
+      desc:"Protege contra Paralisia e condições negativas. Ganho em Defesa e Resistência contra eles.", extra:null },
     { id:"acurado",    emoji:"🎯", nome:"Acurado",      custo:2, repetivel:false, incompativel:["macico"],
-      desc:"Acerto crítico em testes de ataque com 5 ou 6. Incompatível com Maciço." },
+      desc:"Acerto crítico em testes de ataque com 5 ou 6. Incompatível com Maciço.", extra:null },
     { id:"aprimorado", emoji:"💎", nome:"Aprimorado",   custo:1, repetivel:true,  incompativel:[],
-      desc:"Aumenta um atributo em situações específicas. Não afeta ataque/defesa. (pode adicionar múltiplas vezes com atributos/condições diferentes)" },
+      desc:"Aumenta um atributo em situações específicas. Não afeta ataque/defesa.", extraLabel:"Atributo / situação", extraPlaceholder:"Ex: Força ao escalar montanhas" },
     { id:"condutor",   emoji:"⚡", nome:"Condutor",     custo:2, repetivel:false, incompativel:[],
-      desc:"Enquanto usa o equipamento, todas as suas vantagens custam metade dos PM." },
+      desc:"Enquanto usa o equipamento, todas as suas vantagens custam metade dos PM.", extra:null },
     { id:"elemental",  emoji:"🔮", nome:"Elemental",    custo:1, repetivel:true,  incompativel:[],
-      desc:"Causa dano elemental. Ao acertar, teste de Poder vs Resistência: se vencer, +1D do tipo elemental. (empilhável: +1 ponto = +1D)" },
-    { id:"encantado",  emoji:"🔮", nome:"Encantado",    custo:1, repetivel:true,  incompativel:[],
-      desc:"+3 em testes de ataque (arma) ou +3 de Resistência na defesa (armadura). Empilhável até 3 vezes." },
+      desc:"Ao acertar, teste Poder vs Resistência: +1D do tipo elemental por ponto investido.", extraLabel:"Tipo de dano elemental", extraPlaceholder:"Ex: Fogo" },
+    { id:"encantado",  emoji:"✴️", nome:"Encantado",    custo:1, repetivel:true,  incompativel:[],
+      desc:"+3 em testes de ataque (arma) ou +3 de Resistência na defesa (armadura). Empilhável até 3×.", extra:null },
     { id:"espiritual", emoji:"👻", nome:"Espiritual",   custo:2, repetivel:false, incompativel:[],
-      desc:"A arma ataca o espírito. Causa dano em PM igual à metade do dano em PV." },
+      desc:"A arma ataca o espírito. Causa dano em PM igual à metade do dano em PV.", extra:null },
     { id:"fortificada",emoji:"🏰", nome:"Fortificada",  custo:2, repetivel:false, incompativel:["leve"],
-      desc:"Oponentes não conseguem críticos contra você (exceto com vantagens específicas). Incompatível com Leve." },
+      desc:"Oponentes não conseguem críticos contra você (exceto com vantagens específicas). Incompatível com Leve.", extra:null },
     { id:"leve",       emoji:"🕊️", nome:"Leve",        custo:2, repetivel:false, incompativel:["fortificada"],
-      desc:"Armadura leve e ágil. Acerto crítico com 5 ou 6 em testes de defesa. Incompatível com Fortificada." },
+      desc:"Armadura leve e ágil. Acerto crítico com 5 ou 6 em testes de defesa. Incompatível com Fortificada.", extra:null },
     { id:"macico",     emoji:"🔨", nome:"Maciço",       custo:2, repetivel:false, incompativel:["acurado"],
-      desc:"No primeiro acerto crítico, o Poder é somado três vezes ao dano. Incompatível com Acurado." },
+      desc:"No primeiro acerto crítico, o Poder é somado três vezes ao dano. Incompatível com Acurado.", extra:null },
     { id:"obrapima",   emoji:"🎨", nome:"Obra-Prima",   custo:1, repetivel:false, incompativel:[],
-      desc:"Escolha uma perícia. Gaste 3 PM para receber Ganho em testes com ela enquanto usa o equipamento." },
+      desc:"Escolha uma perícia. Gaste 3 PM para receber Ganho em testes com ela enquanto usa o equipamento.", extraLabel:"Perícia potencializada", extraPlaceholder:"Ex: Luta" },
     { id:"fruta",      emoji:"🍎", nome:"Fruta (Akuma no Mi)", custo:0, repetivel:false, incompativel:["__todos__"],
-      desc:"O item 'come' uma Akuma no Mi. Ganha as habilidades da fruta, mas não pode ter nenhum outro encantamento." },
+      desc:"O item 'come' uma Akuma no Mi. Ganha as habilidades da fruta, mas não aceita nenhum outro encantamento.", extra:null },
   ]
 
   const CAT_INFO = {
-    1: { nome:"Comum",    req:"Sem requisitos.",                       penalidade:"Nenhuma."                                        },
-    2: { nome:"Incomum",  req:"Sem requisitos.",                       penalidade:"Nenhuma."                                        },
-    3: { nome:"Raro",     req:"Treinado na Perícia Alvo.",             penalidade:"Parcial: perde 50% do bônus sem Treinamento."     },
-    4: { nome:"Épico",    req:"Treinado na Perícia Alvo.",             penalidade:"Total: perde 100% do bônus sem Treinamento."      },
-    5: { nome:"Lendário", req:"Maestria na Perícia Alvo.",             penalidade:"Híbrida: −50% sem Maestria; −100% sem a Perícia." },
-    6: { nome:"Mítico",   req:"Maestria na Perícia Alvo.",             penalidade:"Total: perde 100% do bônus sem Maestria."        },
+    1: { nome:"Comum",    req:"Sem requisitos de perícia.",  penalidade:"Nenhuma penalidade."                                      },
+    2: { nome:"Incomum",  req:"Sem requisitos de perícia.",  penalidade:"Nenhuma penalidade."                                      },
+    3: { nome:"Raro",     req:"Treinado na Perícia Alvo.",   penalidade:"Parcial: −50% do bônus sem Treinamento."                  },
+    4: { nome:"Épico",    req:"Treinado na Perícia Alvo.",   penalidade:"Total: −100% do bônus sem Treinamento."                   },
+    5: { nome:"Lendário", req:"Maestria na Perícia Alvo.",   penalidade:"Híbrida: −50% sem Maestria; −100% sem a Perícia."         },
+    6: { nome:"Mítico",   req:"Maestria na Perícia Alvo.",   penalidade:"Total: −100% do bônus sem Maestria."                     },
   }
 
   // Estado temporário do modal
-  let _itemEncantamentos  = []  // [{id, nome, emoji, custo, desc, extra?}]
+  let _itemEncantamentos  = []
   let _itemCategoria      = 1
-  let _itemRestricoes     = []  // [{tipo:'parcial'|'total', texto:string}]
+  let _itemRestricoes     = []
+
+  // ── Mini-modal de extra info (substitui prompt()) ─────────
+  // Cria o mini-modal no DOM na primeira vez que for chamado
+  function _criarMiniModalSeNecessario() {
+    if (document.getElementById('miniModalEnc')) return
+    const el = document.createElement('div')
+    el.id = 'miniModalEnc'
+    el.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;
+      display:flex;align-items:center;justify-content:center;
+    `
+    el.innerHTML = `
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:min(380px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 id="miniModalEncTitulo" style="font-size:15px;color:#e2e8f0;margin:0"></h3>
+          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+        </div>
+        <p id="miniModalEncDesc" style="font-size:12px;opacity:0.6;margin:0;line-height:1.5"></p>
+        <div>
+          <label id="miniModalEncLabel" style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px"></label>
+          <input id="miniModalEncInput" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="miniModalEncConfirmar" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Confirmar</button>
+          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(el)
+  }
+
+  function _pedirExtraInfo(enc, callback) {
+    _criarMiniModalSeNecessario()
+    const modal = document.getElementById('miniModalEnc')
+    document.getElementById('miniModalEncTitulo').textContent = `${enc.emoji} ${enc.nome}`
+    document.getElementById('miniModalEncDesc').textContent    = enc.desc
+    document.getElementById('miniModalEncLabel').textContent   = enc.extraLabel ?? 'Detalhe'
+    const input = document.getElementById('miniModalEncInput')
+    input.placeholder = enc.extraPlaceholder ?? ''
+    input.value       = ''
+    modal.style.display = 'flex'
+    setTimeout(() => input.focus(), 50)
+
+    const confirmar = document.getElementById('miniModalEncConfirmar')
+    const novoConfirmar = confirmar.cloneNode(true)
+    confirmar.parentNode.replaceChild(novoConfirmar, confirmar)
+    novoConfirmar.onclick = () => {
+      const val = input.value.trim()
+      if (!val) { input.style.borderColor = '#ef4444'; return }
+      input.style.borderColor = '#334155'
+      modal.style.display = 'none'
+      callback(val)
+    }
+    input.onkeydown = (e) => { if (e.key === 'Enter') novoConfirmar.click() }
+  }
+
+  // ── Mini-modal de restrição (substitui confirm()) ──────────
+  function _criarMiniModalRestricaoSeNecessario() {
+    if (document.getElementById('miniModalRestricao')) return
+    const el = document.createElement('div')
+    el.id = 'miniModalRestricao'
+    el.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;
+      display:flex;align-items:center;justify-content:center;
+    `
+    el.innerHTML = `
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:min(400px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="font-size:15px;color:#e2e8f0;margin:0">🔒 Nova Restrição</h3>
+          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+        </div>
+        <div>
+          <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px">Descrição da restrição</label>
+          <input id="restricaoTextoInput" placeholder="Ex: Requer bateria carregada para funcionar" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+        </div>
+        <div>
+          <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:8px">Tipo de restrição</label>
+          <div style="display:flex;gap:8px">
+            <label id="restricaoParcialLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
+              <input type="radio" name="restricaoTipoModal" value="parcial" checked style="accent-color:#fbbf24;width:14px;height:14px">
+              <span>🟡 Parcial <span style="opacity:0.55;font-size:11px">(−50%)</span></span>
+            </label>
+            <label id="restricaoTotalLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
+              <input type="radio" name="restricaoTipoModal" value="total" style="accent-color:#f87171;width:14px;height:14px">
+              <span>🔴 Total <span style="opacity:0.55;font-size:11px">(−100%)</span></span>
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="restricaoConfirmarBtn" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Adicionar</button>
+          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(el)
+  }
 
   window.selecionarCatEquip = (cat) => {
     _itemCategoria = cat
@@ -2139,15 +2235,19 @@ function expor() {
     })
     _renderCatInfo()
     _renderEncantamentosItem()
+    _renderRestricaoAutoCategoria()
   }
 
   function _renderCatInfo() {
     const info = CAT_INFO[_itemCategoria]
     const el   = document.getElementById('catEquipInfo')
     if (!el) return
-    el.innerHTML = `<strong>Categoria ${_itemCategoria} — ${info.nome}</strong>: ${info.req} ${info.penalidade}`
-    const max = document.getElementById('encantamentosContador')
-    if (max) max.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+    el.innerHTML = `<strong>Cat. ${_itemCategoria} — ${info.nome}</strong> &nbsp;·&nbsp; ${info.req} &nbsp;·&nbsp; <span style="opacity:0.75">${info.penalidade}</span>`
+    const contador = document.getElementById('encantamentosContador')
+    if (contador) {
+      contador.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+      contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#64748b'
+    }
   }
 
   function _renderEncantamentosItem() {
@@ -2161,13 +2261,15 @@ function expor() {
       const chip = document.createElement('div')
       chip.className = 'encantamento-chip'
       chip.innerHTML = `
-        <div style="flex:1">
-          <span class="encantamento-chip-nome">${enc.emoji} ${enc.nome}</span>
-          ${enc.extra ? `<span style="font-size:11px;opacity:0.6;margin-left:6px">(${enc.extra})</span>` : ''}
-          <span class="encantamento-chip-custo">${enc.custo > 0 ? ' +'+enc.custo+' PT' : ''}</span>
-          <div style="font-size:11px;opacity:0.55;margin-top:2px">${enc.desc}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="encantamento-chip-nome">${enc.emoji} ${enc.nome}</span>
+            ${enc.custo > 0 ? `<span class="encantamento-chip-custo">+${enc.custo} PT</span>` : ''}
+            ${enc.extra ? `<span style="font-size:11px;color:#94a3b8;background:#0f172a;border:1px solid #334155;padding:1px 6px;border-radius:4px">${enc.extra}</span>` : ''}
+          </div>
+          <div style="font-size:11px;opacity:0.5;margin-top:3px;line-height:1.4">${enc.desc}</div>
         </div>
-        <button class="encantamento-chip-remover" onclick="_removerEncantamentoItem(${idx})">✕</button>
+        <button class="encantamento-chip-remover" onclick="_removerEncantamentoItem(${idx})" title="Remover">✕</button>
       `
       lista.appendChild(chip)
     })
@@ -2179,14 +2281,16 @@ function expor() {
     const contador = document.getElementById('encantamentosContador')
     if (contador) {
       contador.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
-      contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#94a3b8'
+      contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#64748b'
     }
   }
 
   window._removerEncantamentoItem = (idx) => {
     _itemEncantamentos.splice(idx, 1)
     _renderEncantamentosItem()
-    fecharSeletorEncantamento()
+    // Re-renderiza o seletor se estiver aberto
+    const painel = document.getElementById('painelSeletorEncantamento')
+    if (painel && painel.style.display !== 'none') _renderOpcoesEncantamento()
   }
 
   window.abrirSeletorEncantamento = () => {
@@ -2206,12 +2310,11 @@ function expor() {
     if (!lista) return
     lista.innerHTML = ''
 
-    const temFruta       = _itemEncantamentos.some(e => e.id === 'fruta')
-    const idsPresentes   = _itemEncantamentos.map(e => e.id)
-    const cheio          = _itemEncantamentos.length >= _itemCategoria
+    const temFruta     = _itemEncantamentos.some(e => e.id === 'fruta')
+    const idsPresentes = _itemEncantamentos.map(e => e.id)
+    const cheio        = _itemEncantamentos.length >= _itemCategoria
 
     ENCANTAMENTOS_LISTA.forEach(enc => {
-      // Verificar se pode ser adicionado
       let bloqueado = false
       let motivo    = ''
 
@@ -2221,65 +2324,73 @@ function expor() {
         bloqueado = true; motivo = 'Item com Fruta não aceita outros encantamentos'
       } else if (!enc.repetivel && idsPresentes.includes(enc.id)) {
         bloqueado = true; motivo = 'Já adicionado (não repetível)'
-      } else if (enc.incompativel.includes('__todos__') && _itemEncantamentos.length > 0) {
-        bloqueado = true; motivo = 'Incompatível com outros encantamentos'
       } else {
-        const incompat = enc.incompativel.find(i => idsPresentes.includes(i))
+        const incompat = enc.incompativel.find(i => i !== '__todos__' && idsPresentes.includes(i))
         if (incompat) {
-          const nome = ENCANTAMENTOS_LISTA.find(e => e.id === incompat)?.nome ?? incompat
-          bloqueado = true; motivo = `Incompatível com ${nome}`
+          const nomeInc = ENCANTAMENTOS_LISTA.find(e => e.id === incompat)?.nome ?? incompat
+          bloqueado = true; motivo = `Incompatível com ${nomeInc}`
         }
       }
-      if (cheio && !bloqueado) { bloqueado = true; motivo = 'Limite de encantamentos atingido' }
+      if (cheio && !bloqueado) { bloqueado = true; motivo = 'Limite de encantamentos atingido (aumente a Categoria)' }
 
       const div = document.createElement('div')
       div.className = 'enc-opcao' + (bloqueado ? ' desabilitado' : '')
       div.innerHTML = `
         <div class="enc-opcao-header">
           <span class="enc-opcao-nome">${enc.emoji} ${enc.nome}</span>
-          ${enc.custo > 0 ? `<span class="enc-opcao-custo">+${enc.custo} PT</span>` : ''}
+          ${enc.custo > 0 ? `<span class="enc-opcao-custo">+${enc.custo} PT</span>` : `<span style="font-size:11px;color:#64748b">grátis</span>`}
         </div>
         <div class="enc-opcao-desc">${enc.desc}</div>
         ${bloqueado ? `<div class="enc-opcao-incompat">⛔ ${motivo}</div>` : ''}
       `
-      if (!bloqueado) {
-        div.onclick = () => _selecionarEncantamento(enc)
-      }
+      if (!bloqueado) div.onclick = () => _selecionarEncantamento(enc)
       lista.appendChild(div)
     })
   }
 
   function _selecionarEncantamento(enc) {
-    if (enc.id === 'fruta') {
-      // Fruta remove todos os outros
-      _itemEncantamentos = [{ ...enc }]
-    } else {
-      // Para encantamentos repetíveis que pedem info adicional
-      let extra = null
-      if (enc.id === 'aprimorado') {
-        extra = prompt('Qual atributo e situação esse encantamento aprimora?', 'Ex: Força ao escalar')
-        if (extra === null) return
-      } else if (enc.id === 'elemental') {
-        extra = prompt('Qual tipo de dano elemental?', 'Ex: Fogo')
-        if (extra === null) return
-      } else if (enc.id === 'obrapima') {
-        extra = prompt('Qual perícia esse Obra-Prima potencializa?', 'Ex: Luta')
-        if (extra === null) return
+    const _finalizar = (extra) => {
+      if (enc.id === 'fruta') {
+        _itemEncantamentos = [{ ...enc, extra }]
+      } else {
+        _itemEncantamentos.push({ ...enc, extra })
       }
-      _itemEncantamentos.push({ ...enc, extra })
+      fecharSeletorEncantamento()
+      _renderEncantamentosItem()
     }
-    fecharSeletorEncantamento()
-    _renderEncantamentosItem()
+
+    if (enc.extraLabel) {
+      _pedirExtraInfo(enc, (val) => _finalizar(val))
+    } else {
+      _finalizar(null)
+    }
   }
 
   // ── Restrições customizadas ────────────────────────────────
   window.adicionarRestricaoItem = () => {
-    const tipo  = 'parcial'
-    const texto = prompt('Descreva a restrição (ex: requer bateria carregada):')
-    if (!texto?.trim()) return
-    const tipoEsc = confirm('Essa é uma Restrição TOTAL (0% bônus)?\nCancele para Parcial (50% bônus).') ? 'total' : 'parcial'
-    _itemRestricoes.push({ tipo: tipoEsc, texto: texto.trim() })
-    _renderRestricoesItem()
+    _criarMiniModalRestricaoSeNecessario()
+    const modal = document.getElementById('miniModalRestricao')
+    const input = document.getElementById('restricaoTextoInput')
+    input.value = ''
+    input.style.borderColor = '#334155'
+    // Reset radio para parcial
+    const radios = modal.querySelectorAll('input[name="restricaoTipoModal"]')
+    if (radios[0]) radios[0].checked = true
+    modal.style.display = 'flex'
+    setTimeout(() => input.focus(), 50)
+
+    const confirmar    = document.getElementById('restricaoConfirmarBtn')
+    const novoConfirmar = confirmar.cloneNode(true)
+    confirmar.parentNode.replaceChild(novoConfirmar, confirmar)
+    novoConfirmar.onclick = () => {
+      const texto = input.value.trim()
+      if (!texto) { input.style.borderColor = '#ef4444'; return }
+      const tipo = modal.querySelector('input[name="restricaoTipoModal"]:checked')?.value ?? 'parcial'
+      _itemRestricoes.push({ tipo, texto })
+      modal.style.display = 'none'
+      _renderRestricoesItem()
+    }
+    input.onkeydown = (e) => { if (e.key === 'Enter') novoConfirmar.click() }
   }
 
   window._removerRestricaoItem = (idx) => {
@@ -2297,9 +2408,9 @@ function expor() {
       chip.innerHTML = `
         <div class="restricao-chip-header">
           <span class="${r.tipo === 'total' ? 'restricao-chip-tipo-total' : 'restricao-chip-tipo-parcial'}">
-            ${r.tipo === 'total' ? '🔴 Total (0%)' : '🟡 Parcial (50%)'}
+            ${r.tipo === 'total' ? '🔴 Restrição Total (−100% bônus)' : '🟡 Restrição Parcial (−50% bônus)'}
           </span>
-          <button class="restricao-chip-remover" onclick="_removerRestricaoItem(${idx})">✕</button>
+          <button class="restricao-chip-remover" onclick="_removerRestricaoItem(${idx})" title="Remover">✕</button>
         </div>
         <div class="restricao-chip-texto">${r.texto}</div>
       `
@@ -2311,7 +2422,7 @@ function expor() {
     const el   = document.getElementById('restricaoCategoriaAuto')
     const info = CAT_INFO[_itemCategoria]
     if (!el) return
-    el.innerHTML = `📋 <strong>Cat. ${_itemCategoria}:</strong> ${info.req} → ${info.penalidade}`
+    el.innerHTML = `📋 <strong>Requisito automático (Cat. ${_itemCategoria}):</strong> ${info.req} → <em>${info.penalidade}</em>`
   }
 
   function _resetItemEncantamentos() {

@@ -1879,87 +1879,152 @@ hr {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
 /* ── ENCANTAMENTOS & CATEGORIA EQUIPAMENTO ───────────────── */
+
 .cat-equip-btn {
-  padding: 5px 10px;
-  font-size: 12px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 500;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #94a3b8;
+  border: 1px solid var(--border, #334155);
+  background: var(--bg-base, #0f172a);
+  color: #64748b;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
-.cat-equip-btn:hover { border-color: #64748b; color: #e2e8f0; }
+.cat-equip-btn:hover  { border-color: #475569; color: #cbd5e1; }
 .cat-equip-btn.active {
-  background: #1e40af;
+  background: rgba(59,130,246,0.15);
   border-color: #3b82f6;
-  color: #bfdbfe;
+  color: #93c5fd;
   font-weight: 600;
 }
 
+/* Info box de categoria */
+#catEquipInfo {
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 7px 10px;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 7px;
+  line-height: 1.5;
+}
+#catEquipInfo strong { color: #e2e8f0; }
+
+/* Chips de encantamentos adicionados */
 .encantamento-chip {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 10px;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 9px 11px;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 9px;
+  transition: border-color 0.15s;
 }
-.encantamento-chip-nome { font-weight: 600; color: #c4b5fd; }
-.encantamento-chip-custo { font-size: 11px; opacity: 0.55; }
+.encantamento-chip:hover { border-color: rgba(139,92,246,0.45); }
+.encantamento-chip-nome { font-weight: 600; color: #c4b5fd; font-size: 13px; }
+.encantamento-chip-custo { font-size: 11px; color: #fbbf24; opacity: 0.85; }
 .encantamento-chip-remover {
   background: transparent;
-  border: none;
-  color: #ef4444;
+  border: 1px solid transparent;
+  color: #64748b;
   cursor: pointer;
-  font-size: 14px;
-  padding: 0 4px;
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 5px;
   line-height: 1;
   flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.15s;
+}
+.encantamento-chip-remover:hover { border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.1); }
+
+/* Botão adicionar encantamento */
+#btnAdicionarEncantamento {
+  padding: 9px;
+  background: var(--bg-base, #0f172a);
+  border: 1px dashed #334155;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+#btnAdicionarEncantamento:hover {
+  border-color: #6366f1;
+  color: #a5b4fc;
+  background: rgba(99,102,241,0.06);
 }
 
+/* Painel seletor de encantamentos */
+#painelSeletorEncantamento {
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+/* Opções de encantamento no seletor */
 .enc-opcao {
-  padding: 8px 10px;
-  border-radius: 7px;
+  padding: 9px 11px;
+  border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.15s;
 }
-.enc-opcao:hover { background: #1e293b; border-color: #475569; }
-.enc-opcao.desabilitado { opacity: 0.35; cursor: not-allowed; }
-.enc-opcao.desabilitado:hover { background: transparent; border-color: transparent; }
-.enc-opcao-header { display: flex; align-items: center; justify-content: space-between; }
-.enc-opcao-nome { font-weight: 600; font-size: 13px; }
-.enc-opcao-custo { font-size: 11px; color: #fbbf24; }
-.enc-opcao-desc { font-size: 11px; opacity: 0.6; margin-top: 3px; }
-.enc-opcao-incompat { font-size: 10px; color: #f87171; margin-top: 2px; }
+.enc-opcao:hover { background: var(--bg-card, #1e293b); border-color: var(--border, #334155); }
+.enc-opcao.desabilitado { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+.enc-opcao-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.enc-opcao-nome { font-weight: 600; font-size: 13px; color: #e2e8f0; }
+.enc-opcao-custo { font-size: 11px; color: #fbbf24; flex-shrink: 0; }
+.enc-opcao-desc { font-size: 11px; color: #64748b; margin-top: 3px; line-height: 1.4; }
+.enc-opcao-incompat { font-size: 10px; color: #f87171; margin-top: 3px; }
 
+/* Chips de restrição */
 .restricao-chip {
-  padding: 8px 10px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  padding: 9px 11px;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
   border-radius: 8px;
-  font-size: 12px;
 }
 .restricao-chip-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .restricao-chip-tipo-parcial { color: #fbbf24; font-size: 11px; font-weight: 600; }
 .restricao-chip-tipo-total   { color: #f87171; font-size: 11px; font-weight: 600; }
-.restricao-chip-texto { opacity: 0.7; margin-top: 4px; font-size: 11px; }
+.restricao-chip-texto { color: #94a3b8; margin-top: 5px; font-size: 12px; line-height: 1.4; }
 .restricao-chip-remover {
-  background: transparent; border: none;
-  color: #ef4444; cursor: pointer; font-size: 13px;
+  background: transparent; border: 1px solid transparent;
+  color: #64748b; cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 5px;
+  transition: all 0.15s; line-height: 1; flex-shrink: 0;
 }
+.restricao-chip-remover:hover { border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.1); }
 
-/* badges de encantamentos no card do inventário */
+/* Info de restrição auto por categoria */
+#restricaoCategoriaAuto {
+  font-size: 11px;
+  color: #64748b;
+  padding: 6px 9px;
+  background: var(--bg-base, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 7px;
+  line-height: 1.5;
+}
+#restricaoCategoriaAuto strong { color: #94a3b8; }
+#restricaoCategoriaAuto em { color: #fbbf24; font-style: normal; }
+
+/* Badges de encantamentos no card do inventário */
 .inv-badge-encant {
-  background: rgba(139,92,246,0.2);
+  background: rgba(139,92,246,0.15);
   color: #c4b5fd;
-  border: 1px solid rgba(139,92,246,0.35);
+  border: 1px solid rgba(139,92,246,0.3);
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 4px;
+  white-space: nowrap;
 }
