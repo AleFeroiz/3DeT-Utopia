@@ -310,6 +310,7 @@ function _criarCardFicha(ficha) {
       ${_htmlGaveta("tecnicas",    "⚡ Técnicas",           ficha)}
       ${_htmlGaveta("fontes",      "🌊 Fontes de Poder",    ficha)}
       ${_htmlGaveta("isoladas",    "✨ Caract. Isoladas",   ficha)}
+      ${_htmlGaveta("inventario",  "🎒 Inventário",         ficha)}
     </div>
   `
 
@@ -539,6 +540,7 @@ function _contarGaveta(tipo, ficha) {
   if (tipo === "tecnicas")     return ficha.elementos.filter(e => e.tipo === "tecnica").length
   if (tipo === "fontes")       return ficha.elementos.filter(e => e.tipo === "fonte").length
   if (tipo === "isoladas")     return (ficha.caracteristicasIsoladas ?? []).length
+  if (tipo === "inventario")   return (ficha.inventario?.itens ?? []).length
   return 0
 }
 
@@ -549,6 +551,7 @@ function _conteudoGaveta(tipo, ficha) {
   if (tipo === "tecnicas")     return _htmlElementos(ficha, "tecnica")
   if (tipo === "fontes")       return _htmlFontes(ficha)
   if (tipo === "isoladas")     return _htmlIsoladas(ficha)
+  if (tipo === "inventario")   return _htmlInventario(ficha)
   return ""
 }
 
@@ -700,6 +703,70 @@ function _htmlIsoladas(ficha) {
   return lista.map(c => _htmlCaracItem(c)).join("")
 }
 
+// ─────────────────────────────────────────────────────────
+//  INVENTÁRIO NA CENA
+// ─────────────────────────────────────────────────────────
+function _htmlInventario(ficha) {
+  const itens    = ficha.inventario?.itens ?? []
+  const pesoMax  = ficha.pesoMaxInventario
+  const pesoAtual = ficha.pesoAtualInventario
+  const over     = pesoAtual > pesoMax
+  const ratio    = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
+  const corBarra = over
+    ? "linear-gradient(90deg,#ef4444,#fca5a5)"
+    : ratio > 0.75
+      ? "linear-gradient(90deg,#f59e0b,#fcd34d)"
+      : "linear-gradient(90deg,#16a34a,#4ade80)"
+
+  const barraHtml = `
+    <div class="cfc-inv-peso">
+      <span>⚖️ ${pesoAtual}/${pesoMax}</span>
+      <div class="cfc-inv-barra-bg">
+        <div class="cfc-inv-barra-fill" style="width:${(ratio*100).toFixed(1)}%;background:${corBarra}"></div>
+      </div>
+    </div>`
+
+  if (!itens.length) return `
+    ${barraHtml}
+    <span class="cfc-inv-vazio">Nenhum item no inventário.</span>`
+
+  const html = itens.map(item => {
+    const isEquip = item.categoria === "equipamento"
+    const temAtk  = isEquip && item.usadoAtaque
+    const temDef  = isEquip && item.usadoDefesa
+
+    const badgeAtk = (temAtk && item.equipadoAtaque)
+      ? `<span class="cfc-inv-badge cfc-inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
+    const badgeDef = (temDef && item.equipadoDefesa)
+      ? `<span class="cfc-inv-badge cfc-inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
+
+    const checkAtk = temAtk ? `
+      <label class="cfc-inv-check${item.equipadoAtaque ? " atk-ativo" : ""}" title="Ativar bônus de ataque">
+        <input type="checkbox" data-ficha-id="${ficha.id}" data-item-id="${item.id}" data-tipo="ataque"
+               ${item.equipadoAtaque ? "checked" : ""}>⚔️
+      </label>` : ""
+    const checkDef = temDef ? `
+      <label class="cfc-inv-check${item.equipadoDefesa ? " def-ativo" : ""}" title="Ativar bônus de defesa">
+        <input type="checkbox" data-ficha-id="${ficha.id}" data-item-id="${item.id}" data-tipo="defesa"
+               ${item.equipadoDefesa ? "checked" : ""}>🛡️
+      </label>` : ""
+
+    return `
+      <div class="cfc-inv-item${isEquip ? " equip" : ""}">
+        <div class="cfc-inv-item-info">
+          <div class="cfc-inv-item-nome">${_esc(item.nome)}${badgeAtk}${badgeDef}</div>
+          ${item.descricao ? `<div class="cfc-inv-item-desc">${_esc(item.descricao)}</div>` : ""}
+        </div>
+        <div class="cfc-inv-item-direita">
+          <span class="cfc-inv-peso-tag" style="${(item.peso??0)<0?'color:#4ade80':''}">⚖️ ${item.peso ?? 0}</span>
+          ${checkAtk}${checkDef}
+        </div>
+      </div>`
+  }).join("")
+
+  return barraHtml + html
+}
+
 function _bindGavetas(card, ficha) {
   card.querySelectorAll(".cfc-gaveta-header").forEach(header => {
     header.onclick = () => header.closest(".cfc-gaveta").classList.toggle("aberta")
@@ -708,6 +775,48 @@ function _bindGavetas(card, ficha) {
     header.onclick = e => {
       e.stopPropagation()
       header.closest(".cfc-item").classList.toggle("aberto")
+    }
+  })
+  // Checkboxes de equipado no inventário
+  card.querySelectorAll(".cfc-inv-check input[type='checkbox']").forEach(cb => {
+    cb.onchange = async () => {
+      const itemId = cb.dataset.itemId
+      const tipo   = cb.dataset.tipo   // "ataque" | "defesa"
+      const checked = cb.checked
+
+      const item = ficha.inventario?.itens?.find(i => i.id === itemId)
+      if (!item) return
+
+      if (tipo === "ataque") item.equipadoAtaque = checked
+      else                   item.equipadoDefesa = checked
+
+      // Atualiza visual do label
+      const label = cb.closest(".cfc-inv-check")
+      if (label) {
+        if (tipo === "ataque") label.classList.toggle("atk-ativo", checked)
+        else                   label.classList.toggle("def-ativo", checked)
+      }
+
+      // Atualiza badges no card do item
+      const itemEl = cb.closest(".cfc-inv-item")
+      if (itemEl) {
+        const nomeEl = itemEl.querySelector(".cfc-inv-item-nome")
+        if (nomeEl) {
+          const badgeAtk = (item.usadoAtaque && item.equipadoAtaque)
+            ? `<span class="cfc-inv-badge cfc-inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
+          const badgeDef = (item.usadoDefesa && item.equipadoDefesa)
+            ? `<span class="cfc-inv-badge cfc-inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
+          // Remove badges antigos e reinsere
+          nomeEl.querySelectorAll(".cfc-inv-badge").forEach(b => b.remove())
+          nomeEl.insertAdjacentHTML("beforeend", badgeAtk + badgeDef)
+        }
+      }
+
+      // Recalcula e atualiza combate
+      ficha.calcularStatus()
+      _atualizarCombateDOM(card, ficha)
+
+      await _salvarFicha(ficha)
     }
   })
 }
