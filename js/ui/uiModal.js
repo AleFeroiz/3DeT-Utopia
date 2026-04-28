@@ -64,7 +64,31 @@ export function abrirListaLivro(tipo) {
   for (const item of itens) {
     const div = document.createElement("div")
     div.className = "item-lista"
-    div.innerHTML = `<strong>${item.nome}</strong> <span style="opacity:0.6">(${item.custo > 0 ? "+" : ""}${item.custo} PT)</span><p>${item.descricao}</p>`
+    const negativo = item.custo < 0
+    const custoStr = `${item.custo > 0 ? "+" : ""}${item.custo} PT`
+    // Extrair intro (antes do primeiro header de seção)
+    const desc = item.descricao ?? ""
+    const linhas = desc.split("\n")
+    let intro = ""
+    let resto = ""
+    let foundHeader = false
+    const HEADER_RE = /^(Efeitos?|Custos?|Efeitos? e Custos?|Funções? e Custos?|Passivo|Limite[:\s]|Condição de Reset|Nota[:\s])/i
+    for (const l of linhas) {
+      if (!foundHeader && HEADER_RE.test(l.trim())) { foundHeader = true }
+      if (!foundHeader) {
+        if (l.trim()) intro += (intro ? " " : "") + l.trim()
+      } else {
+        if (l.trim()) resto += l.trim() + "\n"
+      }
+    }
+    div.innerHTML = `
+      <div class="item-lista-header">
+        <strong>${item.nome}</strong>
+        <span class="item-lista-custo ${negativo ? "negativo" : ""}">${custoStr}</span>
+      </div>
+      ${intro ? `<p class="item-lista-intro">${intro}</p>` : ""}
+      ${resto ? `<div class="item-lista-secoes"><div class="item-lista-secao-titulo">Efeitos & Regras</div>${resto.trim().replace(/\n/g, "<br>")}</div>` : ""}
+    `
     div.onclick = () => { _onSalvarElemento?.(new ElementoFicha({ ...item, id: crypto.randomUUID() })); fecharModal("modal") }
     lista.appendChild(div)
   }

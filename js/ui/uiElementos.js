@@ -48,23 +48,136 @@ export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onE
   }
 }
 
+// ── PARSER DE DESCRIÇÃO (formato livro) ──────────────────
+/**
+ * Converte uma descrição raw em HTML estruturado com seções tipo livro.
+ * Detecta headers como "Efeito e Custo", "Passivo", "Limite:", etc.
+ */
+function _parsearDescricao(descricao) {
+  if (!descricao) return ''
+
+  const SECAO_PATTERNS = [
+    { regex: /^(Efeitos? e Custos?|Funções? e Custos?)$/i, tipo: 'tipo-efeito', icone: '✦', label: null },
+    { regex: /^(Efeitos?)$/i,                             tipo: 'tipo-efeito', icone: '✦', label: null },
+    { regex: /^(Custos?)$/i,                              tipo: 'tipo-custo',  icone: '◈', label: null },
+    { regex: /^(Passivo[s]?)$/i,                          tipo: 'tipo-passivo',icone: '◉', label: null },
+    { regex: /^Limite[:\s]/i,                             tipo: 'tipo-limite', icone: '⚠', label: 'Limite' },
+    { regex: /^Condição de Reset[:\s]/i,                  tipo: 'tipo-reset',  icone: '↺', label: 'Condição de Reset' },
+    { regex: /^\(Nota[:\s]/i,                             tipo: 'tipo-nota',   icone: 'ℹ', label: 'Nota' },
+    { regex: /^Nota[:\s]/i,                               tipo: 'tipo-nota',   icone: 'ℹ', label: 'Nota' },
+  ]
+
+  const linhas = descricao.split('\n')
+  let html = ''
+  let intro = ''
+  let secaoAtual = null
+  let itensSecao = []
+  let textoSecao = []
+
+  // A primeira linha(s) antes de qualquer header é a intro
+  let modoIntro = true
+
+  function fecharSecao() {
+    if (!secaoAtual) return
+    let bodyHTML = ''
+    if (itensSecao.length) {
+      bodyHTML = itensSecao.map(item => {
+        // Item com nome em negrito: "Nome: texto"
+        const m = item.match(/^([^:]{2,40}):\s*(.+)$/s)
+        if (m && m[1].length < 50 && !m[1].match(/^\d/)) {
+          return `<div class="card-secao-item"><span><span class="card-item-nome">${m[1]}:</span> ${m[2]}</span></div>`
+        }
+        return `<div class="card-secao-item"><span>${item}</span></div>`
+      }).join('')
+    } else if (textoSecao.length) {
+      bodyHTML = `<div class="card-secao-body">${textoSecao.join('<br>')}</div>`
+    }
+    if (bodyHTML) {
+      html += `<div class="card-secao">
+        <div class="card-secao-header ${secaoAtual.tipo}">${secaoAtual.icone} ${secaoAtual.labelFinal}</div>
+        ${itensSecao.length ? `<div class="card-secao-body">${bodyHTML}</div>` : bodyHTML}
+      </div>`
+    }
+    secaoAtual = null
+    itensSecao = []
+    textoSecao = []
+  }
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i].trim()
+    if (!linha) continue
+
+    // Detectar header de seção
+    let match = null
+    for (const p of SECAO_PATTERNS) {
+      if (p.regex.test(linha)) { match = p; break }
+    }
+
+    // Linhas especiais inline (Limite: / Condição de Reset: com conteúdo na mesma linha)
+    if (!match) {
+      for (const p of SECAO_PATTERNS) {
+        if (p.label && linha.toLowerCase().startsWith(p.label.toLowerCase() + ':') && linha.length > p.label.length + 1) {
+          match = p; break
+        }
+      }
+    }
+
+    if (match) {
+      fecharSecao()
+      modoIntro = false
+      const conteudoInline = linha.replace(match.regex, '').replace(/^[:\s]+/, '').trim()
+      secaoAtual = { ...match, labelFinal: match.label || linha }
+      if (conteudoInline) textoSecao.push(conteudoInline)
+      continue
+    }
+
+    if (modoIntro) {
+      intro += (intro ? ' ' : '') + linha
+    } else if (secaoAtual) {
+      // Item numerado (1º, 2º, etc.) ou com prefixo
+      if (/^[\d]+[ºª°]/.test(linha) || /^\./.test(linha) || /^…/.test(linha)) {
+        itensSecao.push(linha.replace(/^\.\.\.|^\./, '').trim())
+      } else if (linha.match(/^[A-ZÁÉÍÓÚ][^:]{0,40}:\s*.+/)) {
+        itensSecao.push(linha)
+      } else {
+        if (itensSecao.length > 0) {
+          // Continua o último item
+          itensSecao[itensSecao.length - 1] += ' ' + linha
+        } else {
+          textoSecao.push(linha)
+        }
+      }
+    }
+  }
+
+  fecharSecao()
+
+  let result = ''
+  if (intro) result += `<div class="card-intro">${intro}</div>`
+  result += html
+  return result
+}
+
 // ── CARD SIMPLES ──────────────────────────────────────────
 function criarCardSimples(e, onEditar, onRemover, somenteLeitura = false) {
   const card = document.createElement("div")
   card.className = "card-elemento"
-  const custoLabel = e.custo < 0
-    ? `<span style="color:#22c55e">${e.custo} PT</span>`
-    : `<span>${e.custo} PT</span>`
+
+  const negativo = e.custo < 0
+  const custoLabel = `<span class="card-custo-badge ${negativo ? 'negativo' : ''}">${e.custo > 0 ? '+' : ''}${e.custo} PT</span>`
+
+  const conteudoDesc = _parsearDescricao(e.descricao)
+  const notasHTML = e.notas
+    ? `<small class="card-notas">${e.notas}</small>`
+    : ''
 
   card.innerHTML = `
     <div class="card-header">
       <strong>${e.nome}</strong>
       ${custoLabel}
     </div>
-    <div class="card-body">
-      <p>${e.descricao}</p>
-      <small class="card-notas">${e.notas}</small>
-    </div>
+    ${conteudoDesc}
+    ${notasHTML}
     ${somenteLeitura ? "" : `
     <div class="card-actions">
       <button class="btn-editar">✏️ Editar</button>
