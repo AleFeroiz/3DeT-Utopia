@@ -2,9 +2,9 @@
 //  ui/uiModal.js — Controle de todos os modais
 // ============================================================
 
-import { BANCO_ELEMENTOS              } from "../dados/banco.js"
+import { BANCO_ELEMENTOS              } from "../dados/banco.js?v=600000"
 import { toastErro, toastSucesso, toastAviso } from "./uiToast.js" 
-import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js"
+import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js?v=600000"
 import { resumoEscolhas as _resumoEscolhas } from "./uiResumoEscolhas.js"
 import { computarVarianteAba, abasDisponiveis } from "../dados/amplificacao.js"
 import { ElementoFicha                } from "../modelos/Elemento.js"

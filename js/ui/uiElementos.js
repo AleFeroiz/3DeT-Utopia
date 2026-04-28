@@ -2,7 +2,7 @@
 //  ui/uiElementos.js — Renderização dos cards de elementos
 // ============================================================
 
-import { LISTA_PERICIAS } from "../dados/banco.js"
+import { LISTA_PERICIAS } from "../dados/banco.js?v=600000"
 
 // ── Helper: HTML das variantes para cards ──────────────────
 function _htmlVariantesCardIso(c) {

@@ -5,7 +5,7 @@
 import { Storage }  from "./storage.js"
 import { Ficha }    from "./modelos/Ficha.js"
 import { RACAS }    from "./dados/racas.js"
-import { LISTA_PERICIAS } from "./dados/banco.js"
+import { LISTA_PERICIAS } from "./dados/banco.js?v=600000"
 import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras, _atualizarTesteMorte } from "./ui/uiAtributos.js"
 import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
 import { resumoEscolhas } from "./ui/uiResumoEscolhas.js"
