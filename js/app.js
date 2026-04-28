@@ -404,6 +404,13 @@ function _renderInventario() {
     const pericia  = LISTA_PERICIAS.find(p => p.id === item.pericia)
     const badgePericia = pericia
       ? `<span class="inv-badge inv-badge-pericia" title="Perícia: ${pericia.nome}">${pericia.emoji} ${pericia.nome}</span>` : ""
+    // Badge de categoria do equipamento
+    const badgeCatNum = (item.categoria === "equipamento" && item.catEquip)
+      ? `<span class="inv-badge" style="background:rgba(30,64,175,0.3);color:#93c5fd;border:1px solid rgba(59,130,246,0.3)" title="Categoria ${item.catEquip}">Cat. ${item.catEquip}</span>` : ""
+    // Badges de encantamentos
+    const encantsHtml = (item.encantamentos ?? []).map(e =>
+      `<span class="inv-badge inv-badge-encant" title="${e.desc}">${e.emoji} ${e.nome}${e.extra ? ' ('+e.extra+')' : ''}</span>`
+    ).join("")
 
     // Checkboxes de "em uso" — aparecem sempre que o equipamento PODE ser usado para ataque/defesa
     const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && !_invSomenteLeitura)
@@ -425,7 +432,7 @@ function _renderInventario() {
         </div>`
     card.innerHTML = `
       <div class="inv-item-info">
-        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgePericia}${badgeAtk}${badgeDef}</div>
+        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeCatNum}${badgePericia}${badgeAtk}${badgeDef}${encantsHtml}</div>
         ${item.descricao ? `<div class="inv-item-desc">${item.descricao}</div>` : ""}
       </div>
       <div class="inv-item-direita">
@@ -1906,6 +1913,7 @@ function expor() {
     document.getElementById("itemBonusDefesa").value             = "0"
     window.syncStepper?.("itemBonusAtaque")
     window.syncStepper?.("itemBonusDefesa")
+    _resetItemEncantamentos()
     fecharModal("modalItem")
     document.getElementById("modalItem").classList.remove("hidden")
   }
@@ -1938,6 +1946,9 @@ function expor() {
     document.getElementById("campoBonusDefesa").style.display = usaDef ? "block" : "none"
     document.getElementById("itemBonusDefesa").value          = item.bonusDefesa ?? 0
     window.syncStepper?.("itemBonusDefesa")
+    // Encantamentos
+    if (cat === "equipamento") _carregarItemEncantamentos(item)
+    else _resetItemEncantamentos()
     document.getElementById("modalItem").classList.remove("hidden")
   }
 
@@ -1961,6 +1972,10 @@ function expor() {
       usadoDefesa:    usaDef,
       bonusAtaque:    usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
       bonusDefesa:    usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
+      // Encantamentos e categoria (só para equipamentos)
+      catEquip:       cat === "equipamento" ? _itemCategoria : undefined,
+      encantamentos:  cat === "equipamento" ? JSON.parse(JSON.stringify(_itemEncantamentos)) : [],
+      restricoes:     cat === "equipamento" ? JSON.parse(JSON.stringify(_itemRestricoes))     : [],
       // equipadoAtaque/Defesa: se era item existente preserva; se novo inicializa como true (se tiver o bônus)
       equipadoAtaque: usaAtk ? (itemAtual ? (itemAtual.equipadoAtaque ?? true) : true) : false,
       equipadoDefesa: usaDef ? (itemAtual ? (itemAtual.equipadoDefesa ?? true) : true) : false,
@@ -2056,6 +2071,12 @@ function expor() {
   // Modal de item — toggles de categoria e checkboxes
   window.toggleCategoriaItem = (val) => {
     document.getElementById('camposEquipamento').style.display = val === 'equipamento' ? 'block' : 'none'
+    if (val === 'equipamento') {
+      _renderCatInfo()
+      _renderEncantamentosItem()
+      _renderRestricoesItem()
+      _renderRestricaoAutoCategoria()
+    }
   }
   window.toggleBonusAtaque = () => {
     const chk = document.getElementById('itemUsadoAtaque')
@@ -2064,6 +2085,261 @@ function expor() {
   window.toggleBonusDefesa = () => {
     const chk = document.getElementById('itemUsadoDefesa')
     document.getElementById('campoBonusDefesa').style.display = chk.checked ? 'block' : 'none'
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  SISTEMA DE ENCANTAMENTOS & CATEGORIA
+  // ══════════════════════════════════════════════════════════
+
+  const ENCANTAMENTOS_LISTA = [
+    { id:"abencado",   emoji:"✨", nome:"Abençoado",   custo:1, repetivel:false, incompativel:[],
+      desc:"Protege contra Paralisia e condições negativas. Ganho em Defesa e Resistência contra eles." },
+    { id:"acurado",    emoji:"🎯", nome:"Acurado",      custo:2, repetivel:false, incompativel:["macico"],
+      desc:"Acerto crítico em testes de ataque com 5 ou 6. Incompatível com Maciço." },
+    { id:"aprimorado", emoji:"💎", nome:"Aprimorado",   custo:1, repetivel:true,  incompativel:[],
+      desc:"Aumenta um atributo em situações específicas. Não afeta ataque/defesa. (pode adicionar múltiplas vezes com atributos/condições diferentes)" },
+    { id:"condutor",   emoji:"⚡", nome:"Condutor",     custo:2, repetivel:false, incompativel:[],
+      desc:"Enquanto usa o equipamento, todas as suas vantagens custam metade dos PM." },
+    { id:"elemental",  emoji:"🔮", nome:"Elemental",    custo:1, repetivel:true,  incompativel:[],
+      desc:"Causa dano elemental. Ao acertar, teste de Poder vs Resistência: se vencer, +1D do tipo elemental. (empilhável: +1 ponto = +1D)" },
+    { id:"encantado",  emoji:"🔮", nome:"Encantado",    custo:1, repetivel:true,  incompativel:[],
+      desc:"+3 em testes de ataque (arma) ou +3 de Resistência na defesa (armadura). Empilhável até 3 vezes." },
+    { id:"espiritual", emoji:"👻", nome:"Espiritual",   custo:2, repetivel:false, incompativel:[],
+      desc:"A arma ataca o espírito. Causa dano em PM igual à metade do dano em PV." },
+    { id:"fortificada",emoji:"🏰", nome:"Fortificada",  custo:2, repetivel:false, incompativel:["leve"],
+      desc:"Oponentes não conseguem críticos contra você (exceto com vantagens específicas). Incompatível com Leve." },
+    { id:"leve",       emoji:"🕊️", nome:"Leve",        custo:2, repetivel:false, incompativel:["fortificada"],
+      desc:"Armadura leve e ágil. Acerto crítico com 5 ou 6 em testes de defesa. Incompatível com Fortificada." },
+    { id:"macico",     emoji:"🔨", nome:"Maciço",       custo:2, repetivel:false, incompativel:["acurado"],
+      desc:"No primeiro acerto crítico, o Poder é somado três vezes ao dano. Incompatível com Acurado." },
+    { id:"obrapima",   emoji:"🎨", nome:"Obra-Prima",   custo:1, repetivel:false, incompativel:[],
+      desc:"Escolha uma perícia. Gaste 3 PM para receber Ganho em testes com ela enquanto usa o equipamento." },
+    { id:"fruta",      emoji:"🍎", nome:"Fruta (Akuma no Mi)", custo:0, repetivel:false, incompativel:["__todos__"],
+      desc:"O item 'come' uma Akuma no Mi. Ganha as habilidades da fruta, mas não pode ter nenhum outro encantamento." },
+  ]
+
+  const CAT_INFO = {
+    1: { nome:"Comum",    req:"Sem requisitos.",                       penalidade:"Nenhuma."                                        },
+    2: { nome:"Incomum",  req:"Sem requisitos.",                       penalidade:"Nenhuma."                                        },
+    3: { nome:"Raro",     req:"Treinado na Perícia Alvo.",             penalidade:"Parcial: perde 50% do bônus sem Treinamento."     },
+    4: { nome:"Épico",    req:"Treinado na Perícia Alvo.",             penalidade:"Total: perde 100% do bônus sem Treinamento."      },
+    5: { nome:"Lendário", req:"Maestria na Perícia Alvo.",             penalidade:"Híbrida: −50% sem Maestria; −100% sem a Perícia." },
+    6: { nome:"Mítico",   req:"Maestria na Perícia Alvo.",             penalidade:"Total: perde 100% do bônus sem Maestria."        },
+  }
+
+  // Estado temporário do modal
+  let _itemEncantamentos  = []  // [{id, nome, emoji, custo, desc, extra?}]
+  let _itemCategoria      = 1
+  let _itemRestricoes     = []  // [{tipo:'parcial'|'total', texto:string}]
+
+  window.selecionarCatEquip = (cat) => {
+    _itemCategoria = cat
+    document.querySelectorAll('.cat-equip-btn').forEach(b => {
+      b.classList.toggle('active', +b.dataset.cat === cat)
+    })
+    _renderCatInfo()
+    _renderEncantamentosItem()
+  }
+
+  function _renderCatInfo() {
+    const info = CAT_INFO[_itemCategoria]
+    const el   = document.getElementById('catEquipInfo')
+    if (!el) return
+    el.innerHTML = `<strong>Categoria ${_itemCategoria} — ${info.nome}</strong>: ${info.req} ${info.penalidade}`
+    const max = document.getElementById('encantamentosContador')
+    if (max) max.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+  }
+
+  function _renderEncantamentosItem() {
+    const lista = document.getElementById('listaEncantamentosItem')
+    if (!lista) return
+    lista.innerHTML = ''
+
+    const temFruta = _itemEncantamentos.some(e => e.id === 'fruta')
+
+    _itemEncantamentos.forEach((enc, idx) => {
+      const chip = document.createElement('div')
+      chip.className = 'encantamento-chip'
+      chip.innerHTML = `
+        <div style="flex:1">
+          <span class="encantamento-chip-nome">${enc.emoji} ${enc.nome}</span>
+          ${enc.extra ? `<span style="font-size:11px;opacity:0.6;margin-left:6px">(${enc.extra})</span>` : ''}
+          <span class="encantamento-chip-custo">${enc.custo > 0 ? ' +'+enc.custo+' PT' : ''}</span>
+          <div style="font-size:11px;opacity:0.55;margin-top:2px">${enc.desc}</div>
+        </div>
+        <button class="encantamento-chip-remover" onclick="_removerEncantamentoItem(${idx})">✕</button>
+      `
+      lista.appendChild(chip)
+    })
+
+    const btn = document.getElementById('btnAdicionarEncantamento')
+    const podeAdicionar = !temFruta && _itemEncantamentos.length < _itemCategoria
+    if (btn) btn.style.display = podeAdicionar ? 'block' : 'none'
+
+    const contador = document.getElementById('encantamentosContador')
+    if (contador) {
+      contador.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+      contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#94a3b8'
+    }
+  }
+
+  window._removerEncantamentoItem = (idx) => {
+    _itemEncantamentos.splice(idx, 1)
+    _renderEncantamentosItem()
+    fecharSeletorEncantamento()
+  }
+
+  window.abrirSeletorEncantamento = () => {
+    const painel = document.getElementById('painelSeletorEncantamento')
+    if (!painel) return
+    painel.style.display = 'block'
+    _renderOpcoesEncantamento()
+  }
+
+  window.fecharSeletorEncantamento = () => {
+    const painel = document.getElementById('painelSeletorEncantamento')
+    if (painel) painel.style.display = 'none'
+  }
+
+  function _renderOpcoesEncantamento() {
+    const lista = document.getElementById('listaOpcoesEncantamento')
+    if (!lista) return
+    lista.innerHTML = ''
+
+    const temFruta       = _itemEncantamentos.some(e => e.id === 'fruta')
+    const idsPresentes   = _itemEncantamentos.map(e => e.id)
+    const cheio          = _itemEncantamentos.length >= _itemCategoria
+
+    ENCANTAMENTOS_LISTA.forEach(enc => {
+      // Verificar se pode ser adicionado
+      let bloqueado = false
+      let motivo    = ''
+
+      if (enc.id === 'fruta' && _itemEncantamentos.length > 0) {
+        bloqueado = true; motivo = 'Remove todos os outros encantamentos ao adicionar'
+      } else if (temFruta && enc.id !== 'fruta') {
+        bloqueado = true; motivo = 'Item com Fruta não aceita outros encantamentos'
+      } else if (!enc.repetivel && idsPresentes.includes(enc.id)) {
+        bloqueado = true; motivo = 'Já adicionado (não repetível)'
+      } else if (enc.incompativel.includes('__todos__') && _itemEncantamentos.length > 0) {
+        bloqueado = true; motivo = 'Incompatível com outros encantamentos'
+      } else {
+        const incompat = enc.incompativel.find(i => idsPresentes.includes(i))
+        if (incompat) {
+          const nome = ENCANTAMENTOS_LISTA.find(e => e.id === incompat)?.nome ?? incompat
+          bloqueado = true; motivo = `Incompatível com ${nome}`
+        }
+      }
+      if (cheio && !bloqueado) { bloqueado = true; motivo = 'Limite de encantamentos atingido' }
+
+      const div = document.createElement('div')
+      div.className = 'enc-opcao' + (bloqueado ? ' desabilitado' : '')
+      div.innerHTML = `
+        <div class="enc-opcao-header">
+          <span class="enc-opcao-nome">${enc.emoji} ${enc.nome}</span>
+          ${enc.custo > 0 ? `<span class="enc-opcao-custo">+${enc.custo} PT</span>` : ''}
+        </div>
+        <div class="enc-opcao-desc">${enc.desc}</div>
+        ${bloqueado ? `<div class="enc-opcao-incompat">⛔ ${motivo}</div>` : ''}
+      `
+      if (!bloqueado) {
+        div.onclick = () => _selecionarEncantamento(enc)
+      }
+      lista.appendChild(div)
+    })
+  }
+
+  function _selecionarEncantamento(enc) {
+    if (enc.id === 'fruta') {
+      // Fruta remove todos os outros
+      _itemEncantamentos = [{ ...enc }]
+    } else {
+      // Para encantamentos repetíveis que pedem info adicional
+      let extra = null
+      if (enc.id === 'aprimorado') {
+        extra = prompt('Qual atributo e situação esse encantamento aprimora?', 'Ex: Força ao escalar')
+        if (extra === null) return
+      } else if (enc.id === 'elemental') {
+        extra = prompt('Qual tipo de dano elemental?', 'Ex: Fogo')
+        if (extra === null) return
+      } else if (enc.id === 'obrapima') {
+        extra = prompt('Qual perícia esse Obra-Prima potencializa?', 'Ex: Luta')
+        if (extra === null) return
+      }
+      _itemEncantamentos.push({ ...enc, extra })
+    }
+    fecharSeletorEncantamento()
+    _renderEncantamentosItem()
+  }
+
+  // ── Restrições customizadas ────────────────────────────────
+  window.adicionarRestricaoItem = () => {
+    const tipo  = 'parcial'
+    const texto = prompt('Descreva a restrição (ex: requer bateria carregada):')
+    if (!texto?.trim()) return
+    const tipoEsc = confirm('Essa é uma Restrição TOTAL (0% bônus)?\nCancele para Parcial (50% bônus).') ? 'total' : 'parcial'
+    _itemRestricoes.push({ tipo: tipoEsc, texto: texto.trim() })
+    _renderRestricoesItem()
+  }
+
+  window._removerRestricaoItem = (idx) => {
+    _itemRestricoes.splice(idx, 1)
+    _renderRestricoesItem()
+  }
+
+  function _renderRestricoesItem() {
+    const lista = document.getElementById('listaRestricoesItem')
+    if (!lista) return
+    lista.innerHTML = ''
+    _itemRestricoes.forEach((r, idx) => {
+      const chip = document.createElement('div')
+      chip.className = 'restricao-chip'
+      chip.innerHTML = `
+        <div class="restricao-chip-header">
+          <span class="${r.tipo === 'total' ? 'restricao-chip-tipo-total' : 'restricao-chip-tipo-parcial'}">
+            ${r.tipo === 'total' ? '🔴 Total (0%)' : '🟡 Parcial (50%)'}
+          </span>
+          <button class="restricao-chip-remover" onclick="_removerRestricaoItem(${idx})">✕</button>
+        </div>
+        <div class="restricao-chip-texto">${r.texto}</div>
+      `
+      lista.appendChild(chip)
+    })
+  }
+
+  function _renderRestricaoAutoCategoria() {
+    const el   = document.getElementById('restricaoCategoriaAuto')
+    const info = CAT_INFO[_itemCategoria]
+    if (!el) return
+    el.innerHTML = `📋 <strong>Cat. ${_itemCategoria}:</strong> ${info.req} → ${info.penalidade}`
+  }
+
+  function _resetItemEncantamentos() {
+    _itemEncantamentos = []
+    _itemCategoria     = 1
+    _itemRestricoes    = []
+    document.querySelectorAll('.cat-equip-btn').forEach(b => {
+      b.classList.toggle('active', +b.dataset.cat === 1)
+    })
+    _renderCatInfo()
+    _renderEncantamentosItem()
+    _renderRestricoesItem()
+    _renderRestricaoAutoCategoria()
+    fecharSeletorEncantamento()
+  }
+
+  function _carregarItemEncantamentos(item) {
+    _itemEncantamentos = item.encantamentos ? JSON.parse(JSON.stringify(item.encantamentos)) : []
+    _itemCategoria     = item.catEquip ?? 1
+    _itemRestricoes    = item.restricoes ? JSON.parse(JSON.stringify(item.restricoes)) : []
+    document.querySelectorAll('.cat-equip-btn').forEach(b => {
+      b.classList.toggle('active', +b.dataset.cat === _itemCategoria)
+    })
+    _renderCatInfo()
+    _renderEncantamentosItem()
+    _renderRestricoesItem()
+    _renderRestricaoAutoCategoria()
+    fecharSeletorEncantamento()
   }
 
   // Visibilidade
