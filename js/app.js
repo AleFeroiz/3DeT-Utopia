@@ -405,15 +405,15 @@ function _renderInventario() {
     const badgePericia = pericia
       ? `<span class="inv-badge inv-badge-pericia" title="Perícia: ${pericia.nome}">${pericia.emoji} ${pericia.nome}</span>` : ""
 
-    // Checkboxes de "em uso" — aparecem só se o equipamento PODE ser usado para ataque/defesa E está equipado
-    const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && item.equipadoAtaque && !_invSomenteLeitura)
-      ? `<label class="inv-check-uso" title="Usando para ataque">
-           <input type="checkbox" checked onchange="toggleEquipado('${item.id}','ataque',this.checked)">
+    // Checkboxes de "em uso" — aparecem sempre que o equipamento PODE ser usado para ataque/defesa
+    const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && !_invSomenteLeitura)
+      ? `<label class="inv-check-uso" title="Ativar bônus de ataque">
+           <input type="checkbox" ${item.equipadoAtaque ? "checked" : ""} onchange="toggleEquipado('${item.id}','ataque',this.checked)">
            ⚔️
          </label>` : ""
-    const checkDef = (item.categoria === "equipamento" && item.usadoDefesa && item.equipadoDefesa && !_invSomenteLeitura)
-      ? `<label class="inv-check-uso" title="Usando para defesa">
-           <input type="checkbox" checked onchange="toggleEquipado('${item.id}','defesa',this.checked)">
+    const checkDef = (item.categoria === "equipamento" && item.usadoDefesa && !_invSomenteLeitura)
+      ? `<label class="inv-check-uso" title="Ativar bônus de defesa">
+           <input type="checkbox" ${item.equipadoDefesa ? "checked" : ""} onchange="toggleEquipado('${item.id}','defesa',this.checked)">
            🛡️
          </label>` : ""
 
