@@ -5,6 +5,7 @@
 import { Storage }  from "./storage.js"
 import { Ficha }    from "./modelos/Ficha.js"
 import { RACAS }    from "./dados/racas.js"
+import { LISTA_PERICIAS } from "./dados/banco.js"
 import { sincronizarAtributosParaFicha, renderAtributos, renderStatus, renderPontos, atualizarBarras, _atualizarTesteMorte } from "./ui/uiAtributos.js"
 import { renderElementos, renderPericias, renderCaracteristicasIsoladas } from "./ui/uiElementos.js"
 import { resumoEscolhas } from "./ui/uiResumoEscolhas.js"
@@ -393,22 +394,38 @@ function _renderInventario() {
     const card = document.createElement("div")
     card.className = "inv-item-card" + (item.categoria === "equipamento" ? " inv-item-equip" : "")
 
-    // Badges de bônus
+    // Badges de bônus (só mostram quando em uso)
     const badgeAtk = (item.categoria === "equipamento" && item.usadoAtaque)
       ? `<span class="inv-badge inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
     const badgeDef = (item.categoria === "equipamento" && item.usadoDefesa)
       ? `<span class="inv-badge inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
     const badgeCat = item.categoria === "equipamento"
       ? `<span class="inv-badge inv-badge-equip">Equip.</span>` : ""
+    const pericia  = LISTA_PERICIAS.find(p => p.id === item.pericia)
+    const badgePericia = pericia
+      ? `<span class="inv-badge inv-badge-pericia" title="Perícia: ${pericia.nome}">${pericia.emoji} ${pericia.nome}</span>` : ""
+
+    // Checkboxes de "em uso" — aparecem apenas em equipamentos, somente se o campo correspondente for ativo
+    const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && !_invSomenteLeitura)
+      ? `<label class="inv-check-uso" title="Usando para ataque">
+           <input type="checkbox" ${item.usadoAtaque ? "checked" : ""} onchange="toggleEquipado('${item.id}','ataque',this.checked)">
+           ⚔️
+         </label>` : ""
+    const checkDef = (item.categoria === "equipamento" && item.usadoDefesa && !_invSomenteLeitura)
+      ? `<label class="inv-check-uso" title="Usando para defesa">
+           <input type="checkbox" ${item.usadoDefesa ? "checked" : ""} onchange="toggleEquipado('${item.id}','defesa',this.checked)">
+           🛡️
+         </label>` : ""
 
     const botoesAcao = _invSomenteLeitura ? "" : `
         <div class="inv-item-acoes">
+          ${checkAtk}${checkDef}
           <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
           <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
         </div>`
     card.innerHTML = `
       <div class="inv-item-info">
-        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeAtk}${badgeDef}</div>
+        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgePericia}${badgeAtk}${badgeDef}</div>
         ${item.descricao ? `<div class="inv-item-desc">${item.descricao}</div>` : ""}
       </div>
       <div class="inv-item-direita">
@@ -452,7 +469,7 @@ function _renderCombate() {
   set('atkMaluco',    bonusAtk + atrib * 3   + (ex.atkMaluco    ?? 0))
   set('defBloqueio',  bonusDef + res * 2     + (ex.defBloqueio  ?? 0))
   set('defEsquiva',   bonusDef + hab * 2     + (ex.defEsquiva   ?? 0))
-  set('defContra',    bonusDef               + (ex.defContra     ?? 0))
+  set('defContra',    bonusDef + res         + (ex.defContra     ?? 0))
 
   // Toggle visual
   document.getElementById('togglePoder')?.classList.toggle('active',      _atribCombate === 'poder')
@@ -1749,6 +1766,20 @@ function _salvarModificado(ficha) {
   fecharModal('modalModificado')
   toastSucesso('Modificado configurado!')
 }
+function _popularSelectPericias() {
+  const sel = document.getElementById("itemPericia")
+  if (!sel) return
+  // Só repopula se estiver vazio (evita re-render desnecessário)
+  if (sel.options.length > 1) return
+  sel.innerHTML = `<option value="">— escolha uma perícia —</option>`
+  LISTA_PERICIAS.forEach(p => {
+    const opt = document.createElement("option")
+    opt.value = p.id
+    opt.textContent = `${p.emoji} ${p.nome}`
+    sel.appendChild(opt)
+  })
+}
+
 function expor() {
   // Abas
   window.trocarAba = (i) => {
@@ -1835,6 +1866,15 @@ function expor() {
     salvar()
   }
 
+  window.toggleEquipado = (id, tipo, valor) => {
+    const item = ficha.inventario.itens.find(i => i.id === id)
+    if (!item) return
+    if (tipo === 'ataque') item.usadoAtaque = valor
+    else                   item.usadoDefesa = valor
+    _renderInventario()
+    salvar()
+  }
+
   // Anotações
   window.salvarAnotacao = (campo, valor) => {
     if (!ficha.anotacoes) ficha.anotacoes = {}
@@ -1852,6 +1892,9 @@ function expor() {
     document.getElementById("itemDescricao").value = ""
     document.getElementById("itemPeso").value      = "0"
     window.syncStepper?.("itemPeso")
+    // Reset perícia
+    _popularSelectPericias()
+    document.getElementById("itemPericia").value = ""
     // Reset categoria
     document.querySelector('input[name="itemCategoria"][value="item"]').checked = true
     document.getElementById("camposEquipamento").style.display   = "none"
@@ -1876,6 +1919,9 @@ function expor() {
     document.getElementById("itemDescricao").value = item.descricao ?? ""
     document.getElementById("itemPeso").value      = item.peso ?? 0
     window.syncStepper?.("itemPeso")
+    // Restaurar perícia
+    _popularSelectPericias()
+    document.getElementById("itemPericia").value = item.pericia ?? ""
     // Restaurar categoria
     const cat = item.categoria ?? "item"
     document.querySelector(`input[name="itemCategoria"][value="${cat}"]`).checked = true
@@ -1898,11 +1944,14 @@ function expor() {
   window.confirmarSalvarItem = () => {
     const nome = document.getElementById("itemNome").value.trim()
     if (!nome) { toastErro("Digite um nome para o item."); return }
+    const pericia  = document.getElementById("itemPericia").value
+    if (!pericia) { toastErro("Selecione uma perícia alvo para o item."); return }
     const cat     = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? "item"
     const usaAtk  = cat === "equipamento" && document.getElementById("itemUsadoAtaque").checked
     const usaDef  = cat === "equipamento" && document.getElementById("itemUsadoDefesa").checked
     const item = {
       nome,
+      pericia,
       descricao:   document.getElementById("itemDescricao").value.trim(),
       peso:        +document.getElementById("itemPeso").value || 0,
       categoria:   cat,
