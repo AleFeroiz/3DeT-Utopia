@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ficha — 3DeT One Piece</title>
-  <link rel="stylesheet" href="style/global.css?v=600000">
+  <link rel="stylesheet" href="style/global.css?v=600001">
   <link rel="stylesheet" href="style/ficha.css?v=600000">
   <link rel="stylesheet" href="style/toast.css">
 </head>
@@ -391,9 +391,11 @@
 <!-- Lista do livro -->
 <div id="modal" class="modal hidden">
   <div class="modal-content">
-    <h2 id="modalTitulo">Selecionar</h2>
+    <div class="modal-header">
+      <h2 id="modalTitulo">Selecionar</h2>
+      <button class="modal-btn-fechar" onclick="fecharModal('modal')" title="Fechar">✕</button>
+    </div>
     <div id="modalLista"></div>
-    <button onclick="fecharModal('modal')">Fechar</button>
   </div>
 </div>
 
