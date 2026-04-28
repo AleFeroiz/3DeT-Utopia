@@ -346,6 +346,7 @@ function _renderAnotacoes() {
 }
 
 function _renderInventario() {
+  const _invSomenteLeitura = !_fichaOwner && !ficha.editPublic
   const inv      = ficha.inventario ?? { itens: [], offsetPeso: 0 }
   const pesoMax  = ficha.pesoMaxInventario
   const pesoAtual = ficha.pesoAtualInventario
@@ -400,6 +401,11 @@ function _renderInventario() {
     const badgeCat = item.categoria === "equipamento"
       ? `<span class="inv-badge inv-badge-equip">Equip.</span>` : ""
 
+    const botoesAcao = _invSomenteLeitura ? "" : `
+        <div class="inv-item-acoes">
+          <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
+          <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
+        </div>`
     card.innerHTML = `
       <div class="inv-item-info">
         <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeAtk}${badgeDef}</div>
@@ -407,10 +413,7 @@ function _renderInventario() {
       </div>
       <div class="inv-item-direita">
         <span class="inv-item-peso" style="color:${(item.peso??0)<0?'#4ade80':''}">⚖️ ${item.peso ?? 0}</span>
-        <div class="inv-item-acoes">
-          <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
-          <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
-        </div>
+        ${botoesAcao}
       </div>`
     container.appendChild(card)
   })
@@ -456,8 +459,23 @@ function _renderCombate() {
   document.getElementById('toggleHabilidade')?.classList.toggle('active', _atribCombate === 'habilidade')
 }
 
+function _renderNome() {
+  const el = document.getElementById("nomeFicha")
+  if (!el) return
+  // Sempre sincroniza o nome visível com o dado real da ficha
+  if (document.activeElement !== el) {
+    el.textContent = ficha.nome ?? "Nova Ficha"
+  }
+  // Não-donos nunca podem editar o nome, independente de editPublic
+  if (!_fichaOwner) {
+    el.setAttribute("contenteditable", "false")
+    el.style.cursor = "default"
+  }
+}
+
 function renderTudo() {
   ficha.calcularPontos()
+  _renderNome()
   renderAtributos(ficha)
   renderStatus(ficha)
   renderPontos(ficha)
