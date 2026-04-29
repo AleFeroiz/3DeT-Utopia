@@ -2143,19 +2143,19 @@ function expor() {
       display:flex;align-items:center;justify-content:center;
     `
     el.innerHTML = `
-      <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:min(380px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+      <div style="background:var(--bg-card,#1e293b);border:1px solid var(--border,#334155);border-radius:14px;padding:24px;width:min(380px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3 id="miniModalEncTitulo" style="font-size:15px;color:#e2e8f0;margin:0"></h3>
-          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="background:transparent;border:1px solid var(--border,#475569);color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
         </div>
         <p id="miniModalEncDesc" style="font-size:12px;opacity:0.6;margin:0;line-height:1.5"></p>
         <div>
           <label id="miniModalEncLabel" style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px"></label>
-          <input id="miniModalEncInput" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+          <input id="miniModalEncInput" style="width:100%;padding:9px 12px;background:var(--bg-base,#0f172a);border:1px solid var(--border,#334155);border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
         </div>
         <div style="display:flex;gap:8px">
           <button id="miniModalEncConfirmar" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Confirmar</button>
-          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+          <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="flex:1;padding:10px;background:var(--bg-hover,#475569);border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
         </div>
       </div>
     `
@@ -2197,23 +2197,23 @@ function expor() {
       display:flex;align-items:center;justify-content:center;
     `
     el.innerHTML = `
-      <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;width:min(400px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+      <div style="background:var(--bg-card,#1e293b);border:1px solid var(--border,#334155);border-radius:14px;padding:24px;width:min(400px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3 style="font-size:15px;color:#e2e8f0;margin:0">🔒 Nova Restrição</h3>
-          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="background:transparent;border:1px solid var(--border,#475569);color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
         </div>
         <div>
           <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px">Descrição da restrição</label>
-          <input id="restricaoTextoInput" placeholder="Ex: Requer bateria carregada para funcionar" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+          <input id="restricaoTextoInput" placeholder="Ex: Requer bateria carregada para funcionar" style="width:100%;padding:9px 12px;background:var(--bg-base,#0f172a);border:1px solid var(--border,#334155);border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
         </div>
         <div>
           <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:8px">Tipo de restrição</label>
           <div style="display:flex;gap:8px">
-            <label id="restricaoParcialLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
+            <label id="restricaoParcialLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-base,#0f172a);border:1px solid var(--border,#334155);border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
               <input type="radio" name="restricaoTipoModal" value="parcial" checked style="accent-color:#fbbf24;width:14px;height:14px">
               <span>🟡 Parcial <span style="opacity:0.55;font-size:11px">(−50%)</span></span>
             </label>
-            <label id="restricaoTotalLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
+            <label id="restricaoTotalLabel" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-base,#0f172a);border:1px solid var(--border,#334155);border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px">
               <input type="radio" name="restricaoTipoModal" value="total" style="accent-color:#f87171;width:14px;height:14px">
               <span>🔴 Total <span style="opacity:0.55;font-size:11px">(−100%)</span></span>
             </label>
@@ -2221,7 +2221,7 @@ function expor() {
         </div>
         <div style="display:flex;gap:8px">
           <button id="restricaoConfirmarBtn" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Adicionar</button>
-          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+          <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="flex:1;padding:10px;background:var(--bg-hover,#475569);border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
         </div>
       </div>
     `
