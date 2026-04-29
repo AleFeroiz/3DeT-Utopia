@@ -240,15 +240,18 @@ export class Ficha {
 
   adicionarItem(item) {
     this.inventario.itens.push({ ...item, id: crypto.randomUUID() })
+    this.calcularPontos()
   }
 
   removerItem(id) {
     this.inventario.itens = this.inventario.itens.filter(i => i.id !== id)
+    this.calcularPontos()
   }
 
   editarItem(id, dados) {
     const idx = this.inventario.itens.findIndex(i => i.id === id)
     if (idx !== -1) this.inventario.itens[idx] = { ...this.inventario.itens[idx], ...dados }
+    this.calcularPontos()
   }
 
   // ── Elementos ─────────────────────────────────────────────

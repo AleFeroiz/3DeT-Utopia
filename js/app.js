@@ -1989,12 +1989,14 @@ function expor() {
     }
     fecharModal("modalItem")
     _renderInventario()
+    renderPontos(ficha)
     salvar()
   }
 
   window.removerItem = (id) => {
     ficha.removerItem(id)
     _renderInventario()
+    renderPontos(ficha)
     salvar()
     toastAviso("Item removido.")
   }

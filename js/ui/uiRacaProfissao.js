@@ -8,6 +8,53 @@ import { PROFISSOES } from "../dados/profissoes.js"
 let _onSalvar = null
 export function registrarCallbackRacaProf(fn) { _onSalvar = fn }
 
+// ── Formata texto de desc de raça: "• Nome: texto" → HTML estruturado ──
+function _formatarDescRaca(desc) {
+  if (!desc) return ''
+  // Escapa HTML básico
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+
+  const linhas = desc.split('\n')
+  let html = ''
+  let intro = []
+  let itens = []
+
+  function flushIntro() {
+    if (!intro.length) return
+    html += `<span class="raca-desc-intro">${intro.map(fmt).join(' ')}</span>`
+    intro = []
+  }
+  function flushItens() {
+    if (!itens.length) return
+    html += `<ul class="raca-desc-lista">${itens.join('')}</ul>`
+    itens = []
+  }
+
+  for (const l of linhas) {
+    const linha = l.trim()
+    if (!linha) continue
+
+    if (linha.startsWith('•')) {
+      flushIntro()
+      const conteudo = linha.slice(1).trim()
+      // "Nome: texto" → nome em bold
+      const m = conteudo.match(/^([^:]{1,50}?)\s*:\s*(.+)/s)
+      if (m && m[1].split(' ').length <= 6) {
+        itens.push(`<li><strong>${fmt(m[1])}</strong>: ${fmt(m[2].trim())}</li>`)
+      } else {
+        itens.push(`<li>${fmt(conteudo)}</li>`)
+      }
+    } else {
+      flushItens()
+      intro.push(linha)
+    }
+  }
+  flushIntro()
+  flushItens()
+  return html
+}
+
 // ─── Helpers ──────────────────────────────────────────────
 const racaPorId = (id) => RACAS.find(r => r.id === id)
 
@@ -56,12 +103,12 @@ function _renderAbaRacaNormal(ficha, container) {
     <div class="secao-info"><h3>✨ Extras</h3>
       ${raca.extras.map(e => `<div class="tag-extra">${e}</div>`).join("")}</div>
     <div class="secao-info"><h3>👍 Vantagens</h3>
-      ${raca.vantagens.map(v => `<div class="card-info"><strong>${v.nome}</strong><p>${v.desc}</p></div>`).join("")}</div>
+      ${raca.vantagens.map(v => `<div class="card-info"><strong>${v.nome}</strong><div class="raca-desc">${_formatarDescRaca(v.desc)}</div></div>`).join("")}</div>
     <div class="secao-info"><h3>👎 Desvantagens</h3>
-      ${raca.desvantagens.map(d => `<div class="card-info desvantagem"><strong>${d.nome}</strong><p>${d.desc}</p></div>`).join("")}</div>
+      ${raca.desvantagens.map(d => `<div class="card-info desvantagem"><strong>${d.nome}</strong><div class="raca-desc">${_formatarDescRaca(d.desc)}</div></div>`).join("")}</div>
     <div class="secao-info"><h3>⬆️ Evoluções</h3>
-      ${desbloq.map(e => `<div class="card-info desbloqueado">${e.nivel ? `<span class="badge-nivel">Nível ${e.nivel}</span>` : ""}<strong>${e.nome}</strong><p>${e.desc}</p></div>`).join("")}
-      ${bloq.map(e => `<div class="card-info bloqueado"><span class="badge-nivel bloqueado">Nível ${e.nivel} 🔒</span><strong>${e.nome}</strong><p>${e.desc}</p></div>`).join("")}
+      ${desbloq.map(e => `<div class="card-info desbloqueado">${e.nivel ? `<span class="badge-nivel">Nível ${e.nivel}</span>` : ""}<strong>${e.nome}</strong><div class="raca-desc">${_formatarDescRaca(e.desc)}</div></div>`).join("")}
+      ${bloq.map(e => `<div class="card-info bloqueado"><span class="badge-nivel bloqueado">Nível ${e.nivel} 🔒</span><strong>${e.nome}</strong><div class="raca-desc">${_formatarDescRaca(e.desc)}</div></div>`).join("")}
     </div>`
 }
 
@@ -95,7 +142,7 @@ function _renderAbaMestico(ficha, container) {
         <span class="badge-raca-mini">${rEvol?.emoji ?? "?"} ${rEvol?.nome ?? ev.racaId}</span>
         <strong>${ev.nome}</strong>
       </div>
-      <p>${ev.desc}</p></div>`
+      <div class="raca-desc">${_formatarDescRaca(ev.desc)}</div></div>`
   }
 
   const renderPar = (itemR1, itemR2, tipo) => {
@@ -163,7 +210,7 @@ function _renderAbaModificado(ficha, container) {
     const desbloq = !ev.nivel || ev.nivel <= nivel
     return `<div class="card-info ${desbloq ? "desbloqueado" : "bloqueado"}">
       ${ev.nivel ? `<span class="badge-nivel ${desbloq ? "" : "bloqueado"}">Nível ${ev.nivel}${desbloq ? "" : " 🔒"}</span>` : ""}
-      <strong>${ev.nome}</strong><p>${ev.desc}</p></div>`
+      <strong>${ev.nome}</strong><div class="raca-desc">${_formatarDescRaca(ev.desc)}</div></div>`
   }
 
   container.innerHTML = `
@@ -178,12 +225,12 @@ function _renderAbaModificado(ficha, container) {
       ${d.extraManual ? `<div class="tag-extra mod-manual">⚙️ ${d.extraManual}</div>` : ""}
     </div>
     <div class="secao-info"><h3>👍 Vantagens</h3>
-      ${d.vantagemBase?.nome ? `<div class="card-info"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.vantagemBase.nome}</strong><p>${d.vantagemBase.desc}</p></div>` : ""}
-      ${d.vantagemManual?.nome ? `<div class="card-info mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.vantagemManual.nome}</strong><p>${d.vantagemManual.desc}</p></div>` : ""}
+      ${d.vantagemBase?.nome ? `<div class="card-info"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.vantagemBase.nome}</strong><div class="raca-desc">${_formatarDescRaca(d.vantagemBase.desc)}</div></div>` : ""}
+      ${d.vantagemManual?.nome ? `<div class="card-info mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.vantagemManual.nome}</strong><div class="raca-desc">${_formatarDescRaca(d.vantagemManual.desc)}</div></div>` : ""}
     </div>
     <div class="secao-info"><h3>👎 Desvantagens</h3>
-      ${d.desvantagemBase?.nome ? `<div class="card-info desvantagem"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.desvantagemBase.nome}</strong><p>${d.desvantagemBase.desc}</p></div>` : ""}
-      ${d.desvantagemManual?.nome ? `<div class="card-info desvantagem mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.desvantagemManual.nome}</strong><p>${d.desvantagemManual.desc}</p></div>` : ""}
+      ${d.desvantagemBase?.nome ? `<div class="card-info desvantagem"><span class="badge-raca-mini">${rBase?.emoji ?? ""} Base</span><strong> ${d.desvantagemBase.nome}</strong><div class="raca-desc">${_formatarDescRaca(d.desvantagemBase.desc)}</div></div>` : ""}
+      ${d.desvantagemManual?.nome ? `<div class="card-info desvantagem mod-manual"><span class="badge-raca-mini">⚙️ Manual</span><strong> ${d.desvantagemManual.nome}</strong><div class="raca-desc">${_formatarDescRaca(d.desvantagemManual.desc)}</div></div>` : ""}
     </div>
     <div class="secao-info"><h3>⬆️ Evoluções</h3>
       ${(d.evolucoes ?? []).length ? (d.evolucoes ?? []).map(renderEvolCard).join("") : "<p style='opacity:0.4'>Nenhuma definida.</p>"}
@@ -265,7 +312,7 @@ export function renderAbaProfissao(ficha) {
         <span class="badge-nivel ${desbloqueada ? "" : "bloqueado"}">Nível de Prof. ${h.nivel}${desbloqueada ? "" : " 🔒"}</span>
         <strong>${h.nome}</strong>
       </div>
-      <p>${h.desc}</p>
+      <div class="raca-desc">${_formatarDescRaca(h.desc)}</div>
     </div>`
 
   container.innerHTML = `

@@ -52,6 +52,15 @@ export function renderElementos(ficha, { onEditar, onRemover, onEditarFonte, onE
 export function _parsearDescricao(descricao) {
   if (!descricao) return ''
 
+  // ── Técnica especial: começa com [Requisito: X] ───────────
+  const mReq = descricao.trim().match(/^\[([^\]]+)\]\s*(.+)/s)
+  if (mReq) {
+    const requisito = mReq[1].trim()
+    const efeito    = mReq[2].trim()
+    return `<div class="tecnica-requisito">${_esc(requisito)}</div>` +
+           `<div class="tecnica-efeito">${_fmt(efeito)}</div>`
+  }
+
   // Headers de seção — match exato (ou prefixo) da linha
   const SECAO_MAP = [
     ['tipo-efeito', /^(Efeitos? e Custos?|Efeitos? e Punição|Efeito e Custo|Efeito e Condição|Efeito e Punição|Efeito e Descoberta|Efeitos?|Custos?)$/i],
