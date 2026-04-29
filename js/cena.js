@@ -17,6 +17,7 @@ import {
   carregarCenasFirestore, salvarCenasFirestore,
 } from "./firebaseCenas.js"
 import { toastSucesso, toastErro, toastAviso, toastInfo } from "./ui/uiToast.js"
+import { _parsearDescricao } from "./ui/uiElementos.js"
 
 // ── Estado global ─────────────────────────────────────────
 let _cenas        = []
@@ -567,7 +568,11 @@ function _htmlPericias(ficha) {
 function _htmlElementos(ficha, tipo) {
   const lista = ficha.elementos.filter(e => e.tipo === tipo)
   if (!lista.length) return `<span class="cfc-vazio">Nenhum</span>`
-  return lista.map(e => `
+  return lista.map(e => {
+    const descHTML = _parsearDescricao(e.descricao || "")
+    const notasHTML = e.notas
+      ? `<div class="cfc-item-notas">${_esc(e.notas)}</div>` : ""
+    return `
     <div class="cfc-item" data-item-id="${e.id}">
       <div class="cfc-item-header">
         <span class="cfc-item-nome">${_esc(e.nome)}</span>
@@ -575,10 +580,11 @@ function _htmlElementos(ficha, tipo) {
         <span class="cfc-item-seta">▾</span>
       </div>
       <div class="cfc-item-detalhe">
-        <p class="cfc-item-desc">${_esc(e.descricao || "Sem descrição.")}</p>
-        ${e.notas ? `<span class="cfc-item-notas">${_esc(e.notas)}</span>` : ""}
+        ${descHTML || `<p class="cfc-item-desc">Sem descrição.</p>`}
+        ${notasHTML}
       </div>
-    </div>`).join("")
+    </div>`
+  }).join("")
 }
 
 // ─────────────────────────────────────────────────────────
@@ -751,16 +757,44 @@ function _htmlInventario(ficha) {
                ${item.equipadoDefesa ? "checked" : ""}>🛡️
       </label>` : ""
 
+    // ── Encantamentos como sub-seção ────────────────────
+    const encants = item.encantamentos ?? []
+    const encantsBadges = encants.map(e =>
+      `<span class="cfc-inv-badge cfc-inv-badge-encant" title="${_esc(e.desc ?? "")}">${e.emoji ?? "✨"} ${_esc(e.nome)}${e.extra ? " ("+_esc(e.extra)+")" : ""}</span>`
+    ).join("")
+
+    const temDetalhe = !!(item.descricao || encants.length)
+    const seta = temDetalhe ? `<span class="cfc-inv-seta">▾</span>` : ""
+
+    const encantHtml = encants.length ? `
+      <div class="cfc-inv-encants">
+        <div class="cfc-inv-encants-titulo">✨ Encantamentos</div>
+        ${encants.map(e => `
+          <div class="cfc-inv-encant-item">
+            <span class="cfc-inv-encant-nome">${e.emoji ?? "✨"} <strong>${_esc(e.nome)}</strong>${e.extra ? " <em>("+_esc(e.extra)+")</em>" : ""}${e.custo > 0 ? ` <span class="cfc-inv-encant-custo">+${e.custo} PT</span>` : ""}</span>
+            ${e.desc ? `<span class="cfc-inv-encant-desc">${_esc(e.desc)}</span>` : ""}
+          </div>`).join("")}
+      </div>` : ""
+
+    const detalheHtml = temDetalhe ? `
+      <div class="cfc-inv-item-detalhe">
+        ${item.descricao ? `<div class="cfc-inv-item-desc">${_esc(item.descricao)}</div>` : ""}
+        ${encantHtml}
+      </div>` : ""
+
     return `
-      <div class="cfc-inv-item${isEquip ? " equip" : ""}">
-        <div class="cfc-inv-item-info">
-          <div class="cfc-inv-item-nome">${_esc(item.nome)}${badgeAtk}${badgeDef}</div>
-          ${item.descricao ? `<div class="cfc-inv-item-desc">${_esc(item.descricao)}</div>` : ""}
+      <div class="cfc-inv-item${isEquip ? " equip" : ""}${temDetalhe ? " expansivel" : ""}">
+        <div class="cfc-inv-item-topo">
+          <div class="cfc-inv-item-info">
+            <div class="cfc-inv-item-nome">${_esc(item.nome)}${badgeAtk}${badgeDef}${encantsBadges}</div>
+          </div>
+          <div class="cfc-inv-item-direita">
+            <span class="cfc-inv-peso-tag" style="${(item.peso??0)<0?"color:#4ade80":""}">⚖️ ${item.peso ?? 0}</span>
+            ${checkAtk}${checkDef}
+            ${seta}
+          </div>
         </div>
-        <div class="cfc-inv-item-direita">
-          <span class="cfc-inv-peso-tag" style="${(item.peso??0)<0?'color:#4ade80':''}">⚖️ ${item.peso ?? 0}</span>
-          ${checkAtk}${checkDef}
-        </div>
+        ${detalheHtml}
       </div>`
   }).join("")
 
@@ -776,6 +810,11 @@ function _bindGavetas(card, ficha) {
       e.stopPropagation()
       header.closest(".cfc-item").classList.toggle("aberto")
     }
+  })
+  // Expand/collapse de itens do inventário (clique no topo)
+  card.querySelectorAll(".cfc-inv-item.expansivel .cfc-inv-item-topo").forEach(topo => {
+    topo.style.cursor = "pointer"
+    topo.onclick = () => topo.closest(".cfc-inv-item").classList.toggle("aberto")
   })
   // Checkboxes de equipado no inventário
   card.querySelectorAll(".cfc-inv-check input[type='checkbox']").forEach(cb => {

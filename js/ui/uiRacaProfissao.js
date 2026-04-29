@@ -9,7 +9,7 @@ let _onSalvar = null
 export function registrarCallbackRacaProf(fn) { _onSalvar = fn }
 
 // ── Formata texto de desc de raça: "• Nome: texto" → HTML estruturado ──
-function _formatarDescRaca(desc) {
+export function _formatarDescRaca(desc) {
   if (!desc) return ''
   // Escapa HTML básico
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')

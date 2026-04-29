@@ -772,19 +772,42 @@
 
 /* Card de item dentro da gaveta inventário */
 .cfc-inv-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   background: var(--bg-base, #0f172a);
   border: 1px solid #1e3050;
   border-radius: 8px;
-  padding: 7px 10px;
   margin-bottom: 5px;
+  overflow: hidden;
   transition: border-color 0.15s;
 }
 .cfc-inv-item:last-child { margin-bottom: 0; }
 .cfc-inv-item.equip { border-color: #7c3aed44; }
+.cfc-inv-item.equip .cfc-inv-item-topo { border-left: 2px solid #7c3aed66; }
+
+/* Topo (sempre visível): nome + badges + peso + checkboxes + seta */
+.cfc-inv-item-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+/* Detalhe (oculto por padrão, revelado ao abrir) */
+.cfc-inv-item-detalhe {
+  display: none;
+  border-top: 1px solid #1e3050;
+  padding: 6px 10px 8px;
+}
+.cfc-inv-item.aberto .cfc-inv-item-detalhe { display: block; }
+
+/* Seta de expand */
+.cfc-inv-seta {
+  font-size: 10px;
+  color: #475569;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.cfc-inv-item.aberto .cfc-inv-seta { transform: rotate(180deg); }
 
 .cfc-inv-item-info { flex: 1; min-width: 0; }
 
@@ -798,12 +821,10 @@
 }
 
 .cfc-inv-item-desc {
-  font-size: 10px;
-  color: #475569;
-  margin-top: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 6px;
+  line-height: 1.5;
 }
 
 .cfc-inv-item-direita {
@@ -811,6 +832,62 @@
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+}
+
+/* ── Encantamentos na cena ───────────────────────────────── */
+.cfc-inv-encants {
+  margin-top: 4px;
+}
+
+.cfc-inv-encants-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #1e3050;
+}
+
+.cfc-inv-encant-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cfc-inv-encant-item:last-child { border-bottom: none; }
+
+.cfc-inv-encant-nome {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+
+.cfc-inv-encant-custo {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(96,165,250,0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(96,165,250,0.25);
+  padding: 0 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.cfc-inv-encant-desc {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  display: block;
+  line-height: 1.45;
+}
+
+/* Badge de encantamento inline no nome */
+.cfc-inv-badge-encant {
+  background: rgba(167,139,250,0.12);
+  color: #c4b5fd;
+  border: 1px solid rgba(167,139,250,0.25);
 }
 
 .cfc-inv-peso-tag {
@@ -860,4 +937,31 @@
   height: 12px;
   cursor: pointer;
   margin: 0;
+}
+/* ── Parser output dentro de gavetas da cena ────────────── */
+.cfc-item-detalhe .card-intro {
+  padding: 4px 2px 2px;
+  font-size: 12px;
+}
+.cfc-item-detalhe .card-secao {
+  margin: 4px 0;
+}
+.cfc-item-detalhe .card-secao-body,
+.cfc-item-detalhe .card-secao-item {
+  font-size: 11.5px;
+}
+.cfc-item-detalhe .tecnica-requisito {
+  margin: 2px 0 0;
+  font-size: 10px;
+}
+.cfc-item-detalhe .tecnica-efeito {
+  padding: 4px 2px 2px;
+  font-size: 12px;
+}
+.cfc-item-notas {
+  display: block;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  font-style: italic;
+  margin-top: 4px;
 }
