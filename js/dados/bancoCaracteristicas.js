@@ -88,7 +88,7 @@ export const TABELAS = {
     tipo: "empilhavel_mono",
     dados: [
       { nome: "Instantânea (Base)", orcamento: 0,  pm: 0, gratuita: true  },
-      { nome: "1 Rodada",           orcamento: 2,  pm: 1  },
+      { nome: "1 Rodada",           orcamento: 1,  pm: 1  },
       { nome: "1 Cena",             orcamento: 5,  pm: 3  },
       { nome: "1 Hora",             orcamento: 12, pm: 6  },
       { nome: "1 Dia",              orcamento: 24, pm: 12 }
