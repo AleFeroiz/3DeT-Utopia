@@ -115,7 +115,7 @@ A Lojinha é o sistema modular usado para montar suas técnicas próprias. Use o
 |Duração|Orçamento|PM|
 |---|---|---|
 |**Instantânea** (Base)|0|0|
-|**1 rodada**|2|1|
+|**1 rodada**|1|1|
 |**1 cena**|5|3|
 |**1 hora**|12|6|
 |**1 dia**|24|12|
