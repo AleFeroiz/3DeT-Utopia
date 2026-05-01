@@ -256,6 +256,16 @@
    TOGGLE PLAYER / MESTRE
    ════════════════════════════════════════════════════════════ */
 
+/* ── Linha que agrupa o toggle e o botão do livro ────────── */
+.modo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
 .modo-toggle-wrapper {
   display: flex;
   align-items: center;
@@ -264,8 +274,30 @@
   border-radius: 12px;
   padding: 4px;
   gap: 0;
-  margin-bottom: 24px;
   width: fit-content;
+}
+
+/* ── Botão Livro de Regras ───────────────────────────────── */
+.btn-livro-regras {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: #1e2a1e;
+  border: 1px solid #2d4d2d;
+  border-radius: 10px;
+  color: #6dbf88;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  margin-left: auto;
+}
+.btn-livro-regras:hover {
+  background: #243524;
+  border-color: #4a8a4a;
+  color: #86efac;
 }
 
 .modo-btn {
