@@ -22,6 +22,8 @@
   { "file": "12.1-itens.md",                     "id": "sec-12-1", "num": "12.1", "emoji": "🎒", "titulo": "Itens",                          "sub": true  },
   { "file": "12.2-encantamentos.md",             "id": "sec-12-2", "num": "12.2", "emoji": "✨", "titulo": "Encantamentos",                  "sub": true  },
   { "file": "12.3-inventario.md",                "id": "sec-12-3", "num": "12.3", "emoji": "📦", "titulo": "Inventário",                     "sub": true  },
+  { "file": "12.4-multiplos-equipamentos",       "id": "sec-12-4", "num": "12.4", "emoji": "⚔️", "titulo": "Múltiplos Equipamentos",         "sub": true  },
+  { "file": "12.5-aquisicao-e-evolucao-de-equipamentos",       "id": "sec-12-5", "num": "12.5", "emoji": "💰", "titulo": "Aquisição e evolução de equipamentos",         "sub": true  },
   { "file": "13-veiculos.md",                    "id": "sec-13",   "num": "13",   "emoji": "⛵", "titulo": "Veículos",                        "sub": false },
   { "file": "14-viagens-e-deslocamento.md",      "id": "sec-14",   "num": "14",   "emoji": "🗺️", "titulo": "Viagens e Deslocamento",         "sub": false },
   { "file": "14.1-descanso.md",                  "id": "sec-14-1", "num": "14.1", "emoji": "🌙", "titulo": "Descanso",                       "sub": true  },
