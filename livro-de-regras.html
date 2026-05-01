@@ -225,11 +225,14 @@ function renderMD(text) {
 let allSections = [];
 let navLinksEls = [];
 
+// Cache-buster: timestamp único por sessão de carregamento
+const CB = `?v=${Date.now()}`;
+
 async function init() {
-  // 1. Carrega manifest.json
+  // 1. Carrega manifest.json (sem cache)
   let manifest;
   try {
-    const res = await fetch(REGRAS_BASE + 'manifest.json');
+    const res = await fetch(REGRAS_BASE + 'manifest.json' + CB, { cache: 'no-store' });
     if (!res.ok) throw new Error(res.status);
     manifest = await res.json();
   } catch (e) {
@@ -238,10 +241,10 @@ async function init() {
     return;
   }
 
-  // 2. Busca todos os .md em paralelo
+  // 2. Busca todos os .md em paralelo (sem cache)
   const loaded = await Promise.all(
     manifest.map(sec =>
-      fetch(REGRAS_BASE + sec.file)
+      fetch(REGRAS_BASE + sec.file + CB, { cache: 'no-store' })
         .then(r => r.ok ? r.text() : Promise.reject())
         .then(text => ({ ...sec, text }))
         .catch(() => ({ ...sec, text: `> [!danger] Arquivo não encontrado\n> \`${sec.file}\`` }))
