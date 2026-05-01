@@ -6,7 +6,7 @@ Todo personagem possui um Nível que representa sua experiência, fama e poder a
 
 | Nível  | Pontos de Ficha | Limite de Atributo | Recompensas Especiais                                |
 | :----: | :-------------: | :----------------: | :--------------------------------------------------- |
-| **1**  |     **10**      |         5          | Profissão (Nível 1)                                  |
+| **1**  |     **10**      |         5          | Profissão (Nível 1) e Libera Escala de Poder 3       |
 | **2**  |      **3**      |         5          |                                                      |
 | **3**  |      **3**      |         5          | Maestria (Limite 1) e 1 ponto de redefinição         |
 | **4**  |      **3**      |         5          |                                                      |
