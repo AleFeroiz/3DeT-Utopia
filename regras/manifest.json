@@ -1,5 +1,4 @@
 [
-  { "file": "00-sumario.md",                    "id": "sec-0",    "num": "0",    "emoji": "📋", "titulo": "Sumário",                       "sub": false },
   { "file": "01-sinopse-do-mundo.md",            "id": "sec-1",    "num": "1",    "emoji": "🌍", "titulo": "Sinopse do Mundo",               "sub": false },
   { "file": "02-criacao-de-personagem.md",       "id": "sec-2",    "num": "2",    "emoji": "🎲", "titulo": "Criação de Personagem",          "sub": false },
   { "file": "03-fundamentos.md",                 "id": "sec-3",    "num": "3",    "emoji": "📐", "titulo": "Fundamentos do Sistema",         "sub": false },
