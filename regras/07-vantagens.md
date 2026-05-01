@@ -47,11 +47,6 @@ Você tem algo ou alguém com quem pode contar: um aprendiz, animal, robô, veí
 > - **Lutador:** Receba Ganho em um teste de ataque, ou em testes de defesa por uma rodada.
 > - **Montaria:** Custa **2 PM**. Concede um movimento extra, ou um Ganho em teste de iniciativa, corrida ou perseguição.
 
-#### 📏 Alcance (1  PT)
-Seus ataques (e outras vantagens como Cura) acertam mais longe do que deveriam.
-> [!note] Efeitos
-> Pode atingir inimigos a **1 passo** de distância do que seu ataque permite sem penalidades.
-
 
 #### 🚫 Anulação (1 PT)
 Você consegue bloquear ou cancelar temporariamente o uso de uma vantagem de outro personagem. Apenas uma vantagem pode ser anulada por vez; se anular outra, a primeira é liberada.
