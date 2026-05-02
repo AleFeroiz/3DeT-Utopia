@@ -14,7 +14,7 @@ import {
   abrirCriarFonte, atualizarCustoFonte, atualizarSubtipoFonte, confirmarSalvarFonte,
   abrirCriarCaracteristica, atualizarEscala, atualizarLimiteEscala, confirmarCriarCaracteristica,
   renderCaracteristicasFonte, trocarAbaCarac, fecharModal, atualizarPreviewCarac,
-  toggleVariante, selecionarAbaVariante,
+  toggleVariante, selecionarAbaVariante, alternarTipoCarac,
   registrarCallbackIsolada, abrirCriarCaracteristicaIsolada,
   atualizarEscalaIsolada, confirmarCaracIsolada,
   abrirLojinhaIsoladaModal, confirmarIsoladaLojinha, trocarAbaIso,
@@ -1835,6 +1835,7 @@ function expor() {
   window.adicionarCaracteristica  = confirmarCriarCaracteristica
   window.atualizarEscala          = atualizarEscala
   window.atualizarLimiteEscala    = atualizarLimiteEscala
+  window.alternarTipoCarac        = alternarTipoCarac
 
   // Abas característica
   window.trocarAbaCarac        = trocarAbaCarac

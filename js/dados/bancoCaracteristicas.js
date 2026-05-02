@@ -149,3 +149,105 @@ export const TABELAS = {
     ]
   }
 }
+
+// ============================================================
+//  TABELAS_PASSIVA — Lojinha de Características Passivas
+//
+//  REGRAS DE DESIGN:
+//  • Sem coluna PM (campo pm ausente em todos os dados)
+//  • "execucao" substituído por "gatilho"
+//  • Sem "duracao", "condicoes", "descontos"
+//  • Potência e Pressão têm orçamento maior (sem PM pra compensar)
+//  • Alcance, Área e Alvos também com custo ajustado
+// ============================================================
+
+export const TABELAS_PASSIVA = {
+
+  // ── IMPACTO DIRETO ─────────────────────────────────────
+
+  potencia: {
+    label: "Potência",
+    base: "0 (sem potência)",
+    descricao: "Usada para força de efeitos diretos e intensidade de resultados.",
+    tipo: "empilhavel",
+    dados: [
+      { valor: 1,  orcamento: 2  },
+      { valor: 3,  orcamento: 5  },
+      { valor: 5,  orcamento: 8  },
+      { valor: 10, orcamento: 15 }
+    ]
+  },
+
+  pressao: {
+    label: "Pressão",
+    base: "0 (sem pressão)",
+    descricao: "Usada para testes resistidos quando a passiva afeta outros seres.",
+    tipo: "empilhavel",
+    dados: [
+      { valor: 1,  orcamento: 2  },
+      { valor: 3,  orcamento: 5  },
+      { valor: 5,  orcamento: 8  },
+      { valor: 10, orcamento: 15 }
+    ]
+  },
+
+  // ── GATILHO (substitui Execução) ───────────────────────
+
+  gatilho: {
+    label: "Gatilho",
+    base: "Obrigatório — escolha um",
+    descricao: "Define quando a passiva dispara. Não há PM — o custo está no orçamento.",
+    tipo: "unico",
+    dados: [
+      { nome: "Sempre",                    orcamento: 10 },
+      { nome: "Por turno",                 orcamento: 6  },
+      { nome: "Ao usar uma característica",orcamento: 4  },
+      { nome: "Ao receber algo",           orcamento: 4  },
+      { nome: "Condição externa",          orcamento: 2  }
+    ]
+  },
+
+  // ── ALCANCE ────────────────────────────────────────────
+
+  alcance: {
+    label: "Alcance",
+    base: "Pessoal — gratuito",
+    descricao: "Distância máxima que a passiva pode atingir quando dispara.",
+    tipo: "unico",
+    dados: [
+      { nome: "Pessoal (Base)", orcamento: 0,  gratuita: true },
+      { nome: "Toque",          orcamento: 2  },
+      { nome: "Perto",          orcamento: 4  },
+      { nome: "Longe",          orcamento: 7  },
+      { nome: "Muito Longe",    orcamento: 12 }
+    ]
+  },
+
+  // ── INFLIGIR AOS SERES ─────────────────────────────────
+
+  area: {
+    label: "Área",
+    base: "1 alvo (base) — sem custo",
+    descricao: "Expande quem a passiva atinge em raio. Mutuamente exclusivo com Alvos Adicionais.",
+    tipo: "empilhavel",
+    grupoExclusivo: "infligir",
+    dados: [
+      { nome: "1 metro",  orcamento: 4  },
+      { nome: "3 metros", orcamento: 9  },
+      { nome: "9 metros", orcamento: 18 }
+    ]
+  },
+
+  alvos: {
+    label: "Alvos Adicionais",
+    base: "1 alvo (base) — sem custo",
+    descricao: "Permite atingir mais de um alvo individualmente. Mutuamente exclusivo com Área.",
+    tipo: "empilhavel",
+    grupoExclusivo: "infligir",
+    dados: [
+      { nome: "1 alvo",  orcamento: 2  },
+      { nome: "3 alvos", orcamento: 6  },
+      { nome: "6 alvos", orcamento: 12 }
+    ]
+  }
+}

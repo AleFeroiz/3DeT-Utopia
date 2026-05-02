@@ -270,11 +270,22 @@ function criarCardFonte(fonte, onEditarFonte, onExpandirFonte, onRemover, soment
   const pcsTotal  = fonte.pcs       ?? 0
 
   const listaCaract = fonte.caracteristicas?.length
-    ? fonte.caracteristicas.map(c => `
-        <div class="carac-item">
-          <span>⚡ ${c.nome} <em style="opacity:0.5;font-size:11px">E${c.escala}</em>${c.gratuita ? ' <span style="font-size:10px;background:#14532d;color:#86efac;padding:0 4px;border-radius:3px">GRÁTIS</span>' : ''}</span>
-          <span style="font-size:12px">${c.custoPM} PM</span>
-        </div>`).join("")
+    ? fonte.caracteristicas.map(c => {
+        const isPassiva = c.tipo === "passiva"
+        const tipoBadge = isPassiva
+          ? `<span style="font-size:10px;background:#1e1b4b;color:#a5b4fc;padding:0 4px;border-radius:3px;margin-left:3px">PASSIVA</span>`
+          : ""
+        const pmStr = isPassiva
+          ? `<span style="font-size:12px;color:#a5b4fc">Sem PM</span>`
+          : `<span style="font-size:12px">${c.custoPM} PM</span>`
+        const gratBadge = c.gratuita
+          ? ` <span style="font-size:10px;background:#14532d;color:#86efac;padding:0 4px;border-radius:3px">GRÁTIS</span>`
+          : ""
+        return `<div class="carac-item">
+          <span>⚡ ${c.nome} <em style="opacity:0.5;font-size:11px">E${c.escala}</em>${gratBadge}${tipoBadge}</span>
+          ${pmStr}
+        </div>`
+      }).join("")
     : "<p style='opacity:0.4;font-size:13px'>Nenhuma característica.</p>"
 
   let passivosHTML = ""

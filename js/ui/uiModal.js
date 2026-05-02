@@ -4,7 +4,7 @@
 
 import { BANCO_ELEMENTOS              } from "../dados/banco.js?v=600000"
 import { toastErro, toastSucesso, toastAviso } from "./uiToast.js" 
-import { TABELAS, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js?v=600000"
+import { TABELAS, TABELAS_PASSIVA, ORCAMENTO_POR_ESCALA } from "../dados/bancoCaracteristicas.js?v=600000"
 import { resumoEscolhas as _resumoEscolhas } from "./uiResumoEscolhas.js"
 import { computarVarianteAba, abasDisponiveis } from "../dados/amplificacao.js"
 import { ElementoFicha                } from "../modelos/Elemento.js"
@@ -24,10 +24,17 @@ let _onSalvarFonte    = null
 let _fonteEditandoId  = null   // null = criar nova, string = editar existente
 let _getFicha         = null   // callback para obter ficha atual
 
+// ── Helper: retorna a tabela certa conforme tipo da característica ──
+// NUNCA usa TABELAS diretamente no modal de característica — sempre via esta função
+function _tabelasAtivas() {
+  return _caracTemp?.tipoCarac === "passiva" ? TABELAS_PASSIVA : TABELAS
+}
+
 // ── Escolhas iniciais com bases gratuitas pré-selecionadas ─
-function _escolhasIniciais() {
+// tabelas: objeto de tabelas a usar (TABELAS ou TABELAS_PASSIVA)
+function _escolhasIniciais(tabelas = TABELAS) {
   const result = {}
-  for (const [chave, cfg] of Object.entries(TABELAS)) {
+  for (const [chave, cfg] of Object.entries(tabelas)) {
     const base = cfg.dados.find(d => d.gratuita)
     if (base) {
       result[chave] = [{ ...base }]
@@ -321,16 +328,22 @@ export function abrirCriarCaracteristica(editIndex = null) {
   _caracEditIndex = editIndex
   const ex = editIndex !== null ? _fonteTemp.caracteristicas[editIndex] : null
 
-  // Restaura escolhas salvas (deep copy) ou inicializa vazio
+  // Tipo: lê do registro existente; novo padrão = "ativa"
+  // RETROCOMPAT: ex sem campo tipo → "ativa"
+  const tipoInicial = ex?.tipo === "passiva" ? "passiva" : "ativa"
+
+  // Restaura escolhas salvas (deep copy) — respeitando as chaves da tabela correta
+  const tabelaAlvo = tipoInicial === "passiva" ? TABELAS_PASSIVA : TABELAS
   const escolhasSalvas = ex?.escolhas
-    ? Object.fromEntries(Object.keys(TABELAS).map(k => [k, [...(ex.escolhas[k] ?? [])]]))
-    : _escolhasIniciais()
+    ? Object.fromEntries(Object.keys(tabelaAlvo).map(k => [k, [...(ex.escolhas[k] ?? [])]]))
+    : _escolhasIniciais(tabelaAlvo)
 
   _caracTemp = {
+    tipoCarac:   tipoInicial,
     escala:      ex?.escala ?? 1,
     escolhas:    escolhasSalvas,
-    amplificada: ex?.amplificada ?? null,
-    reduzida:    ex?.reduzida    ?? null
+    amplificada: tipoInicial === "ativa" ? (ex?.amplificada ?? null) : null,
+    reduzida:    tipoInicial === "ativa" ? (ex?.reduzida    ?? null) : null,
   }
 
   document.getElementById("caracNome").value      = ex?.nome      ?? ""
@@ -339,14 +352,51 @@ export function abrirCriarCaracteristica(editIndex = null) {
   window.syncStepper?.("caracEscala")
   const chkGrat = document.getElementById("caracGratuita")
   if (chkGrat) chkGrat.checked = ex?.gratuita ?? false
+
+  // Atualiza seletor Ativa/Passiva no modal
+  _atualizarSeletorTipo()
+
   document.getElementById("modalCaracTitulo").innerText =
     editIndex !== null ? "✏️ Editar Característica" : "⚡ Nova Característica"
 
   _atualizarLimiteEscalaCarac()
-  for (const chave of Object.keys(TABELAS)) renderTabelaCarac(chave)
+  _renderTodasAbasCarac()
   trocarAbaCarac(0)
   atualizarPreviewCarac()
   abrirModal("modalCaracteristica")
+}
+
+// Atualiza visualmente o seletor Ativa/Passiva e mostra/oculta painel de variantes
+function _atualizarSeletorTipo() {
+  const btnAtiva   = document.getElementById("btnTipoAtiva")
+  const btnPassiva = document.getElementById("btnTipoPassiva")
+  const painelVar  = document.getElementById("painelVariantes")
+  const isPassiva  = _caracTemp?.tipoCarac === "passiva"
+
+  if (btnAtiva)   btnAtiva.classList.toggle("active",  !isPassiva)
+  if (btnPassiva) btnPassiva.classList.toggle("active",  isPassiva)
+  // Variantes (Amplificada/Reduzida) não existem em passivas
+  if (painelVar)  painelVar.style.display = isPassiva ? "none" : ""
+}
+
+// Chamado pelo botão Ativa/Passiva no HTML
+export function alternarTipoCarac(tipo) {
+  if (!_caracTemp || _caracTemp.tipoCarac === tipo) return
+  _caracTemp.tipoCarac = tipo
+  // Reseta escolhas para a nova tabela (não faz sentido manter abas incompatíveis)
+  const tabelaAlvo = tipo === "passiva" ? TABELAS_PASSIVA : TABELAS
+  _caracTemp.escolhas    = _escolhasIniciais(tabelaAlvo)
+  _caracTemp.amplificada = null
+  _caracTemp.reduzida    = null
+  _atualizarSeletorTipo()
+  _renderTodasAbasCarac()
+  trocarAbaCarac(0)
+  atualizarPreviewCarac()
+}
+
+// Renderiza todas as abas da tabela correta
+function _renderTodasAbasCarac() {
+  for (const chave of Object.keys(_tabelasAtivas())) renderTabelaCarac(chave)
 }
 
 export function atualizarEscala() {
@@ -408,6 +458,13 @@ export function confirmarCriarCaracteristica() {
   const limite = ORCAMENTO_POR_ESCALA[_caracTemp.escala]
   if (gasto > limite) { toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`); return }
 
+  // Passivas devem ter um Gatilho selecionado
+  const isPassiva = _caracTemp.tipoCarac === "passiva"
+  if (isPassiva) {
+    const gatilhoSel = _caracTemp.escolhas?.gatilho ?? []
+    if (!gatilhoSel.length) { toastErro("Selecione um Gatilho para a característica passiva."); return }
+  }
+
   const gratuita = document.getElementById("caracGratuita")?.checked ?? false
   const pcsNec   = PC_POR_ESCALA[_caracTemp.escala] ?? _caracTemp.escala
   if (!gratuita && _caracEditIndex === null && pcsNec > _fonteTemp.pcsDisponiveis) {
@@ -416,13 +473,15 @@ export function confirmarCriarCaracteristica() {
   const dados = {
     nome:        document.getElementById("caracNome").value || "Característica",
     descricao:   document.getElementById("caracDescricao").value,
+    tipo:        _caracTemp.tipoCarac,   // "ativa" | "passiva"
     escala:      _caracTemp.escala,
     gratuita,
     escolhas:    _caracTemp.escolhas,
     custo:       gasto,
-    custoPM:     calcularPMCarac(),
-    amplificada: _caracTemp.amplificada ?? null,
-    reduzida:    _caracTemp.reduzida    ?? null
+    // Passivas: PM sempre 0. Ativas: mín. 2.
+    custoPM:     isPassiva ? 0 : calcularPMCarac(),
+    amplificada: isPassiva ? null : (_caracTemp.amplificada ?? null),
+    reduzida:    isPassiva ? null : (_caracTemp.reduzida    ?? null),
   }
 
   if (_caracEditIndex !== null) _fonteTemp.editarCaracteristica(_caracEditIndex, dados)
@@ -435,12 +494,14 @@ export function confirmarCriarCaracteristica() {
 
 // ── Tabela com stack e right-click ────────────────────────
 export function renderTabelaCarac(chave) {
-  const config    = TABELAS[chave]
+  const tabelas   = _tabelasAtivas()
+  const config    = tabelas[chave]
   const container = document.getElementById(`aba_${chave}`)
-  if (!container) return
+  if (!container || !config) return
 
-  const tipo = config.tipo  // "empilhavel" | "empilhavel_mono" | "unico"
-  const grupoExclusivo = config.grupoExclusivo ?? null  // ex: "infligir"
+  const isPassiva      = _caracTemp?.tipoCarac === "passiva"
+  const tipo           = config.tipo  // "empilhavel" | "empilhavel_mono" | "unico"
+  const grupoExclusivo = config.grupoExclusivo ?? null
 
   container.innerHTML = `<p style="opacity:0.6;font-size:13px;margin-bottom:8px">${config.descricao}</p>`
 
@@ -453,18 +514,20 @@ export function renderTabelaCarac(chave) {
   }
 
   const mostraQtd = tipo === "empilhavel" || tipo === "empilhavel_mono"
+  // Passivas não têm coluna PM
+  const mostraPM  = !isPassiva
   const tabela = document.createElement("table")
   tabela.className = "tabela-sistema"
   tabela.innerHTML = `<thead><tr>
-    <th>${config.label}</th><th>Orç.</th><th>PM</th>
+    <th>${config.label}</th><th>Orç.</th>${mostraPM ? "<th>PM</th>" : ""}
     ${mostraQtd ? "<th>Qtd</th>" : ""}
   </tr></thead>`
 
   const tbody = document.createElement("tbody")
-  const trPorItem = new Map()  // item → tr (para empilhavel_mono re-render)
+  const trPorItem = new Map()
 
   for (const item of config.dados) {
-    const chaveItem = item.nome ?? `+${item.valor}`  // identificador único da linha
+    const chaveItem = item.nome ?? `+${item.valor}`
     const estado = { qtd: 0 }
     const tr     = document.createElement("tr")
     trPorItem.set(chaveItem, { tr, estado, item })
@@ -486,10 +549,11 @@ export function renderTabelaCarac(chave) {
     }
 
     tr.innerHTML = `
-      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td><td>${tdOrc}</td><td>${tdPm}</td>
+      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td>
+      <td>${tdOrc}</td>
+      ${mostraPM ? `<td>${tdPm}</td>` : ""}
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
-    // Itens gratuitos: aparência bloqueada, não são clicáveis
     if (item.gratuita) {
       tr.style.cursor  = "default"
       tr.style.opacity = "0.6"
@@ -502,7 +566,6 @@ export function renderTabelaCarac(chave) {
     if (tipo === "empilhavel") {
       tr.addEventListener("click", e => {
         e.preventDefault()
-        // Grupo exclusivo: limpa a outra chave do grupo
         if (grupoExclusivo) _limparGrupoExclusivo(grupoExclusivo, chave)
         estado.qtd++
         _caracTemp.escolhas[chave].push({ ...item })
@@ -522,15 +585,13 @@ export function renderTabelaCarac(chave) {
       })
     }
 
-    // ── EMPILHAVEL_MONO: só empilha o mesmo tipo ──────────
+    // ── EMPILHAVEL_MONO ────────────────────────────────────
     else if (tipo === "empilhavel_mono") {
       tr.addEventListener("click", e => {
         e.preventDefault()
         const atualChave = _caracTemp.escolhas[chave]?.[0]
           ? (_caracTemp.escolhas[chave][0].nome ?? `+${_caracTemp.escolhas[chave][0].valor}`)
           : null
-
-        // Troca de linha: zera estado de todas as linhas e reseta escolhas
         if (atualChave && atualChave !== chaveItem) {
           _caracTemp.escolhas[chave] = []
           trPorItem.forEach(({ tr: outraTr, estado: outroEstado }) => {
@@ -539,10 +600,8 @@ export function renderTabelaCarac(chave) {
             if (q) q.innerText = 0
             outraTr.classList.remove("selecionado")
           })
-          _flashRow(tr, "vermelho")  // sinaliza descarte
+          _flashRow(tr, "vermelho")
         }
-
-        // Empilha esta linha
         estado.qtd++
         _caracTemp.escolhas[chave].push({ ...item })
         tr.querySelector(".qtd").innerText = estado.qtd
@@ -560,7 +619,6 @@ export function renderTabelaCarac(chave) {
         _flashRow(tr, "vermelho")
         atualizarPreviewCarac()
       })
-      // Marca como selecionada se tem itens
       if (estado.qtd > 0) tr.classList.add("selecionado")
     }
 
@@ -570,10 +628,8 @@ export function renderTabelaCarac(chave) {
         const jaEstaSelected = tr.classList.contains("selecionado")
         tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
         if (jaEstaSelected && !item.gratuita) {
-          // Clicar de novo na opção selecionada: reverte para a base gratuita
           const base = config.dados.find(d => d.gratuita)
           _caracTemp.escolhas[chave] = base ? [{ ...base }] : []
-          // Destaca o item base visualmente
           const trBase = tbody.querySelector("tr[data-gratuita='true']")
           if (trBase) trBase.classList.add("selecionado")
         } else {
@@ -610,11 +666,10 @@ export function renderTabelaCarac(chave) {
 
 // Limpa todas as chaves do mesmo grupo exclusivo, exceto a atual
 function _limparGrupoExclusivo(grupo, chaveAtiva) {
-  for (const [k, cfg] of Object.entries(TABELAS)) {
+  for (const [k, cfg] of Object.entries(_tabelasAtivas())) {
     if (k !== chaveAtiva && cfg.grupoExclusivo === grupo) {
       if (_caracTemp.escolhas[k]?.length) {
         _caracTemp.escolhas[k] = []
-        // Re-renderiza a aba afetada para atualizar qtd visualmente
         renderTabelaCarac(k)
         toastAviso("Stack de '" + cfg.label + "' descartado (mutuamente exclusivo).")
       }
@@ -673,7 +728,8 @@ function _renderCaracteristicasFonteModal() {
     div.style.marginTop = "8px"
     if (c.gratuita) div.style.borderColor = "#22c55e"
 
-    const resumo = _resumoEscolhas(c.escolhas)
+    const isPassiva = c.tipo === "passiva"
+    const resumo    = _resumoEscolhas(c.escolhas)
     const resumoHTML = Object.entries(resumo).map(([label, val]) =>
       `<div class="carac-resumo-row"><span class="carac-resumo-label">${label}:</span> <span>${val}</span></div>`
     ).join("")
@@ -682,17 +738,26 @@ function _renderCaracteristicasFonteModal() {
       ? `<span style="font-size:10px;background:#14532d;color:#86efac;padding:1px 6px;border-radius:4px;margin-left:4px">GRÁTIS em PCs</span>`
       : ""
 
-    const variantesHTML = _htmlVariantesCard(c)
+    // Badge visual diferenciando ativa de passiva
+    const tipoBadge = isPassiva
+      ? `<span style="font-size:10px;background:#1e1b4b;color:#a5b4fc;padding:1px 6px;border-radius:4px;margin-left:4px">PASSIVA</span>`
+      : `<span style="font-size:10px;background:#172554;color:#93c5fd;padding:1px 6px;border-radius:4px;margin-left:4px">ATIVA</span>`
+
+    const variantesHTML = isPassiva ? "" : _htmlVariantesCard(c)
+
+    const pmInfo = isPassiva
+      ? `<span style="color:#a5b4fc">Sem PM</span>`
+      : `<span>${c.custoPM} PM</span>`
 
     div.innerHTML = `
       <div class="card-header">
-        <strong>${c.nome}${gratuitaBadge}</strong>
+        <strong>${c.nome}${gratuitaBadge}${tipoBadge}</strong>
         <div style="display:flex;gap:8px;font-size:12px;opacity:0.7">
           <span>Escala ${c.escala}</span>
           <span>|</span>
           ${c.gratuita ? '<span style="color:#86efac">0 PC</span>' : `<span>Orç. ${c.custo}</span>`}
           <span>|</span>
-          <span>${c.custoPM} PM</span>
+          ${pmInfo}
         </div>
       </div>
       ${resumoHTML ? `<div class="carac-resumo">${resumoHTML}</div>` : ""}
@@ -722,13 +787,17 @@ function calcularGastoCarac() {
   for (const lista of Object.values(_caracTemp.escolhas))
     for (const item of lista)
       if (!item.gratuita) t += item.orcamento ?? 0
-  // Amplificar e Reduzir custam 4 de orçamento cada
-  if (_caracTemp.amplificada) t += 4
-  if (_caracTemp.reduzida)    t += 4
+  // Amplificar e Reduzir custam 4 de orçamento cada (só ativas)
+  if (_caracTemp.tipoCarac !== "passiva") {
+    if (_caracTemp.amplificada) t += 4
+    if (_caracTemp.reduzida)    t += 4
+  }
   return t
 }
 
 function calcularPMCarac() {
+  // Passivas nunca têm custo de PM
+  if (_caracTemp?.tipoCarac === "passiva") return 0
   let t = 0
   for (const lista of Object.values(_caracTemp.escolhas))
     for (const item of lista) t += item.pm ?? 0
@@ -736,14 +805,25 @@ function calcularPMCarac() {
 }
 
 export function atualizarPreviewCarac() {
-  const limite = ORCAMENTO_POR_ESCALA[_caracTemp?.escala ?? 1]
-  const gasto  = calcularGastoCarac()
-  const pm     = calcularPMCarac()
+  const limite    = ORCAMENTO_POR_ESCALA[_caracTemp?.escala ?? 1]
+  const gasto     = calcularGastoCarac()
+  const pm        = calcularPMCarac()
+  const isPassiva = _caracTemp?.tipoCarac === "passiva"
+
   document.getElementById("orcamentoTotal").innerText = limite
   document.getElementById("orcamentoGasto").innerText = gasto
-  document.getElementById("orcamentoPM").innerText    = pm
   document.getElementById("orcamentoGasto").style.color = gasto > limite ? "#ef4444" : "#22c55e"
-  _renderPainelVariantes()
+
+  // PM: oculta o elemento inteiro em passivas
+  const elPM      = document.getElementById("orcamentoPM")
+  const elPMLabel = document.getElementById("orcamentoPMLabel")  // elemento label opcional
+  if (elPM) {
+    elPM.innerText    = pm
+    elPM.style.display = isPassiva ? "none" : ""
+  }
+  if (elPMLabel) elPMLabel.style.display = isPassiva ? "none" : ""
+
+  if (!isPassiva) _renderPainelVariantes()
 }
 
 // ── Painel de Variantes (Amplificada / Reduzida) ──────────
@@ -842,6 +922,8 @@ export function toggleVariante(tipo) {
 }
 
 // ── Abas ──────────────────────────────────────────────────
+// As abas são sempre 9 no HTML. Para passivas, algumas ficam ocultas.
+// O índice de aba mapeia sempre para o mesmo slot visual.
 export function trocarAbaCarac(i) {
   document.querySelectorAll(".tab-carac").forEach(t => t.classList.remove("active"))
   document.querySelectorAll(".conteudo-carac").forEach(c => c.classList.remove("active"))

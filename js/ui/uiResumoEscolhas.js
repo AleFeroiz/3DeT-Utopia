@@ -6,6 +6,7 @@
 
 const LABELS_ESCOLHAS = {
   potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
+  gatilho: 'Gatilho',
   alcance: 'Alcance', duracao: 'Duração', area: 'Área',
   alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
 }

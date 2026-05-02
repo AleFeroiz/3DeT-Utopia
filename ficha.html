@@ -479,12 +479,27 @@
         </label>
       </div>
     </div>
+
+    <!-- Seletor Ativa / Passiva -->
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button id="btnTipoAtiva" class="active"
+        onclick="alternarTipoCarac('ativa')"
+        style="flex:1;padding:6px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #3b82f6;background:#1e3a5f;color:#93c5fd;transition:all 0.15s">
+        🗡️ Ativa
+      </button>
+      <button id="btnTipoPassiva"
+        onclick="alternarTipoCarac('passiva')"
+        style="flex:1;padding:6px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #334155;background:transparent;color:#64748b;transition:all 0.15s">
+        🌙 Passiva
+      </button>
+    </div>
+
     <label>Descrição</label>
     <textarea id="caracDescricao" placeholder="Descreva o efeito narrativo..." style="min-height:60px"></textarea>
     <div class="tabs-internas">
       <div class="tab-carac active" onclick="trocarAbaCarac(0)">Potência</div>
       <div class="tab-carac"        onclick="trocarAbaCarac(1)">Pressão</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(2)">Execução</div>
+      <div class="tab-carac"        onclick="trocarAbaCarac(2)">Execução / Gatilho</div>
       <div class="tab-carac"        onclick="trocarAbaCarac(3)">Alcance</div>
       <div class="tab-carac"        onclick="trocarAbaCarac(4)">Duração</div>
       <div class="tab-carac"        onclick="trocarAbaCarac(5)">Área</div>
@@ -494,7 +509,9 @@
     </div>
     <div class="conteudo-carac active" id="aba_potencia"></div>
     <div class="conteudo-carac"        id="aba_pressao"></div>
+    <!-- ativa usa execucao; passiva usa gatilho — ambos renderizados no mesmo slot pelo JS -->
     <div class="conteudo-carac"        id="aba_execucao"></div>
+    <div class="conteudo-carac"        id="aba_gatilho" style="display:none"></div>
     <div class="conteudo-carac"        id="aba_alcance"></div>
     <div class="conteudo-carac"        id="aba_duracao"></div>
     <div class="conteudo-carac"        id="aba_area"></div>
@@ -505,7 +522,7 @@
     <div class="orcamento-preview">
       <span>Orçamento: <strong id="orcamentoTotal">10</strong></span>
       <span>Gasto: <strong id="orcamentoGasto">0</strong></span>
-      <span>PM total: <strong id="orcamentoPM">2</strong></span>
+      <span id="orcamentoPMLabel">PM total: <strong id="orcamentoPM">2</strong></span>
     </div>
     <div id="painelVariantes" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
     <div class="modal-actions">
