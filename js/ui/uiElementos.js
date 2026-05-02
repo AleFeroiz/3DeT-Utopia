@@ -434,7 +434,7 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }, so
     const resumoLinhas = []
     // Bases padrão diferem conforme tipo
     const BASES_PADRAO = isPassivaIso
-      ? { alcance: 'Pessoal' }
+      ? { alcance: 'Pessoal', duracao: 'Instantânea' }
       : { execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea', area: '1 alvo', alvos: '1 alvo' }
     const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
     for (const chave of todasChaves) {

@@ -34,7 +34,7 @@ export function resumoEscolhas(escolhas) {
   const isPassiva = "gatilho" in escolhas && !("execucao" in escolhas)
 
   const BASES_PADRAO_EFETIVO = isPassiva
-    ? { alcance: 'Pessoal' }
+    ? { alcance: 'Pessoal', duracao: 'Instantânea' }
     : { execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea', area: '1 alvo', alvos: '1 alvo' }
 
   const result = {}

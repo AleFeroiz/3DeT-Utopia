@@ -41,13 +41,13 @@ export const TABELAS = {
   pressao: {
     label: "Pressão",
     base: "0 (sem pressão)",
-    descricao: "Usada para testes resistidos, controle e imposição de condições.",
+    descricao: "Usada para testes resistidos, controle e imposição de condições. Só tem efeito em Condições.",
     tipo: "empilhavel",
     dados: [
-      { valor: 1,  orcamento: 1,  pm: 1 },
-      { valor: 3,  orcamento: 3,  pm: 2 },
-      { valor: 5,  orcamento: 5,  pm: 4 },
-      { valor: 10, orcamento: 10, pm: 8 }
+      { valor: 1,  orcamento: 1, pm: 1 },
+      { valor: 3,  orcamento: 2, pm: 1 },
+      { valor: 5,  orcamento: 3, pm: 2 },
+      { valor: 10, orcamento: 6, pm: 4 }
     ]
   },
 
@@ -60,7 +60,7 @@ export const TABELAS = {
     tipo: "unico",
     dados: [
       { nome: "Padrão (Base)",  orcamento: 0, pm:  0, gratuita: true },
-      { nome: "Completa",       orcamento: 2, pm: -3 },
+      { nome: "Completa",       orcamento: 2, pm:  3 },
       { nome: "Movimento",      orcamento: 8, pm:  3 },
       { nome: "Reação",         orcamento: 6, pm:  2 }
     ]
@@ -156,8 +156,9 @@ export const TABELAS = {
 //  REGRAS DE DESIGN:
 //  • Sem coluna PM (campo pm ausente em todos os dados)
 //  • "execucao" substituído por "gatilho"
-//  • Sem "duracao", "condicoes", "descontos"
-//  • Potência e Pressão têm orçamento maior (sem PM pra compensar)
+//  • Sem "condicoes" nem "descontos"
+//  • Tem "duracao" (duração do efeito produzido)
+//  • Potência e Pressão têm orçamento ajustado (sem PM pra compensar)
 //  • Alcance, Área e Alvos também com custo ajustado
 // ============================================================
 
@@ -181,13 +182,13 @@ export const TABELAS_PASSIVA = {
   pressao: {
     label: "Pressão",
     base: "0 (sem pressão)",
-    descricao: "Usada para testes resistidos quando a passiva afeta outros seres.",
+    descricao: "Usada para testes resistidos quando a passiva afeta outros seres. Só tem efeito em Condições.",
     tipo: "empilhavel",
     dados: [
-      { valor: 1,  orcamento: 2  },
-      { valor: 3,  orcamento: 5  },
-      { valor: 5,  orcamento: 8  },
-      { valor: 10, orcamento: 15 }
+      { valor: 1,  orcamento: 1 },
+      { valor: 3,  orcamento: 3 },
+      { valor: 5,  orcamento: 5 },
+      { valor: 10, orcamento: 9 }
     ]
   },
 
@@ -201,8 +202,8 @@ export const TABELAS_PASSIVA = {
     dados: [
       { nome: "Sempre",                    orcamento: 10 },
       { nome: "Por turno",                 orcamento: 6  },
-      { nome: "Ao usar uma característica",orcamento: 5  },
       { nome: "Ao realizar algo",          orcamento: 6  },
+      { nome: "Ao usar uma característica",orcamento: 5  },
       { nome: "Ao receber algo",           orcamento: 6  },
       { nome: "Condição externa",          orcamento: 5  }
     ]
@@ -216,11 +217,28 @@ export const TABELAS_PASSIVA = {
     descricao: "Distância máxima que a passiva pode atingir quando dispara.",
     tipo: "unico",
     dados: [
-      { nome: "Pessoal (Base)", orcamento: 0,  gratuita: true },
-      { nome: "Toque",          orcamento: 2  },
-      { nome: "Perto",          orcamento: 4  },
-      { nome: "Longe",          orcamento: 7  },
-      { nome: "Muito Longe",    orcamento: 12 }
+      { nome: "Pessoal (Base)",  orcamento: 0,  gratuita: true },
+      { nome: "Toque",           orcamento: 2  },
+      { nome: "Perto",           orcamento: 4  },
+      { nome: "Longe",           orcamento: 6  },
+      { nome: "Muito Longe",     orcamento: 10 },
+      { nome: "Fora de Alcance", orcamento: 14 }
+    ]
+  },
+
+  // ── DURAÇÃO DO EFEITO ──────────────────────────────────
+
+  duracao: {
+    label: "Duração do Efeito",
+    base: "Instantânea — gratuito",
+    descricao: "Duração do efeito produzido quando a passiva dispara. A habilidade em si existe permanentemente.",
+    tipo: "unico",
+    dados: [
+      { nome: "Instantânea (Base)", orcamento: 0,  gratuita: true },
+      { nome: "1 Rodada",           orcamento: 2  },
+      { nome: "1 Cena",             orcamento: 7  },
+      { nome: "1 Hora",             orcamento: 14 },
+      { nome: "1 Dia",              orcamento: 22 }
     ]
   },
 
@@ -233,9 +251,9 @@ export const TABELAS_PASSIVA = {
     tipo: "empilhavel",
     grupoExclusivo: "infligir",
     dados: [
-      { nome: "1 metro",  orcamento: 4  },
-      { nome: "3 metros", orcamento: 9  },
-      { nome: "9 metros", orcamento: 18 }
+      { nome: "1 metro",  orcamento: 3  },
+      { nome: "3 metros", orcamento: 7  },
+      { nome: "9 metros", orcamento: 13 }
     ]
   },
 
@@ -246,9 +264,9 @@ export const TABELAS_PASSIVA = {
     tipo: "empilhavel",
     grupoExclusivo: "infligir",
     dados: [
-      { nome: "1 alvo",  orcamento: 2  },
-      { nome: "3 alvos", orcamento: 6  },
-      { nome: "6 alvos", orcamento: 12 }
+      { nome: "1 alvo",  orcamento: 2 },
+      { nome: "3 alvos", orcamento: 5 },
+      { nome: "6 alvos", orcamento: 9 }
     ]
   }
 }
