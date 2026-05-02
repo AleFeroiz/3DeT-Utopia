@@ -499,16 +499,16 @@
 
     <!-- Abas — visibilidade controlada pelo JS via data-ativa / data-passiva -->
     <div class="tabs-internas" id="tabsCarac">
-      <div class="tab-carac active" data-chave="potencia"  onclick="trocarAbaCarac(0)">Potência</div>
-      <div class="tab-carac"        data-chave="pressao"   onclick="trocarAbaCarac(1)">Pressão</div>
-      <div class="tab-carac"        data-chave="execucao"  data-somente="ativa"  onclick="trocarAbaCarac(2)">Execução</div>
-      <div class="tab-carac"        data-chave="gatilho"   data-somente="passiva" style="display:none" onclick="trocarAbaCarac(2)">Gatilho</div>
-      <div class="tab-carac"        data-chave="alcance"   onclick="trocarAbaCarac(3)">Alcance</div>
-      <div class="tab-carac"        data-chave="duracao"   data-somente="ativa"  onclick="trocarAbaCarac(4)">Duração</div>
-      <div class="tab-carac"        data-chave="area"      onclick="trocarAbaCarac(5)">Área</div>
-      <div class="tab-carac"        data-chave="alvos"     onclick="trocarAbaCarac(6)">Alvos</div>
-      <div class="tab-carac"        data-chave="condicoes" data-somente="ativa"  onclick="trocarAbaCarac(7)">Condições</div>
-      <div class="tab-carac"        data-chave="descontos" data-somente="ativa"  onclick="trocarAbaCarac(8)">Descontos</div>
+      <div class="tab-carac active" data-chave="potencia"  onclick="trocarAbaCarac('potencia')">Potência</div>
+      <div class="tab-carac"        data-chave="pressao"   onclick="trocarAbaCarac('pressao')">Pressão</div>
+      <div class="tab-carac"        data-chave="execucao"  data-somente="ativa"   onclick="trocarAbaCarac('execucao')">Execução</div>
+      <div class="tab-carac"        data-chave="gatilho"   data-somente="passiva" style="display:none" onclick="trocarAbaCarac('gatilho')">Gatilho</div>
+      <div class="tab-carac"        data-chave="alcance"   onclick="trocarAbaCarac('alcance')">Alcance</div>
+      <div class="tab-carac"        data-chave="duracao"   data-somente="ativa"   onclick="trocarAbaCarac('duracao')">Duração</div>
+      <div class="tab-carac"        data-chave="area"      onclick="trocarAbaCarac('area')">Área</div>
+      <div class="tab-carac"        data-chave="alvos"     onclick="trocarAbaCarac('alvos')">Alvos</div>
+      <div class="tab-carac"        data-chave="condicoes" data-somente="ativa"   onclick="trocarAbaCarac('condicoes')">Condições</div>
+      <div class="tab-carac"        data-chave="descontos" data-somente="ativa"   onclick="trocarAbaCarac('descontos')">Descontos</div>
     </div>
 
     <!-- Conteúdos — cada aba tem seu próprio div -->
@@ -551,16 +551,16 @@
       </div>
     </div>
     <div class="tabs-internas" id="tabsIsoLojinha">
-      <div class="tab-iso active"                                  data-chave="potencia"  onclick="trocarAbaIso(0)">Potência</div>
-      <div class="tab-iso"                                         data-chave="pressao"   onclick="trocarAbaIso(1)">Pressão</div>
-      <div class="tab-iso"         data-somente="ativa"            data-chave="execucao"  onclick="trocarAbaIso(2)">Execução</div>
-      <div class="tab-iso"         data-somente="passiva"          data-chave="gatilho"   style="display:none" onclick="trocarAbaIso(2)">Gatilho</div>
-      <div class="tab-iso"                                         data-chave="alcance"   onclick="trocarAbaIso(3)">Alcance</div>
-      <div class="tab-iso"         data-somente="ativa"            data-chave="duracao"   onclick="trocarAbaIso(4)">Duração</div>
-      <div class="tab-iso"                                         data-chave="area"      onclick="trocarAbaIso(5)">Área</div>
-      <div class="tab-iso"                                         data-chave="alvos"     onclick="trocarAbaIso(6)">Alvos</div>
-      <div class="tab-iso"         data-somente="ativa"            data-chave="condicoes" onclick="trocarAbaIso(7)">Condições</div>
-      <div class="tab-iso"         data-somente="ativa"            data-chave="descontos" onclick="trocarAbaIso(8)">Descontos</div>
+      <div class="tab-iso active"                                  data-chave="potencia"  onclick="trocarAbaIso('potencia')">Potência</div>
+      <div class="tab-iso"                                         data-chave="pressao"   onclick="trocarAbaIso('pressao')">Pressão</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="execucao"  onclick="trocarAbaIso('execucao')">Execução</div>
+      <div class="tab-iso"         data-somente="passiva"          data-chave="gatilho"   style="display:none" onclick="trocarAbaIso('gatilho')">Gatilho</div>
+      <div class="tab-iso"                                         data-chave="alcance"   onclick="trocarAbaIso('alcance')">Alcance</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="duracao"   onclick="trocarAbaIso('duracao')">Duração</div>
+      <div class="tab-iso"                                         data-chave="area"      onclick="trocarAbaIso('area')">Área</div>
+      <div class="tab-iso"                                         data-chave="alvos"     onclick="trocarAbaIso('alvos')">Alvos</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="condicoes" onclick="trocarAbaIso('condicoes')">Condições</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="descontos" onclick="trocarAbaIso('descontos')">Descontos</div>
     </div>
     <div class="conteudo-iso active" id="iso_aba_potencia"></div>
     <div class="conteudo-iso"        id="iso_aba_pressao"></div>

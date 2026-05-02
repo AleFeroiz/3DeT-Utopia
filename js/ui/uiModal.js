@@ -574,10 +574,30 @@ export function renderTabelaCarac(chave) {
       ${mostraPM ? `<td>${tdPm}</td>` : ""}
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
+    // ── Itens gratuitos: comportamento depende do tipo ────
     if (item.gratuita) {
-      tr.style.cursor  = "default"
-      tr.style.opacity = "0.6"
       tr.style.background = "rgba(34,197,94,0.07)"
+      if (tipo === "unico") {
+        // Gratuito em aba única = opção "voltar ao padrão" — clicável
+        tr.style.cursor = "pointer"
+        tr.dataset.gratuita = "true"
+        tr.addEventListener("click", () => {
+          tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
+          _caracTemp.escolhas[chave] = [{ ...item }]
+          tr.classList.add("selecionado")
+          atualizarPreviewCarac()
+        })
+        // Marca como selecionado se for o valor atual (ou nenhum valor escolhido ainda)
+        const salvoAtual = _caracTemp.escolhas[chave]?.[0]
+        if (!salvoAtual || (salvoAtual.nome ?? `+${salvoAtual.valor}`) === chaveItem) {
+          tr.classList.add("selecionado")
+        }
+      } else {
+        // Gratuito em aba empilhável = apenas exibição
+        tr.style.cursor  = "default"
+        tr.style.opacity = "0.6"
+      }
+      tbody.appendChild(tr)
       continue
     }
     tr.style.cursor = "pointer"
@@ -647,7 +667,8 @@ export function renderTabelaCarac(chave) {
       tr.addEventListener("click", () => {
         const jaEstaSelected = tr.classList.contains("selecionado")
         tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
-        if (jaEstaSelected && !item.gratuita) {
+        if (jaEstaSelected) {
+          // Clicou no já-selecionado: volta ao gratuito se existir
           const base = config.dados.find(d => d.gratuita)
           _caracTemp.escolhas[chave] = base ? [{ ...base }] : []
           const trBase = tbody.querySelector("tr[data-gratuita='true']")
@@ -658,7 +679,6 @@ export function renderTabelaCarac(chave) {
         }
         atualizarPreviewCarac()
       })
-      if (item.gratuita) tr.dataset.gratuita = "true"
     }
 
     tbody.appendChild(tr)
@@ -943,10 +963,17 @@ export function toggleVariante(tipo) {
 
 // ── Abas ──────────────────────────────────────────────────
 // Troca para a aba de índice i dentre as VISÍVEIS (exclui as ocultas pelo data-somente)
-export function trocarAbaCarac(i) {
+export function trocarAbaCarac(chaveOuIdx) {
   const todasTabs    = [...document.querySelectorAll("#tabsCarac .tab-carac")]
   const visiveisTabs = todasTabs.filter(t => t.style.display !== "none")
-  const tabAlvo      = visiveisTabs[i]
+
+  // Aceita tanto string (chave) quanto número (índice entre visíveis)
+  let tabAlvo
+  if (typeof chaveOuIdx === "string") {
+    tabAlvo = visiveisTabs.find(t => t.dataset.chave === chaveOuIdx)
+  } else {
+    tabAlvo = visiveisTabs[chaveOuIdx]
+  }
   if (!tabAlvo) return
 
   const chave = tabAlvo.dataset.chave
@@ -1168,20 +1195,26 @@ let _isoTipo        = "ativa"  // tipo espelhado de _isoladaTipoAtual ao abrir a
 function _isoTabelas() { return _isoTipo === "passiva" ? TABELAS_PASSIVA : TABELAS }
 
 // ── Abas ────────────────────────────────────────────────────
-export function trocarAbaIso(i) {
+export function trocarAbaIso(chaveOuIdx) {
   // Navega pelas abas visíveis da lojinha isolada
   const todasTabs    = [...document.querySelectorAll("#modalIsoladaLojinha .tab-iso")]
   const visiveisTabs = todasTabs.filter(t => t.style.display !== "none")
-  const tabAlvo      = visiveisTabs[i]
+
+  // Aceita tanto string (chave) quanto número (índice entre visíveis)
+  let tabAlvo
+  if (typeof chaveOuIdx === "string") {
+    tabAlvo = visiveisTabs.find(t => t.dataset.chave === chaveOuIdx)
+  } else {
+    tabAlvo = visiveisTabs[chaveOuIdx]
+  }
   if (!tabAlvo) return
+
   const chave = tabAlvo.dataset.chave ?? tabAlvo.innerText.toLowerCase()
   todasTabs.forEach(t => t.classList.remove("active"))
   tabAlvo.classList.add("active")
   document.querySelectorAll(".conteudo-iso").forEach(c => c.classList.remove("active"))
-  // Tenta pelo data-chave primeiro, senão por índice
   const conteudoAlvo = document.getElementById(`iso_aba_${chave}`)
   if (conteudoAlvo) conteudoAlvo.classList.add("active")
-  else document.querySelectorAll(".conteudo-iso")[i]?.classList.add("active")
 }
 
 // ── Preview de orçamento ────────────────────────────────────
@@ -1272,10 +1305,30 @@ function _isoRenderAba(chave) {
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
 
+    // ── Itens gratuitos: comportamento depende do tipo ────
     if (item.gratuita) {
-      tr.style.cursor     = "default"
-      tr.style.opacity    = "0.6"
       tr.style.background = "rgba(34,197,94,0.07)"
+      if (tipo === "unico") {
+        // Gratuito em aba única = opção "voltar ao padrão" — clicável
+        tr.style.cursor = "pointer"
+        tr.dataset.gratuita = "true"
+        tr.addEventListener("click", () => {
+          tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
+          _isoEscolhas[chave] = [{ ...item }]
+          tr.classList.add("selecionado")
+          _isoAtualizarPreview()
+        })
+        // Marca como selecionado se for o valor atual (ou nenhum valor escolhido ainda)
+        const salvoAtual = _isoEscolhas[chave]?.[0]
+        if (!salvoAtual || (salvoAtual.nome ?? `+${salvoAtual.valor}`) === chaveItem) {
+          tr.classList.add("selecionado")
+        }
+      } else {
+        // Gratuito em aba empilhável = apenas exibição
+        tr.style.cursor  = "default"
+        tr.style.opacity = "0.6"
+      }
+      tbody.appendChild(tr)
       continue
     }
     tr.style.cursor = "pointer"
@@ -1335,9 +1388,18 @@ function _isoRenderAba(chave) {
       if (estado.qtd > 0) tr.classList.add("selecionado")
     } else {
       tr.addEventListener("click", () => {
-        _isoEscolhas[chave] = [{ ...item }]
+        const jaEstaSelected = tr.classList.contains("selecionado")
         tbody.querySelectorAll("tr").forEach(l => l.classList.remove("selecionado"))
-        tr.classList.add("selecionado")
+        if (jaEstaSelected) {
+          // Clicou no já-selecionado: volta ao gratuito se existir
+          const base = config.dados.find(d => d.gratuita)
+          _isoEscolhas[chave] = base ? [{ ...base }] : []
+          const trBase = tbody.querySelector("tr[data-gratuita='true']")
+          if (trBase) trBase.classList.add("selecionado")
+        } else {
+          _isoEscolhas[chave] = [{ ...item }]
+          tr.classList.add("selecionado")
+        }
         _isoAtualizarPreview()
       })
     }
