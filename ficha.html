@@ -550,20 +550,22 @@
         <input id="isoLojEscala" type="number" value="1" min="1" max="6" disabled style="opacity:0.6;cursor:default">
       </div>
     </div>
-    <div class="tabs-internas">
-      <div class="tab-iso active" onclick="trocarAbaIso(0)">Potência</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(1)">Pressão</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(2)">Execução</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(3)">Alcance</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(4)">Duração</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(5)">Área</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(6)">Alvos</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(7)">Condições</div>
-      <div class="tab-iso"        onclick="trocarAbaIso(8)">Descontos</div>
+    <div class="tabs-internas" id="tabsIsoLojinha">
+      <div class="tab-iso active"                                  data-chave="potencia"  onclick="trocarAbaIso(0)">Potência</div>
+      <div class="tab-iso"                                         data-chave="pressao"   onclick="trocarAbaIso(1)">Pressão</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="execucao"  onclick="trocarAbaIso(2)">Execução</div>
+      <div class="tab-iso"         data-somente="passiva"          data-chave="gatilho"   style="display:none" onclick="trocarAbaIso(2)">Gatilho</div>
+      <div class="tab-iso"                                         data-chave="alcance"   onclick="trocarAbaIso(3)">Alcance</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="duracao"   onclick="trocarAbaIso(4)">Duração</div>
+      <div class="tab-iso"                                         data-chave="area"      onclick="trocarAbaIso(5)">Área</div>
+      <div class="tab-iso"                                         data-chave="alvos"     onclick="trocarAbaIso(6)">Alvos</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="condicoes" onclick="trocarAbaIso(7)">Condições</div>
+      <div class="tab-iso"         data-somente="ativa"            data-chave="descontos" onclick="trocarAbaIso(8)">Descontos</div>
     </div>
     <div class="conteudo-iso active" id="iso_aba_potencia"></div>
     <div class="conteudo-iso"        id="iso_aba_pressao"></div>
     <div class="conteudo-iso"        id="iso_aba_execucao"></div>
+    <div class="conteudo-iso"        id="iso_aba_gatilho"></div>
     <div class="conteudo-iso"        id="iso_aba_alcance"></div>
     <div class="conteudo-iso"        id="iso_aba_duracao"></div>
     <div class="conteudo-iso"        id="iso_aba_area"></div>

@@ -16,7 +16,7 @@ import {
   renderCaracteristicasFonte, trocarAbaCarac, fecharModal, atualizarPreviewCarac,
   toggleVariante, selecionarAbaVariante, alternarTipoCarac,
   registrarCallbackIsolada, abrirCriarCaracteristicaIsolada,
-  atualizarEscalaIsolada, confirmarCaracIsolada,
+  atualizarEscalaIsolada, confirmarCaracIsolada, alternarTipoIsolada,
   abrirLojinhaIsoladaModal, confirmarIsoladaLojinha, trocarAbaIso,
   selecionarAbaVarianteIso, toggleVarianteIso
 } from "./ui/uiModal.js"
@@ -1836,6 +1836,7 @@ function expor() {
   window.atualizarEscala          = atualizarEscala
   window.atualizarLimiteEscala    = atualizarLimiteEscala
   window.alternarTipoCarac        = alternarTipoCarac
+  window.alternarTipoIsolada      = alternarTipoIsolada
 
   // Abas característica
   window.trocarAbaCarac        = trocarAbaCarac

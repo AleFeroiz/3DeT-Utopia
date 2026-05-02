@@ -373,10 +373,30 @@ function _atualizarSeletorTipo() {
   const painelVar  = document.getElementById("painelVariantes")
   const isPassiva  = _caracTemp?.tipoCarac === "passiva"
 
-  if (btnAtiva)   btnAtiva.classList.toggle("active",  !isPassiva)
-  if (btnPassiva) btnPassiva.classList.toggle("active",  isPassiva)
+  // Feedback visual explícito (sobrescreve inline styles do HTML)
+  if (btnAtiva) {
+    btnAtiva.style.background = isPassiva ? "#0f172a" : "#1e3a5f"
+    btnAtiva.style.color      = isPassiva ? "#475569" : "#93c5fd"
+    btnAtiva.style.fontWeight = isPassiva ? "500"     : "700"
+  }
+  if (btnPassiva) {
+    btnPassiva.style.background = isPassiva ? "#1e1b4b" : "#0f172a"
+    btnPassiva.style.color      = isPassiva ? "#a5b4fc" : "#475569"
+    btnPassiva.style.fontWeight = isPassiva ? "700"     : "500"
+  }
   // Variantes (Amplificada/Reduzida) não existem em passivas
-  if (painelVar)  painelVar.style.display = isPassiva ? "none" : ""
+  if (painelVar) painelVar.style.display = isPassiva ? "none" : ""
+
+  // Mostra/oculta abas exclusivas de cada tipo
+  _atualizarVisibilidadeAbas()
+}
+
+// Mostra as abas corretas conforme o tipo atual
+function _atualizarVisibilidadeAbas() {
+  const isPassiva = _caracTemp?.tipoCarac === "passiva"
+  document.querySelectorAll("#tabsCarac .tab-carac[data-somente]").forEach(tab => {
+    tab.style.display = tab.dataset.somente === (isPassiva ? "passiva" : "ativa") ? "" : "none"
+  })
 }
 
 // Chamado pelo botão Ativa/Passiva no HTML
@@ -922,13 +942,19 @@ export function toggleVariante(tipo) {
 }
 
 // ── Abas ──────────────────────────────────────────────────
-// As abas são sempre 9 no HTML. Para passivas, algumas ficam ocultas.
-// O índice de aba mapeia sempre para o mesmo slot visual.
+// Troca para a aba de índice i dentre as VISÍVEIS (exclui as ocultas pelo data-somente)
 export function trocarAbaCarac(i) {
-  document.querySelectorAll(".tab-carac").forEach(t => t.classList.remove("active"))
+  const todasTabs    = [...document.querySelectorAll("#tabsCarac .tab-carac")]
+  const visiveisTabs = todasTabs.filter(t => t.style.display !== "none")
+  const tabAlvo      = visiveisTabs[i]
+  if (!tabAlvo) return
+
+  const chave = tabAlvo.dataset.chave
+  todasTabs.forEach(t => t.classList.remove("active"))
+  tabAlvo.classList.add("active")
+
   document.querySelectorAll(".conteudo-carac").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".tab-carac")[i]?.classList.add("active")
-  document.querySelectorAll(".conteudo-carac")[i]?.classList.add("active")
+  document.getElementById(`aba_${chave}`)?.classList.add("active")
 }
 
 export function abrirModal(id) { document.getElementById(id)?.classList.remove("hidden") }
@@ -941,16 +967,24 @@ export function fecharModal(id) { document.getElementById(id)?.classList.add("hi
 let _onSalvarIsolada  = null
 let _isoladaEditIndex = null
 let _isoladaTemp      = null
+let _isoladaTipoAtual = "ativa"  // "ativa" | "passiva" — tipo da característica isolada em edição
 
 export function registrarCallbackIsolada(fn) { _onSalvarIsolada = fn }
 
 export function abrirCriarCaracteristicaIsolada(editIndex = null, existente = null) {
   _isoladaEditIndex = editIndex
+  // RETROCOMPAT: existente sem tipo => "ativa"
+  _isoladaTipoAtual = existente?.tipo === "passiva" ? "passiva" : "ativa"
+
+  const tabelaAlvo = _isoladaTipoAtual === "passiva" ? TABELAS_PASSIVA : TABELAS
   _isoladaTemp = {
     escala:   existente?.escala ?? 1,
+    tipo:     _isoladaTipoAtual,
     escolhas: Object.fromEntries(
-      Object.keys(TABELAS).map(k => [k, existente?.escolhas?.[k] ? [...existente.escolhas[k]] : []])
-    )
+      Object.keys(tabelaAlvo).map(k => [k, existente?.escolhas?.[k] ? [...existente.escolhas[k]] : []])
+    ),
+    amplificada: _isoladaTipoAtual === "ativa" ? (existente?.amplificada ?? null) : null,
+    reduzida:    _isoladaTipoAtual === "ativa" ? (existente?.reduzida    ?? null) : null,
   }
 
   document.getElementById("isoladaNome").value      = existente?.nome      ?? ""
@@ -970,8 +1004,44 @@ export function abrirCriarCaracteristicaIsolada(editIndex = null, existente = nu
   const titulo = document.getElementById("modalIsoladaTitulo")
   if (titulo) titulo.innerText = editIndex !== null ? "✏️ Editar Característica Isolada" : "⚡ Criar Característica Isolada"
 
+  _atualizarSeletorTipoIsolada()
   _atualizarPreviewIsolada()
   abrirModal("modalCaracIsolada")
+}
+
+// Alterna tipo da isolada (chamado pelos botões no HTML)
+export function alternarTipoIsolada(tipo) {
+  if (_isoladaTipoAtual === tipo) return
+  _isoladaTipoAtual = tipo
+  if (_isoladaTemp) {
+    _isoladaTemp.tipo = tipo
+    // Reseta escolhas para a tabela correta
+    const tabelaAlvo = tipo === "passiva" ? TABELAS_PASSIVA : TABELAS
+    _isoladaTemp.escolhas    = _escolhasIniciais(tabelaAlvo)
+    _isoladaTemp.amplificada = tipo === "ativa" ? null : undefined
+    _isoladaTemp.reduzida    = tipo === "ativa" ? null : undefined
+  }
+  _atualizarSeletorTipoIsolada()
+  _atualizarPreviewIsolada()
+}
+
+function _atualizarSeletorTipoIsolada() {
+  const isPassiva  = _isoladaTipoAtual === "passiva"
+  const btnAtiva   = document.getElementById("btnIsoladaTipoAtiva")
+  const btnPassiva = document.getElementById("btnIsoladaTipoPassiva")
+  const pmLabel    = document.getElementById("isoladaPMLabel")
+
+  if (btnAtiva) {
+    btnAtiva.style.background = isPassiva ? "#0f172a" : "#1e3a5f"
+    btnAtiva.style.color      = isPassiva ? "#475569" : "#93c5fd"
+    btnAtiva.style.fontWeight = isPassiva ? "500"     : "700"
+  }
+  if (btnPassiva) {
+    btnPassiva.style.background = isPassiva ? "#1e1b4b" : "#0f172a"
+    btnPassiva.style.color      = isPassiva ? "#a5b4fc" : "#475569"
+    btnPassiva.style.fontWeight = isPassiva ? "700"     : "500"
+  }
+  if (pmLabel) pmLabel.style.display = isPassiva ? "none" : ""
 }
 
 export function atualizarEscalaIsolada() {
@@ -986,25 +1056,29 @@ export function atualizarEscalaIsolada() {
   if (_isoladaTemp) {
     _isoladaTemp.escala  = nova
     // Reseta escolhas ao trocar escala para não ultrapassar orçamento
-    _isoladaTemp.escolhas = _escolhasIniciais()
+    const tabelaAlvo = _isoladaTipoAtual === "passiva" ? TABELAS_PASSIVA : TABELAS
+    _isoladaTemp.escolhas = _escolhasIniciais(tabelaAlvo)
   }
   _atualizarPreviewIsolada()
 }
 
 function _atualizarPreviewIsolada() {
-  const escala = _isoladaTemp?.escala ?? 1
-  const limite = ORCAMENTO_POR_ESCALA[escala] ?? 10
-  const gasto  = _calcularGastoIsolada()
-  const pm     = _calcularPMIsolada()
+  const escala    = _isoladaTemp?.escala ?? 1
+  const isPassiva = _isoladaTipoAtual === "passiva"
+  const limite    = ORCAMENTO_POR_ESCALA[escala] ?? 10
+  const gasto     = _calcularGastoIsolada()
+  const pm        = _calcularPMIsolada()
 
   const elMax   = document.getElementById("isoladaOrcMax")
   const elGasto = document.getElementById("isoladaOrcGasto")
   const elPM    = document.getElementById("isoladaOrcPM")
   const elInfo  = document.getElementById("isoladaEscalaInfo")
+  const pmLabel = document.getElementById("isoladaPMLabel")
 
   if (elMax)   elMax.innerText  = limite
   if (elGasto) { elGasto.innerText = gasto; elGasto.style.color = gasto > limite ? "#ef4444" : "#22c55e" }
   if (elPM)    elPM.innerText   = pm
+  if (pmLabel) pmLabel.style.display = isPassiva ? "none" : ""
   if (elInfo)  {
     const ficha = _getFicha?.()
     elInfo.innerText = `(máx. ${ficha?.escalaMax ?? 6} pelo nível)`
@@ -1017,13 +1091,17 @@ function _calcularGastoIsolada() {
   for (const lista of Object.values(_isoladaTemp.escolhas))
     for (const item of lista)
       if (!item.gratuita) t += item.orcamento ?? 0
-  // Amplificar e Reduzir custam 4 de orçamento cada
-  if (_isoladaTemp.amplificada) t += 4
-  if (_isoladaTemp.reduzida)    t += 4
+  // Amplificar e Reduzir custam 4 de orçamento cada (só ativas)
+  if (_isoladaTipoAtual !== "passiva") {
+    if (_isoladaTemp.amplificada) t += 4
+    if (_isoladaTemp.reduzida)    t += 4
+  }
   return t
 }
 
 function _calcularPMIsolada() {
+  // Passivas nunca têm PM
+  if (_isoladaTipoAtual === "passiva") return 0
   if (!_isoladaTemp?.escolhas) return 2
   let t = 0
   for (const lista of Object.values(_isoladaTemp.escolhas)) for (const item of lista) t += item.pm ?? 0
@@ -1034,12 +1112,19 @@ export function confirmarCaracIsolada() {
   const nome = document.getElementById("isoladaNome").value?.trim()
   if (!nome) { toastErro("Digite um nome para a característica."); return }
 
+  const isPassiva = _isoladaTipoAtual === "passiva"
   const escala  = +document.getElementById("isoladaEscala").value  || 1
   const custoPT = +document.getElementById("isoladaCustoPT").value || 0
   const ficha   = _getFicha?.()
   if (ficha && escala > ficha.escalaMax) {
     toastErro(`Escala máxima pelo nível: ${ficha.escalaMax}`)
     return
+  }
+
+  // Passivas precisam de gatilho
+  if (isPassiva) {
+    const gatilhoSel = _isoladaTemp?.escolhas?.gatilho ?? []
+    if (!gatilhoSel.length) { toastErro("Selecione um Gatilho para a característica passiva."); return }
   }
 
   const gasto  = _calcularGastoIsolada()
@@ -1053,13 +1138,14 @@ export function confirmarCaracIsolada() {
     nome,
     descricao:   document.getElementById("isoladaDescricao").value,
     origem:      document.getElementById("isoladaOrigem").value,
+    tipo:        _isoladaTipoAtual,
     escala,
     custoPT,
     escolhas:    _isoladaTemp?.escolhas    ?? {},
-    amplificada: _isoladaTemp?.amplificada ?? null,
-    reduzida:    _isoladaTemp?.reduzida    ?? null,
+    amplificada: isPassiva ? null : (_isoladaTemp?.amplificada ?? null),
+    reduzida:    isPassiva ? null : (_isoladaTemp?.reduzida    ?? null),
     custo:       gasto,
-    custoPM:     _calcularPMIsolada()
+    custoPM:     isPassiva ? 0 : _calcularPMIsolada()
   })
 
   _onSalvarIsolada?.(c.toJSON(), _isoladaEditIndex)
@@ -1076,17 +1162,31 @@ let _isoEscolhas    = {}   // estado interno das escolhas da lojinha isolada
 let _isoEscala      = 1    // escala corrente
 let _isoAmplificada = null // variante amplificada da lojinha isolada
 let _isoReduzida    = null // variante reduzida da lojinha isolada
+let _isoTipo        = "ativa"  // tipo espelhado de _isoladaTipoAtual ao abrir a lojinha
+
+// Helper: retorna tabela correta da lojinha isolada
+function _isoTabelas() { return _isoTipo === "passiva" ? TABELAS_PASSIVA : TABELAS }
 
 // ── Abas ────────────────────────────────────────────────────
 export function trocarAbaIso(i) {
-  document.querySelectorAll(".tab-iso").forEach(t => t.classList.remove("active"))
+  // Navega pelas abas visíveis da lojinha isolada
+  const todasTabs    = [...document.querySelectorAll("#modalIsoladaLojinha .tab-iso")]
+  const visiveisTabs = todasTabs.filter(t => t.style.display !== "none")
+  const tabAlvo      = visiveisTabs[i]
+  if (!tabAlvo) return
+  const chave = tabAlvo.dataset.chave ?? tabAlvo.innerText.toLowerCase()
+  todasTabs.forEach(t => t.classList.remove("active"))
+  tabAlvo.classList.add("active")
   document.querySelectorAll(".conteudo-iso").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".tab-iso")[i]?.classList.add("active")
-  document.querySelectorAll(".conteudo-iso")[i]?.classList.add("active")
+  // Tenta pelo data-chave primeiro, senão por índice
+  const conteudoAlvo = document.getElementById(`iso_aba_${chave}`)
+  if (conteudoAlvo) conteudoAlvo.classList.add("active")
+  else document.querySelectorAll(".conteudo-iso")[i]?.classList.add("active")
 }
 
 // ── Preview de orçamento ────────────────────────────────────
 function _isoAtualizarPreview() {
+  const isPassiva = _isoTipo === "passiva"
   const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
   let gasto = 0, pm = 0
   for (const lista of Object.values(_isoEscolhas)) {
@@ -1095,26 +1195,33 @@ function _isoAtualizarPreview() {
       pm += item.pm ?? 0
     }
   }
-  // Amplificar e Reduzir custam 4 de orçamento cada
-  if (_isoAmplificada) gasto += 4
-  if (_isoReduzida)    gasto += 4
-  pm = Math.max(2, pm)
+  // Amplificar e Reduzir custam 4 de orçamento cada (só ativas)
+  if (!isPassiva) {
+    if (_isoAmplificada) gasto += 4
+    if (_isoReduzida)    gasto += 4
+  }
+  pm = isPassiva ? 0 : Math.max(2, pm)
 
-  const elTotal = document.getElementById("isoOrcTotal")
-  const elGasto = document.getElementById("isoOrcGasto")
-  const elPM    = document.getElementById("isoOrcPM")
+  const elTotal  = document.getElementById("isoOrcTotal")
+  const elGasto  = document.getElementById("isoOrcGasto")
+  const elPM     = document.getElementById("isoOrcPM")
+  const elPMRow  = document.querySelector("#modalIsoladaLojinha .orcamento-preview span:last-child")
   if (elTotal) elTotal.innerText = limite
   if (elGasto) { elGasto.innerText = gasto; elGasto.style.color = gasto > limite ? "#ef4444" : "#22c55e" }
   if (elPM)    elPM.innerText    = pm
-  _renderPainelVariantesIso()
+  if (elPMRow) elPMRow.style.display = isPassiva ? "none" : ""
+  if (!isPassiva) _renderPainelVariantesIso()
+  else { const pv = document.getElementById("painelVariantesIso"); if (pv) pv.innerHTML = "" }
 }
 
 // ── Render de uma aba da lojinha isolada ────────────────────
 function _isoRenderAba(chave) {
-  const config    = TABELAS[chave]
+  const tabelas   = _isoTabelas()
+  const config    = tabelas[chave]
   const container = document.getElementById(`iso_aba_${chave}`)
   if (!container || !config) return
 
+  const isPassiva      = _isoTipo === "passiva"
   const tipo           = config.tipo
   const grupoExclusivo = config.grupoExclusivo ?? null
 
@@ -1128,10 +1235,11 @@ function _isoRenderAba(chave) {
   }
 
   const mostraQtd = tipo === "empilhavel" || tipo === "empilhavel_mono"
+  const mostraPM  = !isPassiva
   const tabela = document.createElement("table")
   tabela.className = "tabela-sistema"
   tabela.innerHTML = `<thead><tr>
-    <th>${config.label}</th><th>Orç.</th><th>PM</th>
+    <th>${config.label}</th><th>Orç.</th>${mostraPM ? "<th>PM</th>" : ""}
     ${mostraQtd ? "<th>Qtd</th>" : ""}
   </tr></thead>`
 
@@ -1160,7 +1268,7 @@ function _isoRenderAba(chave) {
     }
 
     tr.innerHTML = `
-      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td><td>${tdOrc}</td><td>${tdPm}</td>
+      <td>${tdNome}${item.gratuita ? ' <span style="font-size:10px;opacity:0.5;color:#22c55e">(base)</span>' : ""}</td><td>${tdOrc}</td>${mostraPM ? `<td>${tdPm}</td>` : ""}
       ${mostraQtd ? `<td><span class="qtd">${estado.qtd}</span></td>` : ""}
     `
 
@@ -1258,7 +1366,7 @@ function _isoRenderAba(chave) {
 }
 
 function _isoLimparGrupo(grupo, chaveAtiva) {
-  for (const [k, cfg] of Object.entries(TABELAS)) {
+  for (const [k, cfg] of Object.entries(_isoTabelas())) {
     if (k !== chaveAtiva && cfg.grupoExclusivo === grupo) {
       if (_isoEscolhas[k]?.length) {
         _isoEscolhas[k] = []
@@ -1370,16 +1478,20 @@ export function abrirLojinhaIsoladaModal(existente = null) {
   const nome   = document.getElementById("isoladaNome")?.value ?? ""
   const escala = +document.getElementById("isoladaEscala")?.value || 1
 
-  _isoEscala   = escala
+  // Espelha o tipo atual da isolada
+  _isoTipo   = _isoladaTipoAtual
+  _isoEscala = escala
+
+  const tabelaAlvo = _isoTabelas()
   _isoEscolhas = existente?.escolhas
     ? JSON.parse(JSON.stringify(existente.escolhas))
-    : _escolhasIniciais()
+    : _escolhasIniciais(tabelaAlvo)
   if (_isoladaTemp?.escolhas) {
     _isoEscolhas = JSON.parse(JSON.stringify(_isoladaTemp.escolhas))
   }
-  // Carrega variantes salvas
-  _isoAmplificada = _isoladaTemp?.amplificada ?? null
-  _isoReduzida    = _isoladaTemp?.reduzida    ?? null
+  // Carrega variantes salvas (só ativas têm variantes)
+  _isoAmplificada = _isoTipo !== "passiva" ? (_isoladaTemp?.amplificada ?? null) : null
+  _isoReduzida    = _isoTipo !== "passiva" ? (_isoladaTemp?.reduzida    ?? null) : null
 
   const ficha     = _getFicha?.()
   const escalaMax = ficha?.escalaMax ?? 6
@@ -1391,18 +1503,39 @@ export function abrirLojinhaIsoladaModal(existente = null) {
   if (elEscala) elEscala.value   = escala
   if (elInfo)   elInfo.innerText = `(máx. ${escalaMax} pelo nível)`
 
-  for (const chave of Object.keys(TABELAS)) _isoRenderAba(chave)
+  // Atualiza visibilidade das abas da lojinha conforme tipo
+  _atualizarVisibilidadeAbasIso()
+
+  for (const chave of Object.keys(tabelaAlvo)) _isoRenderAba(chave)
   trocarAbaIso(0)
   _isoAtualizarPreview()
   abrirModal("modalIsoladaLojinha")
 }
 
+// Mostra/oculta abas da lojinha isolada conforme tipo
+function _atualizarVisibilidadeAbasIso() {
+  const isPassiva = _isoTipo === "passiva"
+  document.querySelectorAll("#modalIsoladaLojinha .tab-iso[data-somente]").forEach(tab => {
+    tab.style.display = tab.dataset.somente === (isPassiva ? "passiva" : "ativa") ? "" : "none"
+  })
+}
+
 // ── Confirmar (salva escolhas + variantes de volta ao _isoladaTemp) ──
 export function confirmarIsoladaLojinha() {
+  const isPassiva = _isoTipo === "passiva"
+
+  // Passivas: validar gatilho
+  if (isPassiva) {
+    const gatilhoSel = _isoEscolhas?.gatilho ?? []
+    if (!gatilhoSel.length) { toastErro("Selecione um Gatilho para a característica passiva."); return }
+  }
+
   let gasto = Object.values(_isoEscolhas).flat().reduce((s, i) => i.gratuita ? s : s + (i.orcamento ?? 0), 0)
-  // Amplificar e Reduzir custam 4 de orçamento cada
-  if (_isoAmplificada) gasto += 4
-  if (_isoReduzida)    gasto += 4
+  // Amplificar e Reduzir custam 4 de orçamento cada (só ativas)
+  if (!isPassiva) {
+    if (_isoAmplificada) gasto += 4
+    if (_isoReduzida)    gasto += 4
+  }
   const limite = ORCAMENTO_POR_ESCALA[_isoEscala] ?? 10
   if (gasto > limite) {
     toastErro(`Orçamento ultrapassado! Máx: ${limite}, Gasto: ${gasto}`)
@@ -1410,8 +1543,8 @@ export function confirmarIsoladaLojinha() {
   }
   if (_isoladaTemp) {
     _isoladaTemp.escolhas    = JSON.parse(JSON.stringify(_isoEscolhas))
-    _isoladaTemp.amplificada = _isoAmplificada
-    _isoladaTemp.reduzida    = _isoReduzida
+    _isoladaTemp.amplificada = isPassiva ? null : _isoAmplificada
+    _isoladaTemp.reduzida    = isPassiva ? null : _isoReduzida
   }
   _atualizarPreviewIsolada()
   fecharModal("modalIsoladaLojinha")

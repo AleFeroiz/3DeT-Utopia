@@ -417,6 +417,7 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }, so
 
   const LABELS = {
     potencia: 'Potência', pressao: 'Pressão', execucao: 'Execução',
+    gatilho: 'Gatilho',
     alcance: 'Alcance', duracao: 'Duração', area: 'Área',
     alvos: 'Alvos Adicionais', condicoes: 'Condições', descontos: 'Descontos'
   }
@@ -426,13 +427,15 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }, so
     card.className = "card-elemento"
     card.style.borderColor = "#7c3aed"
 
+    const isPassivaIso = c.tipo === "passiva"
+
     // Resumo das escolhas das tabelas
     const escolhas = c.escolhas ?? {}
     const resumoLinhas = []
-    const BASES_PADRAO = {
-      execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea',
-      area: '1 alvo', alvos: '1 alvo'
-    }
+    // Bases padrão diferem conforme tipo
+    const BASES_PADRAO = isPassivaIso
+      ? { alcance: 'Pessoal' }
+      : { execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea', area: '1 alvo', alvos: '1 alvo' }
     const todasChaves = new Set([...Object.keys(escolhas), ...Object.keys(BASES_PADRAO)])
     for (const chave of todasChaves) {
       const lista = escolhas[chave] ?? []
@@ -462,16 +465,28 @@ export function renderCaracteristicasIsoladas(ficha, { onEditar, onRemover }, so
       ? `<span style="background:#1e3a5f;padding:1px 7px;border-radius:4px;font-size:11px;color:#93c5fd">${c.custoPT} PT</span>`
       : ""
 
-    // Variantes amplificada / reduzida
-    const variantesHTML = _htmlVariantesCardIso(c)
+    // Badge de tipo: passiva vs ativa
+    const isPassivaCard = c.tipo === "passiva"
+    const tipoBadgeCard = isPassivaCard
+      ? `<span style="font-size:10px;background:#1e1b4b;color:#a5b4fc;padding:1px 6px;border-radius:3px">PASSIVA</span>`
+      : `<span style="font-size:10px;background:#172554;color:#93c5fd;padding:1px 6px;border-radius:3px">ATIVA</span>`
+
+    // PM: passivas não têm custo de PM
+    const pmHTML = isPassivaCard
+      ? `<span style="opacity:0.6;color:#a5b4fc">Sem PM</span>`
+      : `<span style="opacity:0.6">${c.custoPM} PM</span>`
+
+    // Variantes amplificada / reduzida (só ativas)
+    const variantesHTML = isPassivaCard ? "" : _htmlVariantesCardIso(c)
 
     card.innerHTML = `
       <div class="card-header">
         <strong>⚡ ${c.nome}</strong>
         <div style="display:flex;gap:6px;font-size:12px;align-items:center;flex-wrap:wrap">
           ${custoPTHTML}
+          ${tipoBadgeCard}
           <span style="opacity:0.6">Escala ${c.escala}</span>
-          <span style="opacity:0.6">${c.custoPM} PM</span>
+          ${pmHTML}
         </div>
       </div>
       ${c.origem ? `<p style="font-size:12px;opacity:0.55;margin:3px 0;font-style:italic">📍 ${c.origem}</p>` : ""}

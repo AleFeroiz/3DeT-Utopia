@@ -29,10 +29,18 @@ const BASES_PADRAO_ESCOLHAS = {
 export function resumoEscolhas(escolhas) {
   if (!escolhas) return {}
 
+  // Detecta se é passiva pela presença da chave "gatilho" (exclusiva de passivas)
+  // ou ausência de "execucao" (exclusiva de ativas)
+  const isPassiva = "gatilho" in escolhas && !("execucao" in escolhas)
+
+  const BASES_PADRAO_EFETIVO = isPassiva
+    ? { alcance: 'Pessoal' }
+    : { execucao: 'Padrão', alcance: 'Pessoal', duracao: 'Instantânea', area: '1 alvo', alvos: '1 alvo' }
+
   const result = {}
   const todasChaves = new Set([
     ...Object.keys(escolhas),
-    ...Object.keys(BASES_PADRAO_ESCOLHAS)
+    ...Object.keys(BASES_PADRAO_EFETIVO)
   ])
 
   for (const chave of todasChaves) {
@@ -40,9 +48,9 @@ export function resumoEscolhas(escolhas) {
     const itensExtra = lista.filter(i => !i.gratuita)
 
     if (itensExtra.length === 0) {
-      if (BASES_PADRAO_ESCOLHAS[chave]) {
+      if (BASES_PADRAO_EFETIVO[chave]) {
         result[LABELS_ESCOLHAS[chave] ?? chave] =
-          `<span style="opacity:0.45;font-style:italic">${BASES_PADRAO_ESCOLHAS[chave]} (padrão)</span>`
+          `<span style="opacity:0.45;font-style:italic">${BASES_PADRAO_EFETIVO[chave]} (padrão)</span>`
       }
       continue
     }
