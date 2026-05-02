@@ -481,37 +481,41 @@
     </div>
 
     <!-- Seletor Ativa / Passiva -->
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button id="btnTipoAtiva" class="active"
+    <div id="seletorTipoCarac" style="display:flex;gap:0;margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid #334155">
+      <button id="btnTipoAtiva"
         onclick="alternarTipoCarac('ativa')"
-        style="flex:1;padding:6px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #3b82f6;background:#1e3a5f;color:#93c5fd;transition:all 0.15s">
+        style="flex:1;padding:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:#1e3a5f;color:#93c5fd;transition:all 0.15s">
         🗡️ Ativa
       </button>
       <button id="btnTipoPassiva"
         onclick="alternarTipoCarac('passiva')"
-        style="flex:1;padding:6px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #334155;background:transparent;color:#64748b;transition:all 0.15s">
+        style="flex:1;padding:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:#0f172a;color:#475569;transition:all 0.15s">
         🌙 Passiva
       </button>
     </div>
 
     <label>Descrição</label>
     <textarea id="caracDescricao" placeholder="Descreva o efeito narrativo..." style="min-height:60px"></textarea>
-    <div class="tabs-internas">
-      <div class="tab-carac active" onclick="trocarAbaCarac(0)">Potência</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(1)">Pressão</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(2)">Execução / Gatilho</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(3)">Alcance</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(4)">Duração</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(5)">Área</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(6)">Alvos</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(7)">Condições</div>
-      <div class="tab-carac"        onclick="trocarAbaCarac(8)">Descontos</div>
+
+    <!-- Abas — visibilidade controlada pelo JS via data-ativa / data-passiva -->
+    <div class="tabs-internas" id="tabsCarac">
+      <div class="tab-carac active" data-chave="potencia"  onclick="trocarAbaCarac(0)">Potência</div>
+      <div class="tab-carac"        data-chave="pressao"   onclick="trocarAbaCarac(1)">Pressão</div>
+      <div class="tab-carac"        data-chave="execucao"  data-somente="ativa"  onclick="trocarAbaCarac(2)">Execução</div>
+      <div class="tab-carac"        data-chave="gatilho"   data-somente="passiva" style="display:none" onclick="trocarAbaCarac(2)">Gatilho</div>
+      <div class="tab-carac"        data-chave="alcance"   onclick="trocarAbaCarac(3)">Alcance</div>
+      <div class="tab-carac"        data-chave="duracao"   data-somente="ativa"  onclick="trocarAbaCarac(4)">Duração</div>
+      <div class="tab-carac"        data-chave="area"      onclick="trocarAbaCarac(5)">Área</div>
+      <div class="tab-carac"        data-chave="alvos"     onclick="trocarAbaCarac(6)">Alvos</div>
+      <div class="tab-carac"        data-chave="condicoes" data-somente="ativa"  onclick="trocarAbaCarac(7)">Condições</div>
+      <div class="tab-carac"        data-chave="descontos" data-somente="ativa"  onclick="trocarAbaCarac(8)">Descontos</div>
     </div>
+
+    <!-- Conteúdos — cada aba tem seu próprio div -->
     <div class="conteudo-carac active" id="aba_potencia"></div>
     <div class="conteudo-carac"        id="aba_pressao"></div>
-    <!-- ativa usa execucao; passiva usa gatilho — ambos renderizados no mesmo slot pelo JS -->
     <div class="conteudo-carac"        id="aba_execucao"></div>
-    <div class="conteudo-carac"        id="aba_gatilho" style="display:none"></div>
+    <div class="conteudo-carac"        id="aba_gatilho"></div>
     <div class="conteudo-carac"        id="aba_alcance"></div>
     <div class="conteudo-carac"        id="aba_duracao"></div>
     <div class="conteudo-carac"        id="aba_area"></div>
@@ -732,6 +736,21 @@
         <div class="num-stepper"><button type="button" class="step-btn" onclick="stepperDec('isoladaCustoPT',1,0,99)">‹</button><input type="number" id="isoladaCustoPT" value="0" min="0" max="99" style="display:none"><span class="step-val" id="step_val_isoladaCustoPT">0</span><button type="button" class="step-btn" onclick="stepperInc('isoladaCustoPT',1,0,99)">›</button></div>
       </div>
     </div>
+
+    <!-- Seletor Ativa / Passiva -->
+    <div id="seletorTipoIsolada" style="display:flex;gap:0;margin:10px 0 4px;border-radius:8px;overflow:hidden;border:1px solid #334155">
+      <button id="btnIsoladaTipoAtiva"
+        onclick="alternarTipoIsolada('ativa')"
+        style="flex:1;padding:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:#1e3a5f;color:#93c5fd;transition:all 0.15s">
+        🗡️ Ativa
+      </button>
+      <button id="btnIsoladaTipoPassiva"
+        onclick="alternarTipoIsolada('passiva')"
+        style="flex:1;padding:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:#0f172a;color:#475569;transition:all 0.15s">
+        🌙 Passiva
+      </button>
+    </div>
+
     <label>Origem / Fonte</label>
     <textarea id="isoladaOrigem" placeholder="Ex: Fruto do Diabo herdado de Xebec, treinamento com Silvers Rayleigh..." style="min-height:55px"></textarea>
     <label>Descrição</label>
@@ -739,7 +758,7 @@
     <div id="isoladaOrcamentoPreview" class="orcamento-preview" style="font-size:13px">
       <span>Orç. máx: <strong id="isoladaOrcMax">10</strong></span>
       <span>Gasto: <strong id="isoladaOrcGasto" style="color:#22c55e">0</strong></span>
-      <span>PM: <strong id="isoladaOrcPM">2</strong></span>
+      <span id="isoladaPMLabel">PM: <strong id="isoladaOrcPM">2</strong></span>
     </div>
     <button onclick="abrirLojinhaIsolada()" style="background:#7c3aed;border:none;color:white;padding:9px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;width:100%;margin-top:4px">🛒 Configurar Tabelas de Poder</button>
     <div class="modal-actions">
