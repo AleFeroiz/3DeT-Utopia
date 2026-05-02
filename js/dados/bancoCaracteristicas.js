@@ -202,6 +202,7 @@ export const TABELAS_PASSIVA = {
       { nome: "Sempre",                    orcamento: 10 },
       { nome: "Por turno",                 orcamento: 6  },
       { nome: "Ao usar uma característica",orcamento: 5  },
+      { nome: "Ao realizar algo",          orcamento: 6  },
       { nome: "Ao receber algo",           orcamento: 6  },
       { nome: "Condição externa",          orcamento: 5  }
     ]
