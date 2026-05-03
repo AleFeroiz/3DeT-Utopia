@@ -1957,8 +1957,8 @@ function expor() {
     window.syncStepper?.("itemBonusDefesa")
     document.getElementById("itemPrioridadeDefesa").value        = "1"
     window.syncStepper?.("itemPrioridadeDefesa")
-    const _prvReset = document.getElementById("prioridadeDefesaPreview")
-    if (_prvReset) _prvReset.textContent = ""
+    const _prvReset = document.getElementById("defesaFinalDisplay")
+    if (_prvReset) { _prvReset.textContent = "0"; _prvReset.style.color = "#4ade80" }
     _resetItemEncantamentos()
     fecharModal("modalItem")
     const _modalItem = document.getElementById("modalItem")
@@ -2151,20 +2151,19 @@ function expor() {
     _atualizarPreviewPrioridade()
   }
 
-  // Atualiza o preview de bônus efetivo de defesa conforme prioridade
+  // Atualiza o display de defesa final conforme bônus bruto e prioridade
   function _atualizarPreviewPrioridade() {
-    const prev = document.getElementById("prioridadeDefesaPreview")
-    if (!prev) return
+    const el    = document.getElementById("defesaFinalDisplay")
+    if (!el) return
     const bonus = +document.getElementById("itemBonusDefesa")?.value || 0
     const prio  = Math.max(1, +document.getElementById("itemPrioridadeDefesa")?.value || 1)
-    if (prio === 1) {
-      prev.textContent = "Bônus completo aplicado"
-    } else {
-      const efetivo = Math.trunc(bonus / prio)
-      prev.textContent = `${bonus} ÷ ${prio} = ${efetivo} (bônus efetivo)`
-    }
+    const final = Math.trunc(bonus / prio)
+    el.textContent = (final >= 0 ? "+" : "") + final
+    el.style.color       = final < 0 ? "#f87171" : "#4ade80"
+    el.style.borderColor = final < 0 ? "rgba(248,113,113,0.2)" : "rgba(74,222,128,0.2)"
+    el.style.background  = final < 0 ? "rgba(248,113,113,0.08)" : "rgba(74,222,128,0.08)"
   }
-  // Expor para uso nos steppers do modal
+  // Expor para uso nos botões inline do HTML (módulo ES6 não expõe ao escopo global automaticamente)
   window._atualizarPreviewPrioridade = _atualizarPreviewPrioridade
 
   // ══════════════════════════════════════════════════════════

@@ -822,24 +822,45 @@
             <span>🛡️ Bônus de Defesa</span>
           </label>
           <div id="campoBonusDefesa" style="display:none">
+
+            <!-- Bônus bruto -->
+            <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em">BÔNUS BRUTO</div>
             <div class="num-stepper">
-              <button type="button" class="step-btn" onclick="stepperDec('itemBonusDefesa',1,-99,99);_atualizarPreviewPrioridade?.()">‹</button>
+              <button type="button" class="step-btn" onclick="stepperDec('itemBonusDefesa',1,-99,99);window._atualizarPreviewPrioridade?.()">‹</button>
               <input type="number" id="itemBonusDefesa" value="0" min="-99" max="99" style="display:none">
               <span class="step-val" id="step_val_itemBonusDefesa">0</span>
-              <button type="button" class="step-btn" onclick="stepperInc('itemBonusDefesa',1,-99,99);_atualizarPreviewPrioridade?.()">›</button>
+              <button type="button" class="step-btn" onclick="stepperInc('itemBonusDefesa',1,-99,99);window._atualizarPreviewPrioridade?.()">›</button>
             </div>
-            <div style="margin-top:8px">
-              <label style="font-size:12px;opacity:0.7;display:block;margin-bottom:4px" title="O bônus de defesa é dividido por este valor. Prioridade 1 = bônus completo. Prioridade 2 = metade. Etc.">
-                ⚖️ Prioridade <span style="opacity:0.5;font-size:11px">(divisor do bônus)</span>
-              </label>
-              <div class="num-stepper">
-                <button type="button" class="step-btn" onclick="stepperDec('itemPrioridadeDefesa',1,1,99);_atualizarPreviewPrioridade?.()">‹</button>
-                <input type="number" id="itemPrioridadeDefesa" value="1" min="1" max="99" style="display:none">
-                <span class="step-val" id="step_val_itemPrioridadeDefesa">1</span>
-                <button type="button" class="step-btn" onclick="stepperInc('itemPrioridadeDefesa',1,1,99);_atualizarPreviewPrioridade?.()">›</button>
-              </div>
-              <div id="prioridadeDefesaPreview" style="font-size:11px;opacity:0.55;margin-top:4px;text-align:center"></div>
+
+            <!-- Seta divisória -->
+            <div style="text-align:center;margin:5px 0;opacity:0.35;font-size:13px;line-height:1">÷</div>
+
+            <!-- Prioridade -->
+            <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em" title="O bônus bruto é dividido por este valor. Prioridade 1 = bônus completo.">PRIORIDADE</div>
+            <div class="num-stepper">
+              <button type="button" class="step-btn" onclick="stepperDec('itemPrioridadeDefesa',1,1,99);window._atualizarPreviewPrioridade?.()">‹</button>
+              <input type="number" id="itemPrioridadeDefesa" value="1" min="1" max="99" style="display:none">
+              <span class="step-val" id="step_val_itemPrioridadeDefesa">1</span>
+              <button type="button" class="step-btn" onclick="stepperInc('itemPrioridadeDefesa',1,1,99);window._atualizarPreviewPrioridade?.()">›</button>
             </div>
+
+            <!-- Linha separadora -->
+            <div style="border-top:1px solid rgba(255,255,255,0.08);margin:8px 0 5px"></div>
+
+            <!-- Defesa final -->
+            <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em">DEFESA FINAL</div>
+            <div id="defesaFinalDisplay" style="
+              text-align:center;
+              font-size:22px;
+              font-weight:700;
+              color:#4ade80;
+              background:rgba(74,222,128,0.08);
+              border:1px solid rgba(74,222,128,0.2);
+              border-radius:8px;
+              padding:6px 0;
+              letter-spacing:0.02em;
+            ">0</div>
+
           </div>
         </div>
 
