@@ -398,7 +398,13 @@ function _renderInventario() {
     const badgeAtk = (item.categoria === "equipamento" && item.usadoAtaque && item.equipadoAtaque)
       ? `<span class="inv-badge inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
     const badgeDef = (item.categoria === "equipamento" && item.usadoDefesa && item.equipadoDefesa)
-      ? `<span class="inv-badge inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
+      ? (() => {
+          const bonus = Number(item.bonusDefesa) || 0
+          const prio  = Math.max(1, Number(item.prioridadeDefesa) || 1)
+          const efet  = Math.trunc(bonus / prio)
+          const prioBadge = prio > 1 ? ` <span style="opacity:0.6;font-size:10px">(÷${prio})</span>` : ""
+          return `<span class="inv-badge inv-badge-def" title="Bônus bruto: ${bonus} ÷ prioridade ${prio} = ${efet}">🛡️ +${efet}${prioBadge}</span>`
+        })() : ""
     const badgeCat = item.categoria === "equipamento"
       ? `<span class="inv-badge inv-badge-equip">Equip.</span>` : ""
     const pericia  = LISTA_PERICIAS.find(p => p.id === item.pericia)
@@ -424,19 +430,42 @@ function _renderInventario() {
            🛡️
          </label>` : ""
 
-    const botoesAcao = _invSomenteLeitura ? "" : `
+    const botoesAcao = _invSomenteLeitura ? `
+        <div class="inv-item-acoes">
+          <button class="btn-editar" title="Ver detalhes" onclick="toggleDetalheItem('${item.id}')">👁️</button>
+        </div>` : `
         <div class="inv-item-acoes">
           ${checkAtk}${checkDef}
           <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
           <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
         </div>`
+
+    // Painel de detalhes expandível (para modo leitura)
+    const restricoesHtml = [...(item.restricoes ?? [])].map(r =>
+      `<span style="font-size:11px;background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.25);border-radius:4px;padding:2px 6px">${r.nome ?? r}</span>`
+    ).join(" ")
+    const detalhePanel = _invSomenteLeitura ? `
+      <div id="detalhe_${item.id}" class="inv-item-detalhe" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);font-size:12px;color:#94a3b8;display:none">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+          <span>⚖️ Peso: <b style="color:#e2e8f0">${item.peso ?? 0}</b></span>
+          ${item.catEquip ? `<span>🏷️ Cat. <b style="color:#93c5fd">${item.catEquip}</b></span>` : ""}
+          ${item.usadoAtaque ? `<span>⚔️ Atk bruto: <b style="color:#fbbf24">+${item.bonusAtaque ?? 0}</b></span>` : ""}
+          ${item.usadoDefesa ? (() => {
+            const b = Number(item.bonusDefesa)||0; const p = Math.max(1,Number(item.prioridadeDefesa)||1); const e = Math.trunc(b/p)
+            return `<span>🛡️ Def bruto: <b style="color:#4ade80">+${b}</b>${p>1?` ÷${p} = <b style="color:#4ade80">${e}</b>`:""}</span>`
+          })() : ""}
+        </div>
+        ${restricoesHtml ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${restricoesHtml}</div>` : ""}
+      </div>` : ""
+
     card.innerHTML = `
       <div class="inv-item-info">
         <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeCatNum}${badgePericia}${badgeAtk}${badgeDef}${encantsHtml}</div>
         ${item.descricao ? `<div class="inv-item-desc">${item.descricao}</div>` : ""}
+        ${detalhePanel}
       </div>
       <div class="inv-item-direita">
-        <span class="inv-item-peso" style="color:${(item.peso??0)<0?'#4ade80':''}">⚖️ ${item.peso ?? 0}</span>
+        <span class="inv-item-peso" style="color:${(item.peso??0)<0?'#4ade80':''};${_invSomenteLeitura?'display:none':''}">⚖️ ${item.peso ?? 0}</span>
         ${botoesAcao}
       </div>`
     container.appendChild(card)
@@ -1884,6 +1913,17 @@ function expor() {
     salvar()
   }
 
+  // Expande/colapsa painel de detalhes no modo somente-leitura
+  window.toggleDetalheItem = (id) => {
+    const el = document.getElementById(`detalhe_${id}`)
+    if (!el) return
+    const aberto = el.style.display !== "none"
+    el.style.display = aberto ? "none" : "block"
+    // Atualiza ícone do botão
+    const btn = el.closest(".inv-item-card")?.querySelector(".btn-editar")
+    if (btn) btn.textContent = aberto ? "👁️" : "🔼"
+  }
+
   // Anotações
   window.salvarAnotacao = (campo, valor) => {
     if (!ficha.anotacoes) ficha.anotacoes = {}
@@ -1915,9 +1955,19 @@ function expor() {
     document.getElementById("itemBonusDefesa").value             = "0"
     window.syncStepper?.("itemBonusAtaque")
     window.syncStepper?.("itemBonusDefesa")
+    document.getElementById("itemPrioridadeDefesa").value        = "1"
+    window.syncStepper?.("itemPrioridadeDefesa")
+    const _prvReset = document.getElementById("prioridadeDefesaPreview")
+    if (_prvReset) _prvReset.textContent = ""
     _resetItemEncantamentos()
     fecharModal("modalItem")
-    document.getElementById("modalItem").classList.remove("hidden")
+    const _modalItem = document.getElementById("modalItem")
+    _modalItem.classList.remove("hidden")
+    // Fix: re-habilita os elementos do modal caso _aplicarModoLeitura os tenha desabilitado
+    // (acontece quando editPublic=true — terceiro tem permissão de edição mas o container foi bloqueado)
+    if (!_fichaOwner && ficha.editPublic) {
+      _modalItem.querySelectorAll("input, textarea, button, select").forEach(el => { el.disabled = false })
+    }
   }
 
   window.abrirEditarItem = (id) => {
@@ -1948,10 +1998,18 @@ function expor() {
     document.getElementById("campoBonusDefesa").style.display = usaDef ? "block" : "none"
     document.getElementById("itemBonusDefesa").value          = item.bonusDefesa ?? 0
     window.syncStepper?.("itemBonusDefesa")
+    document.getElementById("itemPrioridadeDefesa").value     = item.prioridadeDefesa ?? 1
+    window.syncStepper?.("itemPrioridadeDefesa")
+    _atualizarPreviewPrioridade()
     // Encantamentos
     if (cat === "equipamento") _carregarItemEncantamentos(item)
     else _resetItemEncantamentos()
-    document.getElementById("modalItem").classList.remove("hidden")
+    const _modalItemEdit = document.getElementById("modalItem")
+    _modalItemEdit.classList.remove("hidden")
+    // Fix: re-habilita elementos do modal caso editPublic tenha sido bloqueado
+    if (!_fichaOwner && ficha.editPublic) {
+      _modalItemEdit.querySelectorAll("input, textarea, button, select").forEach(el => { el.disabled = false })
+    }
   }
 
   window.confirmarSalvarItem = () => {
@@ -1974,6 +2032,7 @@ function expor() {
       usadoDefesa:    usaDef,
       bonusAtaque:    usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
       bonusDefesa:    usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
+      prioridadeDefesa: usaDef ? (Math.max(1, +document.getElementById("itemPrioridadeDefesa").value || 1)) : 1,
       // Encantamentos e categoria (só para equipamentos)
       catEquip:       cat === "equipamento" ? _itemCategoria : undefined,
       encantamentos:  cat === "equipamento" ? JSON.parse(JSON.stringify(_itemEncantamentos)) : [],
@@ -2089,7 +2148,24 @@ function expor() {
   window.toggleBonusDefesa = () => {
     const chk = document.getElementById('itemUsadoDefesa')
     document.getElementById('campoBonusDefesa').style.display = chk.checked ? 'block' : 'none'
+    _atualizarPreviewPrioridade()
   }
+
+  // Atualiza o preview de bônus efetivo de defesa conforme prioridade
+  function _atualizarPreviewPrioridade() {
+    const prev = document.getElementById("prioridadeDefesaPreview")
+    if (!prev) return
+    const bonus = +document.getElementById("itemBonusDefesa")?.value || 0
+    const prio  = Math.max(1, +document.getElementById("itemPrioridadeDefesa")?.value || 1)
+    if (prio === 1) {
+      prev.textContent = "Bônus completo aplicado"
+    } else {
+      const efetivo = Math.trunc(bonus / prio)
+      prev.textContent = `${bonus} ÷ ${prio} = ${efetivo} (bônus efetivo)`
+    }
+  }
+  // Expor para uso nos steppers do modal
+  window._atualizarPreviewPrioridade = _atualizarPreviewPrioridade
 
   // ══════════════════════════════════════════════════════════
   //  SISTEMA DE ENCANTAMENTOS & CATEGORIA

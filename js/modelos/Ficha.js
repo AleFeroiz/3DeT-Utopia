@@ -232,10 +232,15 @@ export class Ficha {
   }
 
   // Soma bônus de defesa dos equipamentos atualmente equipados para defesa
+  // O bônus de cada item é dividido pela prioridade (mínimo 1), resultado truncado
   get bonusDefesaEquipamentos() {
     return (this.inventario.itens ?? [])
       .filter(i => i.categoria === 'equipamento' && i.usadoDefesa && i.equipadoDefesa)
-      .reduce((s, i) => s + (Number(i.bonusDefesa) || 0), 0)
+      .reduce((s, i) => {
+        const bonus = Number(i.bonusDefesa) || 0
+        const prioridade = Math.max(1, Number(i.prioridadeDefesa) || 1)
+        return s + Math.trunc(bonus / prioridade)
+      }, 0)
   }
 
   adicionarItem(item) {
