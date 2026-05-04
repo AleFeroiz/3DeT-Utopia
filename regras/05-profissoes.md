@@ -41,7 +41,6 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 * **Nível 15 | Esse Caminho Cheira a Mal:** *Minha intuição está apitando!* Dentro de uma viagem, em apenas um evento de rota, pode descobrir tudo sobre as rotas e qual deve escolher.
 
 ---
-
 #### 🍳 Cozinheiro
 **Requisito:** Sustento
 
@@ -86,7 +85,7 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 **Requisito:** Máquinas
 
 * **Nível 1 | Em Altas Rotas:** *Pilotar? Há, fácil fácil, é comigo mesmo!* Recebe ganho em testes de pilotagem com veículos enquanto se locomove, além de não receber percas por conta de penalidades de rotas complicadas. Além de pode executar a manobra Defensiva de um veículo (ver *Veículos e modificações*).
-* **Nível 5 | Instinto de Piloto:** *E lá vamos nós!!* 1 vez por cena pode gastar 4 PM para refazer um teste de defesa do veículo, ficando com o melhor resultado.
+* **Nível 5 | Instinto de Piloto:** *E lá vamos nós!!* 1 vez por cena ode gastar 4 PM para refazer um teste de defesa do veículo, ficando com o melhor resultado.
 * **Nível 10 | Posição Estratégica:** *É hora desse veículo meter pipoco neles!* Pode gastar uma ação completa para manter o veículo em uma posição estratégica para que receba ganho em qualquer tipo de ataque que se derive do veículo.
 * **Nível 15 | Comigo Pilotando Não Tem Erro:** *Quero que se foda, vou é meter o pé daqui!* Uma vez por viagem, quando avistar uma situação de conflito, pode gastar 10 PM e forçar o veículo a uma velocidade anormal. Perderá 5D6 de PV do veículo, mas irá fugir do conflito.
 
@@ -101,7 +100,6 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 * **Nível 15 | Não Toque na Minha Tripulação!:** *Ver aliados próximos serem derrotados… EU NÃO ACEITO ISSO!!* Pra cada aliado que você presenciar ser derrotado, você recebe 20 PV temporários e 20 PM temporários, além de 2 PA durante a cena.
 
 ---
-
 #### **⚗️ Versatilidade de Profissão**
 Ao atingir os níveis **7** e **14**, você recebe 1 ponto de Versatilidade. Esses pontos representam o crescimento do personagem além dos limites da sua especialização original.
 

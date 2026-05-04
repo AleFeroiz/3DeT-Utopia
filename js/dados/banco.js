@@ -322,6 +322,13 @@ Faça um ataque e gaste 4 PM. Se vencer a defesa do alvo, em vez de sofrer dano,
 A paralisia dura até o fim da cena ou até o alvo sofrer dano. A cada turno, o alvo pode tentar se soltar rolando Resistência (Dificuldade: Teste de poder do atacante).`
   },
   {
+    id: "resistente",
+    nome: "Resistente",
+    tipo: "vantagem",
+    custo: 1,
+    descricao: `Você desenvolveu uma resiliência natural contra certos tipos de dano — seja por treinamento, constituição física ou simplesmente por ter apanhado demais da coisa certa.\nEfeito\nEscolha dois tipos de dano. Quando efetuar um teste de defesa contra esses tipos, some sua Resistência novamente ao teste (cumulativo com outras manobras de defesa).`
+  },
+  {
     id: "resoluto",
     nome: "Resoluto",
     tipo: "vantagem",
@@ -632,6 +639,15 @@ Comum (–2 PT): Acontece frequentemente (É de noite/dia; lugar aberto/fechado;
     descricao: `Você não é uma pessoa muito brilhante. (Nota: Você não pode ser Tapado e também Gênio).
 Efeito
 Quando faz testes de Habilidade relacionados a inteligência e raciocínio, você sofre Perda e nunca tem Acertos Críticos.`
+  },
+  {
+    id: "vulneravel",
+    nome: "Vulnerável",
+    tipo: "desvantagem",
+    custo: -1,
+    descricao: `Você possui uma fraqueza terrível contra certos tipos de dano. Pode ser uma sensibilidade física, um trauma, ou simplesmente a maldição de existir.
+Efeito
+Escolha dois tipos de dano. Sempre que sofrer dano desses tipos, o valor final recebido é dobrado.`
   },
 
   {

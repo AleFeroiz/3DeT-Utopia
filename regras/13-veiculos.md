@@ -1,89 +1,121 @@
-Veículos (navios, carros, motos, etc.) são extensões dos personagens e seguem um processo de criação simplificado. Para criar um veículo, você possui **5 pontos** para distribuir entre seus Atributos.
-
-## 1. Atributos Base
-
-- **Poder (POD):** Define a quantidade total e a eficácia das **Modificações**.
-    
-- **Habilidade (HAB):** Define a agilidade e o deslocamento (**Passos**; 1 passo = Alcance Curto).
-    
-- **Resistência (RES):** Define a durabilidade (**HP**), a robustez (**Defesa**) e a capacidade de carga (**Inventário**).
-    
-
-> **Nota:** Atributos com valor **0** fornecem metade do bônus concedido pelo valor 1 (arredondado para cima).
+Veículos — navios, carros, motos, helicópteros, aviões e outros — são extensões dos personagens e seguem um processo de criação simplificado. Para criar um veículo, você possui 5 pontos para distribuir entre seus Atributos.
 
 ---
 
-## 2. Escala e Progressão
+#### 1. Atributos Base
 
-A **Escala** determina o potencial de crescimento e os multiplicadores de status do veículo.
+- **Poder (POD):** Define a quantidade total e a eficácia das Modificações.
+- **Habilidade (HAB):** Define a agilidade e o deslocamento (Passos; 1 passo = Alcance Curto).
+- **Resistência (RES):** Define a durabilidade (HP), a robustez (Defesa) e a capacidade de carga (Inventário).
 
-|**Escala**|**Modificações (por POD)**|**Passos (por HAB)**|**HP (por RES)**|**Inventário Base**|**Nível Máx. Modif.**|**Defesa Base**|
+> Atributos com valor 0 fornecem metade do bônus concedido pelo valor 1 (arredondado para cima).
+
+---
+
+#### 2. Escala e Progressão
+
+A Escala determina o potencial de crescimento e os multiplicadores de status do veículo.
+
+|Escala|Modificações (por POD)|Passos (por HAB)|HP (por RES)|Inventário Base|Nível Máx. Modif.|Defesa Base|
 |---|---|---|---|---|---|---|
-|**Pequena**|1|3|40|50|Nível 2|4 x RES|
-|**Média**|3|2|60|80|Nível 3|6 x RES|
-|**Grande**|2|1|80|100|Nível 4|8 x RES|
+|Pequena|1|3|40|50|Nível 2|4 x RES|
+|Média|3|2|60|80|Nível 3|6 x RES|
+|Grande|2|1|80|100|Nível 4|8 x RES|
 
-### Regras Complementares:
+**Regras Complementares:**
 
-- **Inventário:** É possível gastar **1 Modificação** para expandir o inventário. Isso soma **50% do valor base** ao total (respeitando o nível máximo da escala).
-    
-- **Efeito Cerco:** Veículos são vulneráveis a múltiplos atacantes. Cada ataque sofrido após o primeiro na mesma rodada penaliza a Defesa em **-3** (acumulativo).
-    
+- **Inventário:** É possível gastar 1 Modificação para expandir o inventário, somando 50% do valor base ao total (respeitando o nível máximo da escala).
+- **Efeito Cerco:** Veículos são vulneráveis a múltiplos atacantes. Cada ataque sofrido após o primeiro na mesma rodada penaliza a Defesa em -3 (acumulativo).
 
 ---
 
-## 3. Modificações
+#### 3. Modificações
 
 As modificações definem a utilidade do veículo. Cada ponto de Poder permite adquirir ou evoluir uma modificação (Nível 1 a 4).
 
-### Categorias
+**Categorias:**
 
-1. **Ofensiva:** Armamentos (canhões, metralhadoras). Exige rolagem de perícia ativa.
-    
-2. **Defensiva:** Blindagens e escudos passivos. Aumentam a Defesa Base.
-    
-3. **Mobilidade:** Motores e propulsores. Aumentam o deslocamento (1 passo = distância *curto*).
-    
-4. **Suporte:** Alas médicas ou torres de vigia. Concedem bônus em perícias específicas realizadas dentro do veículo.
-    
+- **Ofensiva:** Armamentos como canhões e metralhadoras. Exige rolagem de perícia ativa.
+- **Defensiva:** Blindagens e escudos passivos. Aumentam a Defesa Base.
+- **Mobilidade:** Motores e propulsores. Aumentam o deslocamento (1 passo = distância curta).
+- **Suporte:** Alas médicas, torres de vigia, etc. Concedem bônus em perícias específicas realizadas dentro do veículo.
 
-### Tabela de Bônus por Nível
+**Tabela de Bônus por Nível:**
 
-|**Nível**|**Ofensiva / Defensiva***|**Mobilidade**|**Suporte**|
-|---|---|---|---|
-|**1**|12 a 18|+1 Passo|+3 em Perícia|
-|**2**|18 a 24|+2 Passos|+6 em Perícia|
-|**3**|24 a 30|+3 Passos|+9 em Perícia|
-|**4**|30 a 36|+4 Passos|+12 em Perícia|
+|Nível|Ofensiva / Defensiva|Mobilidade|Suporte|Alcance (Ofensiva)|
+|---|---|---|---|---|
+|1|12 a 18|1 Passo|3 em Perícia|Perto|
+|2|18 a 24|2 Passos|6 em Perícia|Longe|
+|3|24 a 30|3 Passos|9 em Perícia|Muito Longe|
+|4|30 a 36|4 Passos|12 em Perícia|Fora de Alcance*|
 
-_*Para definir o bônus exato de Ofensiva/Defensiva, role 1d6 e ou utilize o valor médio (3) e some o valor mínimo de bônus da modificação._
+> Para definir o bônus exato de Ofensiva/Defensiva, role 1D6 e some ao valor mínimo da modificação, ou utilize o valor médio (3).
+
+> *O alcance exato de modificações Ofensivas de Nível 4 é definido pelo Mestre com base no tipo de armamento — um canhão de longo alcance e uma espingarda nível 4 operam em escalas completamente diferentes.
 
 ---
 
-## 4. Integridade e Combate
+#### 4. Progressão do Veículo
 
-### Falha de Modificação
+Veículos crescem junto com o grupo — narrativamente e via investimento.
 
-Modificações podem ser avariadas conforme o veículo sofre dano:
+**Limite de Pontos:** Nenhum veículo pode ultrapassar **15 pontos totais**, independente da Escala ou tipo. Todo veículo começa com 5 pontos na criação.
 
-- **Nível 1:** Para de funcionar com 75% do HP total.
-    
-- **Nível 2:** Para de funcionar com 50% do HP total.
-    
-- **Nível 3:** Para de funcionar com 25% do HP total.
-    
-- **Nível 4:** Funciona até a destruição total do veículo.
-    
+**Como ganhar pontos:** Pontos adicionais são adquiridos narrativamente — estaleiros, carpinteiros, engenheiros e recursos encontrados no mundo. O custo em Bellys e o tempo necessário são definidos pelo mestre baseados no que está sendo feito.
 
-### Ações de Combate
+**Modificações — Troca e Realocação:** Modificações podem ser removidas e reinstaladas a qualquer momento com custo narrativo em Bellys, fora de combate. O ponto de Poder que as sustenta permanece — apenas o que ele representa muda. Isso permite adaptar o veículo conforme as necessidades da campanha mudam.
 
-- **Ataque Mirado:** Um atacante pode visar uma modificação específica. Se o dano causado for superior a **10% do HP total** do veículo, a modificação é destruída.
-    
-- **Manobra Defensiva (Reação):** O piloto pode tentar desviar de ataques.
-    
-    - _Cálculo:_ `MAQUINAS + HAB do Veículo + Total de Passos + Bônus de Defesa (Modif.)`
-        
-- **Ataque Ofensivo:** Tripulantes podem operar as armas do veículo.
-    
-    - _Cálculo:_ `MAQUINAS (ou perícia adequada) + POD ou HAB (conforme situação) + Bônus Ofensivo (Modif.)`
+**Atributos — Aumento Permanente:** Aumentar Poder, Habilidade ou Resistência do veículo é estrutural e mais caro que trocar modificações. O Carpinteiro nível 15 possui essa função mecanicamente — fora disso, o mestre define o custo, o tempo e os recursos necessários narrativamente.
 
+**Mudança de Escala:** Um veículo pode mudar de Escala, mas isso representa uma reconstrução completa — semanas num estaleiro, recursos significativos e um arco narrativo validado pelo mestre. Quando acontece, o veículo migra para a nova Escala mantendo os pontos que já possui, e os novos limites e multiplicadores passam a valer.
+
+---
+
+#### 5. Integridade e Combate
+
+##### Falha de Modificação
+
+Modificações param de funcionar conforme o veículo sofre dano:
+
+|Nível da Modificação|Para de funcionar com...|
+|---|---|
+|Nível 1|75% do HP total|
+|Nível 2|50% do HP total|
+|Nível 3|25% do HP total|
+|Nível 4|Funciona até a destruição total|
+
+##### Ataque Mirado
+
+Um atacante pode visar uma modificação específica. Se o dano causado for superior a 10% do HP total do veículo, a modificação é destruída.
+
+##### Ações de Combate
+
+**Manobra Defensiva (Reação):** O piloto pode tentar desviar de ataques.
+
+> Cálculo: MÁQUINAS + HAB do Veículo + Total de Passos + Bônus de Defesa (Modif.)
+
+**Ataque Ofensivo:** Tripulantes podem operar as armas do veículo.
+
+> Cálculo: MÁQUINAS (ou perícia adequada) + POD ou HAB (conforme situação) + Bônus Ofensivo (Modif.)
+
+---
+
+#### 6. Conserto de Modificações
+
+##### Fora de Combate
+
+Qualquer modificação danificada ou destruída pode ser consertada fora de combate com custo em Bellys e tempo definidos pelo mestre. Sem restrições além do recurso narrativo necessário.
+
+##### Durante o Combate
+
+Consertar uma modificação no meio de uma batalha é possível, mas exige dedicação total.
+
+O **Carpinteiro** é o único com essa capacidade em combate. Para tentar o conserto:
+
+1. Gaste uma **Ação Completa**.
+2. Role um teste de **Máquinas** contra uma DT definida pelo mestre baseada na severidade do dano. _(base DT = 6 + (3 × nível modificação))_
+3. Se passar, a modificação volta a funcionar imediatamente.
+
+**Limite:** Só pode ser tentado **uma vez por modificação por cena**. Se falhar, a modificação permanece fora de combate até o próximo conserto fora de batalha.
+
+> O Carpinteiro nível 1 já possui a habilidade de rolar dados de vida pro veículo uma vez por cena — isso representa recuperação de HP, não conserto de modificação. As duas ações são distintas e podem ser usadas na mesma cena.

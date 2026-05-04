@@ -40,6 +40,27 @@ Se um personagem já sofre os efeitos de uma característica específica com dur
 Esta regra vale tanto para Características Ativas quanto Passivas.
 
 ---
+### ⚠️ Regras Gerais das Características
+
+As regras a seguir se aplicam a **todas as características**, sejam Ativas ou Passivas, independente da Fonte de Poder ou do conceito narrativo.
+
+> [!warning] O que características não podem fazer
+>  Independente do orçamento gasto, da Escala de Poder ou da justificativa narrativa, nenhuma característica pode:
+> 
+> - **Modificar PV ou PM permanentemente** — nenhuma característica pode aumentar ou reduzir esses valores de forma definitiva, seja no próprio personagem ou em outros.
+> -  **Modifica PA** — nenhuma característica pode aumentar ou reduzir esse valor seja de forma definitiva ou temporária, independente de ser no próprio personagem ou em outros.
+> - **Interagir com vantagens ou desvantagens** — características não podem conceder, remover ou modificar vantagens e desvantagens do sistema base.
+> - **Modificar críticos e falhas críticas** — nenhuma característica pode alterar as margens ou os efeitos de sucessos e falhas críticas, com exceção da Regra Opcional de Maestria.
+> - **Interagir com PT ou PC diretamente** — características não podem gerar, remover ou modificar Pontos de Ficha ou Pontos de Característica de nenhuma forma.
+> - **Modificar testes de morte e derrota** — nenhuma característica pode alterar, ignorar ou garantir resultados nesses testes.
+> - **Alterar a Escala de Poder de outras características** — uma característica não pode subir ou descer a Escala de outra, seja própria ou de terceiros.
+> - **Reduzir o custo em PM de outras características** — além dos Descontos da própria Lojinha, nenhuma característica pode baratear o custo de ativação de outra.
+> - **Conceder níveis, profissões ou habilidades de progressão** — nem temporária nem permanentemente.
+> - **Ignorar requisitos de equipamento** — características não podem substituir ou contornar os requisitos de perícia exigidos por equipamentos.
+> - **Copiar, roubar ou suprimir características de outra Fonte de Poder** — nem temporariamente. Caso a Fonte de Poder tenha esse conceito como núcleo narrativo, o Mestre avalia caso a caso.
+> - **Acionar outras características sem o devido custo de PM** — o custo de PM de uma característica ativa sempre se aplica normalmente, independente do que a disparou.
+
+---
 
 ## 🗡️ Características Ativas
 
@@ -234,7 +255,13 @@ A Lojinha é o sistema modular usado para montar suas técnicas. Use o seu **Or�
 
 #### 🔩 Regras Adicionais
 
-> [!tip] Regras para Criações Características que criam entidades ou estruturas — de um muro de pedra a um servo de lama — seguem regras próprias além da Lojinha padrão.
+>> [!tip] Regras Opcionais — Efeito Livre Especializado
+>>  Certas características que usam a vertente **Efeito Livre** se encaixam em conceitos específicos que possuem regras próprias. **Quando isso ocorrer, a Regra Opcional substitui completamente a regra base do Efeito Livre.** O Mestre define se a característica se enquadra em alguma delas.
+
+---
+
+> [!tip] Criação de Entidades
+>  Características que criam entidades ou estruturas — de um muro de pedra a um servo de lama — seguem regras próprias além da Lojinha padrão.
 > 
 > Toda criação possui atributos distribuídos pelo criador. A cada 4 pontos de Potência, você ganha 1 atributo para as **ENTIDADES**.
 > 
@@ -244,9 +271,95 @@ A Lojinha é o sistema modular usado para montar suas técnicas. Use o seu **Or�
 > 
 > O que a criação faz com seus atributos depende do que ela é narrativamente. Um muro existe passivamente. Um servo age sob seu controle. A natureza da criação precisa ser aprovada pelo Mestre junto com a característica.
 > 
-> A aba ÁREA para esse tipo de característica fica responsável pela questão de **tamanho** da criação. Para entidades vivas isso não importa tanto — mas para estruturas, define a extensão: uma parede de X metros, uma cúpula com área de Y metros. Os valores de **orçamento e PM** dessa aba para essa regra adicional caem pela **metade**.
+> A aba **ÁREA** para esse tipo de característica fica responsável pela questão de **tamanho** da criação. Para entidades vivas isso não importa tanto — mas para estruturas, define a extensão: uma parede de X metros, uma cúpula com área de Y metros. Os valores de **orçamento e PM** dessa aba para essa regra adicional caem pela **metade**.
+
+---
+
+> [!tip] Criação de Equipamento 
+> Características que manifestam equipamentos temporários a partir da Fonte de Poder — uma espada de chamas, um escudo de gelo, uma armadura improvisada — seguem esta regra.
 > 
-> _Outras regras especiais para criações fora da curva podem ser adicionadas futuramente conforme o sistema se expande._
+> O equipamento criado tem uma **Categoria**, definida na criação da característica e aprovada pelo Mestre. A Potência mínima necessária para manifestá-lo é:
+> 
+> **Potência mínima = Limiar + (4 × Categoria)**
+> 
+> O bônus entregue pelo equipamento é sempre o **valor médio da faixa** da Categoria correspondente. Potência excedente além do mínimo soma diretamente a esse bônus.
+> 
+> A **Duração** é obrigatória — sem ela, o equipamento não pode ser criado. Ela define por quanto tempo o equipamento existe antes de se dissipar. Ao fim da duração, some independentemente do estado narrativo.
+> 
+> O equipamento criado segue normalmente os **requisitos de perícia** do sistema — se o usuário não atender ao requisito da Categoria, sofre as penalidades padrão.
+> 
+> O tipo de equipamento, sua perícia alvo e seu bônus são definidos na criação da característica e não podem ser alterados sem um Ponto de Redefinição.
+> 
+> _Exemplo: manifestar uma espada de Categoria 2 exige Potência mínima de Limiar (2 próprio) + 8 = 10. O valor médio da faixa Cat 2 é 9. Com Potência 13, há 3 excedentes — o equipamento entrega bônus 12._
+
+---
+
+> [!tip] Encantamento 
+> Características que aplicam encantamentos sobre equipamentos já existentes — sejam encontrados, comprados ou criados — seguem esta regra.
+> 
+> O encantamento concede ao equipamento alvo um efeito adicional definido na criação da característica. A Potência mínima necessária é:
+> 
+> **Potência mínima = Limiar + (PT_ENC × 2)**
+> 
+> Onde **PT_ENC** é o custo em PT do encantamento conforme as regras de equipamentos do sistema.
+> 
+> O encantamento sempre segue a **Duração** comprada na característica — nunca é permanente. Ao fim da duração, o efeito se dissipa e o equipamento retorna ao seu estado original.
+> 
+> Um mesmo equipamento não pode receber o mesmo encantamento duas vezes enquanto o efeito ainda estiver ativo — seguindo a regra universal de não sobreposição.
+
+---
+
+> [!tip] Criação de Ferramenta 
+> Características que manifestam ferramentas temporárias — um mapa improvisado, uma luneta de neblina, um kit de escalada conjurado — seguem esta regra.
+> 
+> A Potência mínima necessária é simplesmente o **limiar** de quem receberá a ferramenta:
+> 
+> |Limiar|Quem pode receber|
+> |---|---|
+> |2|Apenas o próprio usuário|
+> |4|Terceiro de forma voluntária|
+> 
+> O efeito é sempre fixo: **1 Ganho contextual** em uma perícia específica dentro de uma condição de uso definidas na criação. Potência excedente não altera a magnitude — a ferramenta sempre entrega 1 Ganho contextual.
+> 
+> A **Duração** é obrigatória — define por quanto tempo a ferramenta existe antes de se dissipar.
+
+---
+
+> [!tip] Criação de Consumível
+>  Características que criam itens consumíveis — poções, bombas, venenos, estimulantes — seguem esta regra.
+> 
+> O consumível tem uma **Intensidade**, definida na criação e aprovada pelo Mestre. A Potência mínima necessária é:
+> 
+> **Potência mínima = Limiar + (4 × Intensidade)**
+> 
+> Onde Intensidade segue a escala: **Fraca = 1, Média = 2, Forte = 3**. A intensidade **Extrema não pode ser criada** por esta regra.
+> 
+> O tipo de efeito — cura, dano, condição — é definido na criação da característica. Potência excedente além do mínimo soma normalmente à magnitude do efeito.
+> 
+> A **Duração** define por quanto tempo o consumível existe antes de deteriorar. Ao ser **usado**, some imediatamente independente da duração restante — o uso encerra sua existência antes do tempo se necessário.
+> 
+> A quantidade de consumíveis criados por uso da característica é definida pela aba de **Alvos Adicionais**.
+
+---
+
+> [!tip] Bônus de Perícia e Maestria 
+> Características que concedem bônus temporários em perícias ou maestrias seguem esta regra.
+> 
+> O bônus é sempre **contextual** — definido na criação da característica como uma perícia específica dentro de uma condição de uso específica. Nunca abrangente.
+> 
+> A Potência mínima necessária segue o limiar normal de alcance:
+> 
+> |Limiar|Quem pode ser afetado|
+> |---|---|
+> |2|Apenas o próprio usuário|
+> |4|Terceiro de forma voluntária|
+> |6|Terceiro de forma involuntária|
+> 
+> **Bônus de Perícia** — Potência excedente além do limiar soma diretamente ao valor da perícia no contexto definido, seguindo a mesma lógica de magnitude do Efeito Livre base.
+> 
+> **Maestria** — Concede Maestria na perícia dentro do contexto definido, ampliando a margem de crítico. Exige Potência mínima de **Limiar + 6** além do custo normal. Não empilha com Maestria já possuída — se o personagem já tem Maestria na perícia em questão, este efeito não tem utilidade.
+> 
+> A **Duração** define por quanto tempo o bônus ou a Maestria se mantém.
 
 ---
 
@@ -298,19 +411,19 @@ Potência 6 atinge o limiar de terceiro involuntário. Pressão 2 define a dific
 
 ---
 
----
-
 ## 🌙 Características Passivas
 
 Uma Característica Passiva é um traço permanente da sua Fonte de Poder. Ela **não é ativada** — ela simplesmente _existe_. Não custa PM para funcionar e não depende da sua vontade para estar presente.
 
 Em vez de ser algo que você _faz_, é algo que você **é**.
 
-> [!warning] ⚠️ Aprovação do Mestre As mesmas regras de aprovação das Características Ativas se aplicam aqui. A passiva precisa ser coerente com o tema e a origem da Fonte de Poder. Um usuário de Logia de Fogo pode ter imunidade ao calor como passiva. Não pode ter visão no escuro sem justificativa narrativa sólida ligada ao fogo.
+> [!warning] ⚠️ Aprovação do Mestre
+>  As mesmas regras de aprovação das Características Ativas se aplicam aqui. A passiva precisa ser coerente com o tema e a origem da Fonte de Poder. Um usuário de Logia de Fogo pode ter imunidade ao calor como passiva. Não pode ter visão no escuro sem justificativa narrativa sólida ligada ao fogo.
 
 ---
 
-> [!abstract] Como Características Passivas funcionam Uma Passiva não tem Execução nem Descontos. No lugar da Execução, ela tem um **Gatilho** — a condição que a faz disparar.
+> [!abstract] Como Características Passivas funcionam
+>  Uma Passiva não tem Execução nem Descontos. No lugar da Execução, ela tem um **Gatilho** — a condição que a faz disparar.
 > 
 > Passivas são **ilimitadas**: sempre que o Gatilho for satisfeito, o efeito acontece. Não há contador de usos por cena.
 > 
@@ -320,7 +433,8 @@ Em vez de ser algo que você _faz_, é algo que você **é**.
 
 ---
 
-> [!abstract] A Base Gratuita Toda característica passiva começa com uma base simples que **não custa Orçamento**. A partir dela, você compra os aprimoramentos:
+> [!abstract] A Base Gratuita
+>  Toda característica passiva começa com uma base simples que **não custa Orçamento**. A partir dela, você compra os aprimoramentos:
 > 
 > - **Potência:** 0
 > - **Pressão:** 0
@@ -395,7 +509,7 @@ O Mestre define qual escala de tempo está sendo usada fora de combate com base 
 |+5|8|
 |+10|15|
 
-**Pressão** _(Empilhável de forma livre)_ Só tem efeito em Condições — em Ataque/Defesa e Efeito Livre, Pressão não é utilizada.
+**Pressão** _(Empilhável de forma livre)_ Só tem efeito livre que usa pressão e em Condições — em Ataque/Defesa a Pressão não é utilizada.
 
 |Pressão|Orçamento|
 |:-:|:-:|
@@ -548,8 +662,6 @@ Conceito: o corpo do usuário irradia calor intenso, queimando quem estiver pert
 _(Excede em 1 — reduzir Potência para +5, totalizando 19, sobrando 1.)_
 
 No início de cada turno, todos que estiverem Perto sofrem o efeito da aura automaticamente. Potência 6 atinge o limiar de terceiro involuntário. Como não tem Duração, o dano é instantâneo a cada pulso — sem sobreposição de efeito.
-
----
 
 ---
 

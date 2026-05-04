@@ -48,11 +48,11 @@ O grupo começa conhecendo apenas o nó de entrada. A cada **período de explora
 |Locais habitados ou abandonados|Percepção / Manha|
 |Subterrâneos e fundos do mar|Máquinas / Sustento|
 
-|Resultado do Teste|O que acontece|
-|---|---|
-|Sucesso Perfeito|Revela 2 nós conectados ao nó atual|
-|Sucesso|Revela 1 nó conectado ao nó atual|
-|Falha|Não revela nó novo — mas o grupo chega a algum lugar com custo|
+| Resultado do Teste | O que acontece                                                 |
+| ------------------ | -------------------------------------------------------------- |
+| Sucesso Perfeito   | Revela 1 nó conectado ao nó atual sem tomar ponto de pressão   |
+| Sucesso            | Revela 1 nó conectado ao nó atual                              |
+| Falha              | Não revela nó novo — mas o grupo chega a algum lugar com custo |
 
 **Na falha**, o Mestre escolhe conforme o ambiente e o momento:
 
