@@ -41,23 +41,24 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 * **Nível 15 | Esse Caminho Cheira a Mal:** *Minha intuição está apitando!* Dentro de uma viagem, em apenas um evento de rota, pode descobrir tudo sobre as rotas e qual deve escolher.
 
 ---
+
 #### 🍳 Cozinheiro
 **Requisito:** Sustento
 
-* **Nível 1 | Master Chef:** *Ah isso? É somente uma receitinha secreta…* Em descansos e tendo 1 hora disponível, pode preparar um prato para toda tripulação de nível excelente que recupera 10 PM e 10 PV.
-* **Nível 5 | Comida de Batalha:** *Comidinha concentrada nunca é demais!* Gastando 15 minutos pode produzir comida de combate para cada aliado seu. Em combate, pode ser usada como ação de movimento e fornece 3 em testes de defesa e ataque por 2 turnos.
-* **Nível 10 | Banquete Lendário:** *Essa comida é feita por uma divindade? Ah não, a divindade sou eu!* Em 2 horas, pode produzir um alimento no qual qualquer um que comer irá recuperar 30 PV e 30 PM.
-* **Nível 15 | Entre a Faca e o Queijo, Sou o Mais Honrado:** *Essa é a especialidade da casa, e somente um merece tal façanha!* Em um descanso longo, pode passar o tempo todo produzindo um alimento especial (somente 1). Ao fornecer para si ou a um companheiro, comer este alimento irá preencher sua força de vontade tornando-o uma máquina novamente: recupere todo seu PA.
+- **Nível 1 | Master Chef:** _Ah isso? É somente uma receitinha secreta…_ Em descansos e tendo 30 minutos disponíveis, pode preparar um prato para toda a tripulação que recupera o **dobro da Resistência em PV** e o **dobro da Habilidade em PM** de cada aliado — essencialmente um descanso curto extra via comida.
+- **Nível 5 | Comida de Batalha:** _Comidinha concentrada nunca é demais!_ Gastando 15 minutos, pode produzir comida de combate para cada aliado. Em combate, pode ser usada como ação de movimento e fornece **+3 em testes de defesa e ataque** por 2 turnos.
+- **Nível 10 | Banquete Lendário:** _Essa comida é feita por uma divindade? Ah não, a divindade sou eu!_ Em 1 hora, pode produzir uma quantidade de alimentos igual à sua **Habilidade**. Qualquer um que comer irá recuperar **50% do seu PV e PM máximo**.
+- **Nível 15 | Entre a Faca e o Queijo, Sou o Mais Honrado:** _Essa é a especialidade da casa, e somente um merece tal façanha!_ Durante um descanso longo, pode dedicar o tempo inteiro produzindo um alimento especial (somente 1 por descanso longo). Ao fazê-lo, seu próprio descanso longo cai um grau — tornando-se **Precário**. Quem comer este alimento recupera todos os seus status: **PV, PM e PA** completamente (não pode existir mais de 1 desse tipo de alimento feito pelo cozinheiro).
 
 ---
 
-#### 🩺 Médico
+#### 🩺 Médico 
 **Requisito:** Medicina
 
-* **Nível 1 | Ninguém Morre Aqui!:** *EII! TÁ ME OUVINDO, CONTINUE COM A GENTE! VOCÊ NÃO VAI MORRER!!!* Em testes de recuperação, caso fracasse para estabilizar, pode efetuar um teste de medicina (9) onde, se você passar, adiciona vantagem no teste de morte da vítima.
-* **Nível 5 | Cura Efetiva:** *Vou tratar você o melhor do que eu posso!* Usando uma ação completa, pode curar um aliado ferido por ataques. Gaste 1 PM para girar 1D6 para curar de vida, podendo girar mais dados com o limite de sua HABILIDADE.
-* **Nível 10 | Cirurgia de Campo:** *Levante e lute!* Uma vez por dia, pode usar uma ação completa para levantar um aliado que está no estado morrendo e mantê-lo firme, motivando a continuar na batalha, fornecendo H.D6 (Habilidade em D6) de vida temporária.
-* **Nível 15 | Eu Estou Aqui Para Salvar:** *Estou lhe dando meu máximo para que você sobreviva!* Uma vez por dia, dê o equivalente a 1/4 de seu PM e transforme em PV para um aliado em alcance curto.
+- **Nível 1 | Ninguém Morre Aqui!:** _EII! TÁ ME OUVINDO, CONTINUE COM A GENTE! VOCÊ NÃO VAI MORRER!!!_ Uma quantidade de vezes por cena igual à sua **Habilidade**, pode gastar uma ação para realizar um curativo rápido em um aliado, curando **dobro da sua Habilidade em PV**. Além disso, ao realizar o Teste de Medicina para estabilizar um aliado em estado Morrendo e fracassar, o aliado recebe **ganho no próximo Teste de Morte**.
+- **Nível 5 | Cura Efetiva:** _Vou tratar você o melhor do que eu posso!_ Usando uma ação completa, pode curar um aliado ferido por ataques. Gaste 1 PM para girar 1D6 para curar de vida, podendo girar mais dados com o limite de sua **Habilidade**.
+- **Nível 10 | Cirurgia de Campo:** _Levante e lute!_ Uma vez por dia, pode usar uma ação completa para levantar um aliado que está no estado Morrendo e mantê-lo firme, motivando a continuar na batalha, fornecendo **Habilidade em D6** de vida temporária.
+- **Nível 15 | Eu Estou Aqui Para Salvar:** _Estou lhe dando meu máximo para que você sobreviva!_ Uma vez por dia, converta o equivalente a **1/4 do seu PM máximo** em PV para um aliado em alcance curto.
 
 ---
 
@@ -74,10 +75,10 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 #### 🎸 Músico
 **Requisito:** Artes
 
-* **Nível 1 | Canção da Batalha:** *Eu sinto seu cheiro… o cheiro de que sua morte está chegando.* Em batalha, por rodada, pode gastar uma ação para cantar/tocar e animar seu bando, fazendo com que se animem mais e tirem forças que nem eles sabiam que tinham! Faça um teste de Artes (9) e, caso passe, aliados recebem 5 PM. Caso seja um teste perfeito, de bônus receberá 1 PA. Fora de combate, pode gastar essa ação uma vez por dia e sem testes, considerando o tempo de um descanso curto, assim recebendo 6 PM.
-* **Nível 5 | Música Boa Pra Mim, Música Ruim Pra Tu:** *Eu tô curtindo a vibe amigo, e tu? Não tá? Pena.* 1 vez por cena, pode gastar 1 ação para tocar um som agonizante que afeta inimigos em alcance médio. Todos os afetados devem girar um teste de Resistência contra sua Artes; se não passarem, recebem perca em todos os testes por 1D6 rodadas.
-* **Nível 10 | Hino de Guerra:** *É hora de lutar.* Uma vez por cena, pode gastar sua ação completa e tocar uma música caracterizada pros seus aliados e motivá-los a vencer! Todos em alcance médio de aliados recebem 1 ganho em TODOS os testes durante o combate inteiro.
-* **Nível 15 | Coral Lendário!:** *Todos juntos, bora destruir tripulação!!!* Uma vez por cena, pode gastar uma ação e tocar uma música que faça com que seus aliados recebam metade do seu PM máximo como PM temporário durante esse combate.
+- **Nível 1 | Canção da Batalha:** _A música é a alma do combate!_ Em batalha, por rodada, pode gastar uma ação para cantar ou tocar e animar seu bando. Faça um teste de Artes (9) e, caso passe, aliados recebem **Habilidade do Músico × 2 PM**. Caso seja um teste perfeito, de bônus todos recebem **+1 PA**. Fora de combate, pode gastar essa ação uma vez por dia sem testes, considerando o tempo de um descanso curto, concedendo o mesmo valor de PM aos aliados.
+- **Nível 5 | Música Boa Pra Mim, Música Ruim Pra Tu:** _Eu tô curtindo a vibe amigo, e tu? Não tá? Pena._ Uma vez por cena, pode gastar uma ação para tocar um som agonizante que afeta inimigos em alcance médio. Todos os afetados devem girar um teste de Resistência contra sua Artes — se não passarem, recebem Perda em todos os testes por **1D6 rodadas**.
+- **Nível 10 | Hino de Guerra:** _É hora de lutar._ Uma vez por cena, pode gastar uma ação completa e tocar uma música motivacional para seus aliados. Todos em alcance médio recebem **1 Ganho em todos os testes** durante o combate inteiro.
+- **Nível 15 | Coral Lendário!:** _Todos juntos, bora destruir essa tripulação!!!_ Uma vez por cena, pode gastar uma ação e tocar uma música que energiza seus aliados, concedendo **Habilidade do Músico × 5 PM temporários** durante esse combate.
 
 ---
 
@@ -85,7 +86,7 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 **Requisito:** Máquinas
 
 * **Nível 1 | Em Altas Rotas:** *Pilotar? Há, fácil fácil, é comigo mesmo!* Recebe ganho em testes de pilotagem com veículos enquanto se locomove, além de não receber percas por conta de penalidades de rotas complicadas. Além de pode executar a manobra Defensiva de um veículo (ver *Veículos e modificações*).
-* **Nível 5 | Instinto de Piloto:** *E lá vamos nós!!* 1 vez por cena ode gastar 4 PM para refazer um teste de defesa do veículo, ficando com o melhor resultado.
+* **Nível 5 | Instinto de Piloto:** *E lá vamos nós!!* 1 vez por cena pode gastar 4 PM para refazer um teste de defesa do veículo, ficando com o melhor resultado.
 * **Nível 10 | Posição Estratégica:** *É hora desse veículo meter pipoco neles!* Pode gastar uma ação completa para manter o veículo em uma posição estratégica para que receba ganho em qualquer tipo de ataque que se derive do veículo.
 * **Nível 15 | Comigo Pilotando Não Tem Erro:** *Quero que se foda, vou é meter o pé daqui!* Uma vez por viagem, quando avistar uma situação de conflito, pode gastar 10 PM e forçar o veículo a uma velocidade anormal. Perderá 5D6 de PV do veículo, mas irá fugir do conflito.
 
@@ -100,6 +101,7 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 * **Nível 15 | Não Toque na Minha Tripulação!:** *Ver aliados próximos serem derrotados… EU NÃO ACEITO ISSO!!* Pra cada aliado que você presenciar ser derrotado, você recebe 20 PV temporários e 20 PM temporários, além de 2 PA durante a cena.
 
 ---
+
 #### **⚗️ Versatilidade de Profissão**
 Ao atingir os níveis **7** e **14**, você recebe 1 ponto de Versatilidade. Esses pontos representam o crescimento do personagem além dos limites da sua especialização original.
 

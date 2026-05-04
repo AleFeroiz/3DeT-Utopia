@@ -162,3 +162,7 @@ Certa condição torna mais difícil usar seus poderes. *(Aviso: Você não pode
 Você não é uma pessoa muito brilhante. *(Nota: Você não pode ser Tapado e também Gênio).*
 > [!danger] Efeito
 > Quando faz testes de Habilidade relacionados a inteligência e raciocínio, você sofre **Perda** e **nunca** tem Acertos Críticos.
+##### 💥 Vulnerável (–1 PT)
+Você possui uma fraqueza terrível contra certos tipos de dano. Pode ser uma sensibilidade física, um trauma, ou simplesmente a maldição de existir.
+> [!danger] Efeito
+>  Escolha **dois** tipos de dano. Sempre que sofrer dano desses tipos, o valor final recebido é **dobrado**.

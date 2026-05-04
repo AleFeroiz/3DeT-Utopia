@@ -201,6 +201,11 @@ Você tem um meio de imobilizar o alvo (congelando, rede, pontos de pressão, et
 > Faça um ataque e gaste **4 PM**. Se vencer a defesa do alvo, em vez de sofrer dano, ele fica **Imobilizado (Indefeso)**.
 > *A paralisia dura até o fim da cena ou até o alvo sofrer dano. A cada turno, o alvo pode tentar se soltar rolando Resistência (Dificuldade: Teste de poder do atacante).*
 
+##### 🛡️ Resistente (1 PT)
+Você desenvolveu uma resiliência natural contra certos tipos de dano — seja por treinamento, constituição física ou simplesmente por ter apanhado demais da coisa certa.
+> [!note] Efeito 
+> Escolha **dois** tipos de dano. Quando efetuar um teste de defesa contra esses tipos, some sua **Resistência** novamente ao teste (cumulativo com outras manobras de defesa).
+
 #### 🛡️ Resoluto (1 PT)
 Sua determinação é inabalável frente aos horrores do mundo.
 > [!note] Efeitos e Custos
