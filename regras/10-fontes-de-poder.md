@@ -260,18 +260,37 @@ A Lojinha é o sistema modular usado para montar suas técnicas. Use o seu **Or�
 
 ---
 
-> [!tip] Criação de Entidades
->  Características que criam entidades ou estruturas — de um muro de pedra a um servo de lama — seguem regras próprias além da Lojinha padrão.
+> [!tip] Resistência e Imunidade
+>  Características que concedem proteção contra tipos específicos de dano — resistência ao fogo, imunidade a veneno, dureza ao impacto físico — seguem esta regra. Consulte a seção **Tipos de Dano** para a lista completa de tipos disponíveis.
 > 
-> Toda criação possui atributos distribuídos pelo criador. A cada 4 pontos de Potência, você ganha 1 atributo para as **ENTIDADES**.
+> A Potência define o nível de proteção concedida:
 > 
-> A quantidade de entidades criadas na execução é definida pela quantidade de **ALVOS**.
+> |Limiar de Potência|Efeito|
+> |---|---|
+> |**2**|**Resistência** — o personagem soma seu atributo de Resistência novamente no teste de defesa contra ataques daquele tipo, exatamente como a vantagem Resistente do sistema base.|
+> |**6**|**Imunidade** — o personagem anula completamente o dano daquele tipo, seguindo as regras de Imunidade do sistema base.|
 > 
-> Os atributos seguem as mesmas regras do sistema base — Resistência define PV, Poder define impacto, Habilidade define agilidade. A criação usa Duração normalmente da Lojinha para definir quanto tempo existe. Ao chegar a 0 PV, some imediatamente — sem testes de morte.
+> **Potência excedente** entre os limiares 2 e 5 não aumenta a magnitude da Resistência — ela já entrega seu efeito completo ao atingir o limiar 2. O excedente até 5 não tem efeito adicional.
 > 
-> O que a criação faz com seus atributos depende do que ela é narrativamente. Um muro existe passivamente. Um servo age sob seu controle. A natureza da criação precisa ser aprovada pelo Mestre junto com a característica.
+> Ao atingir o limiar 6, o efeito sobe para Imunidade. Potência acima de 6 não amplifica a Imunidade já existente.
 > 
-> A aba **ÁREA** para esse tipo de característica fica responsável pela questão de **tamanho** da criação. Para entidades vivas isso não importa tanto — mas para estruturas, define a extensão: uma parede de X metros, uma cúpula com área de Y metros. Os valores de **orçamento e PM** dessa aba para essa regra adicional caem pela **metade**.
+> Caso queira proteger contra **mais de um tipo de dano**, cada tipo adicional exige uma nova característica separada — ou uma nova compra desta regra dentro da mesma característica, seguindo os mesmos limiares e custos de Potência.
+> 
+> O tipo de dano protegido é definido na criação da característica e não pode ser alterado sem um Ponto de Redefinição.
+
+
+---
+>[!tip] Criação de Entidades
+> Características que criam entidades — servos, construtos, criaturas conjuradas, clones — seguem esta regra em vez das regras base do Efeito Livre.
+>A entidade criada é representada por uma **Ficha Reduzida**: uma versão simplificada da ficha de personagem, construída com Pontos de Ficha gerados pela Potência da característica. **A cada 4 pontos de Potência, o criador recebe 1 Ponto de Ficha** para distribuir na ficha da entidade.
+>Esses pontos funcionam exatamente como os de um personagem — podem comprar atributos, perícias, vantagens e até características próprias da entidade. No entanto, entidades possuem restrições:
+>- **A entidade não possui PM próprio.** Qualquer característica ativa que ela use tem seu custo em PM pago **sempre pelo criador**, nunca pela entidade. O criador deve estar em condições de pagar — se não puder, a característica não pode ser ativada.
+>- **Profissões e progressão de nível não podem ser adquiridas.**
+>- Tudo que a entidade possui — habilidades, atributos, conceito — **precisa ser aprovado pelo Mestre** antes de entrar em jogo, tanto na criação quanto em qualquer redefinição posterior.
+>- A entidade age sob controle do criador e dentro dos limites narrativos da Fonte de Poder. A narrativa sempre vem primeiro.
+>**A quantidade de entidades** criadas por uso é definida pela aba de **Alvos Adicionais**.
+>**A duração** de existência é definida pela aba de **Duração**. Ao fim da duração, a entidade se dissolve independentemente do seu estado. Se chegar a 0 PV antes disso, some imediatamente — sem testes de morte.
+>**O tamanho** da entidade é definido pela aba de **Área** — uma entidade de proporção humana padrão não exige Área; estruturas maiores ou criaturas colossais exigem investimento nessa aba.
 
 ---
 
