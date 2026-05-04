@@ -785,6 +785,14 @@
       <option value="">— escolha uma perícia —</option>
     </select>
 
+    <label style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
+    <div class="num-stepper">
+      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">‹</button>
+      <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
+      <span class="step-val" id="step_val_itemPeso">0</span>
+      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">›</button>
+    </div>
+
     <label>Categoria</label>
     <div style="display:flex;gap:8px;margin-top:4px">
       <label class="item-cat-opt" id="catItemLabel">
@@ -795,14 +803,6 @@
         <input type="radio" name="itemCategoria" value="equipamento" onchange="toggleCategoriaItem(this.value)">
         <span>⚔️ Equipamento</span>
       </label>
-    </div>
-
-    <label style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
-    <div class="num-stepper">
-      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">‹</button>
-      <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
-      <span class="step-val" id="step_val_itemPeso">0</span>
-      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">›</button>
     </div>
 
     <label>Descrição</label>
