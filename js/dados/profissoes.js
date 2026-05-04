@@ -117,7 +117,7 @@ export const PROFISSOES = [
     emoji: "🏴‍☠️",
     requisito: "Influência",
     habilidades: [
-      { nivel: 1,  nome: "Avante!",                  desc: "Ao início de um combate, escolha um aliado; ele irá receber um ganho no teste de iniciativa." },
+      { nivel: 1,  nome: "Avante!",                  desc: "Ao início de um combate, escolha aliados igual ao seu PODER; eles irão receber um ganho no teste de iniciativa." },
       { nivel: 5,  nome: "Cai Pra Porrada!",         desc: "Caso um aliado em alcance curto vá receber um ataque, como reação pode gastar 4 PM e girar um teste de Poder contra a Resistência do atacante. Se vencer, o ataque será direcionado a você e tu possuis 1 ganho no teste de defesa." },
       { nivel: 10, nome: "Eu Confio no Seu Potencial", desc: "Durante um combate, no seu turno, pode gastar uma ação completa para ceder uma ação a mais para um aliado em alcance curto de ti." },
       { nivel: 15, nome: "Não Toque na Minha Tripulação!", desc: "Para cada aliado que você presenciar ser derrotado, você recebe 20 PV temporários e 20 PM temporários, além de 2 PA durante a cena." }
