@@ -418,6 +418,11 @@ function _renderInventario() {
       `<span class="inv-badge inv-badge-encant" title="${e.desc}">${e.emoji} ${e.nome}${e.extra ? ' ('+e.extra+')' : ''}</span>`
     ).join("")
 
+    // Badge de alcance ideal
+    const _alcLabels = {corpo_a_corpo:"🤜 Corpo a corpo",curto:"📏 Curto",longo:"📐 Longo",muito_longo:"🎯 Muito longo",fora_de_alcance:"❌ Fora de alcance"}
+    const badgeAlcance = (item.categoria === "equipamento" && item.usadoAtaque && item.equipadoAtaque && item.alcanceIdeal)
+      ? `<span class="inv-badge inv-badge-alcance" title="Alcance ideal">${_alcLabels[item.alcanceIdeal] ?? item.alcanceIdeal}</span>` : ""
+
     // Checkboxes de "em uso" — aparecem sempre que o equipamento PODE ser usado para ataque/defesa
     const checkAtk = (item.categoria === "equipamento" && item.usadoAtaque && !_invSomenteLeitura)
       ? `<label class="inv-check-uso" title="Ativar bônus de ataque">
@@ -464,7 +469,7 @@ function _renderInventario() {
 
     card.innerHTML = `
       <div class="inv-item-info">
-        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeCatNum}${badgePericia}${badgeAtk}${badgeDef}${encantsHtml}</div>
+        <div class="inv-item-nome">${item.nome} ${badgeCat}${badgeCatNum}${badgePericia}${badgeAtk}${badgeDef}${badgeAlcance}${encantsHtml}</div>
         ${item.descricao ? `<div class="inv-item-desc">${item.descricao}</div>` : ""}
         ${detalhePanel}
       </div>

@@ -1363,6 +1363,7 @@ hr {
 .inv-badge-equip   { background: #4c1d9530; color: #a78bfa; border: 1px solid #7c3aed55; }
 .inv-badge-atk     { background: #7f1d1d30; color: #fca5a5; border: 1px solid #ef444455; }
 .inv-badge-def     { background: var(--cor-tema-dim, #1e3a5f30); color: #93c5fd; border: 1px solid var(--cor-tema-mid, #3b82f655); }
+.inv-badge-alcance { background: color-mix(in srgb, var(--cor-tema, #3b82f6) 12%, transparent); color: var(--cor-tema, #93c5fd); border: 1px solid color-mix(in srgb, var(--cor-tema, #3b82f6) 35%, transparent); }
 .inv-badge-pericia { background: #14532d30; color: #86efac; border: 1px solid #22c55e55; }
 
 /* Checkboxes inline de "em uso" no card de equipamento */
