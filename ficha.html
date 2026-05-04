@@ -797,6 +797,17 @@
       </label>
     </div>
 
+    <label style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
+    <div class="num-stepper">
+      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">‹</button>
+      <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
+      <span class="step-val" id="step_val_itemPeso">0</span>
+      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">›</button>
+    </div>
+
+    <label>Descrição</label>
+    <textarea id="itemDescricao" placeholder="Detalhes, origem, efeitos especiais..." style="min-height:70px"></textarea>
+
     <!-- Campos extras só para equipamento -->
     <div id="camposEquipamento" style="display:none;margin-top:10px;border-top:1px solid #334155;padding-top:10px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -919,17 +930,6 @@
       </div>
 
     </div>
-
-    <label style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
-    <div class="num-stepper">
-      <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">‹</button>
-      <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
-      <span class="step-val" id="step_val_itemPeso">0</span>
-      <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">›</button>
-    </div>
-
-    <label>Descrição</label>
-    <textarea id="itemDescricao" placeholder="Detalhes, origem, efeitos especiais..." style="min-height:70px"></textarea>
 
     <div class="modal-actions">
       <button onclick="confirmarSalvarItem()">✅ Salvar</button>
