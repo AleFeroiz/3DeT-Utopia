@@ -450,6 +450,10 @@ function _renderInventario() {
           <span>⚖️ Peso: <b style="color:#e2e8f0">${item.peso ?? 0}</b></span>
           ${item.catEquip ? `<span>🏷️ Cat. <b style="color:#93c5fd">${item.catEquip}</b></span>` : ""}
           ${item.usadoAtaque ? `<span>⚔️ Atk bruto: <b style="color:#fbbf24">+${item.bonusAtaque ?? 0}</b></span>` : ""}
+          ${item.usadoAtaque && item.alcanceIdeal ? (() => {
+            const labels = {corpo_a_corpo:"🤜 Corpo a corpo",curto:"📏 Curto",longo:"📐 Longo",muito_longo:"🎯 Muito longo",fora_de_alcance:"❌ Fora de alcance"}
+            return `<span style="color:#a78bfa">${labels[item.alcanceIdeal] ?? item.alcanceIdeal}</span>`
+          })() : ""}
           ${item.usadoDefesa ? (() => {
             const b = Number(item.bonusDefesa)||0; const p = Math.max(1,Number(item.prioridadeDefesa)||1); const e = Math.trunc(b/p)
             return `<span>🛡️ Def bruto: <b style="color:#4ade80">+${b}</b>${p>1?` ÷${p} = <b style="color:#4ade80">${e}</b>`:""}</span>`
@@ -1953,6 +1957,7 @@ function expor() {
     document.getElementById("campoBonusDefesa").style.display    = "none"
     document.getElementById("itemBonusAtaque").value             = "0"
     document.getElementById("itemBonusDefesa").value             = "0"
+    document.getElementById("itemAlcanceIdeal").value            = "corpo_a_corpo"
     window.syncStepper?.("itemBonusAtaque")
     window.syncStepper?.("itemBonusDefesa")
     document.getElementById("itemPrioridadeDefesa").value        = "1"
@@ -1992,6 +1997,7 @@ function expor() {
     document.getElementById("campoBonusAtaque").style.display = usaAtk ? "block" : "none"
     document.getElementById("itemBonusAtaque").value          = item.bonusAtaque ?? 0
     window.syncStepper?.("itemBonusAtaque")
+    document.getElementById("itemAlcanceIdeal").value         = item.alcanceIdeal ?? "corpo_a_corpo"
     // Defesa
     const usaDef = !!item.usadoDefesa
     document.getElementById("itemUsadoDefesa").checked        = usaDef
@@ -2031,6 +2037,7 @@ function expor() {
       usadoAtaque:    usaAtk,
       usadoDefesa:    usaDef,
       bonusAtaque:    usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
+      alcanceIdeal:   usaAtk ? (document.getElementById("itemAlcanceIdeal").value || "corpo_a_corpo") : undefined,
       bonusDefesa:    usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
       prioridadeDefesa: usaDef ? (Math.max(1, +document.getElementById("itemPrioridadeDefesa").value || 1)) : 1,
       // Encantamentos e categoria (só para equipamentos)
@@ -2175,6 +2182,8 @@ function expor() {
       desc:"Protege contra Paralisia e condições negativas. Ganho em Defesa e Resistência contra eles.", extra:null },
     { id:"acurado",    emoji:"🎯", nome:"Acurado",      custo:2, repetivel:false, incompativel:["macico"],
       desc:"Acerto crítico em testes de ataque com 5 ou 6. Incompatível com Maciço.", extra:null },
+    { id:"alcance",    emoji:"📏", nome:"Alcance",      custo:1, repetivel:true,  incompativel:[],
+      desc:"Permite escolher mais 1 categoria de distância como alcance ideal (aprovação do mestre).", extraLabel:"Categoria de distância adicional", extraPlaceholder:"Ex: Longo" },
     { id:"aprimorado", emoji:"💎", nome:"Aprimorado",   custo:1, repetivel:true,  incompativel:[],
       desc:"Aumenta um atributo em situações específicas. Não afeta ataque/defesa.", extraLabel:"Atributo / situação", extraPlaceholder:"Ex: Força ao escalar montanhas" },
     { id:"condutor",   emoji:"⚡", nome:"Condutor",     custo:2, repetivel:false, incompativel:[],

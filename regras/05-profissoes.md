@@ -94,7 +94,7 @@ Além de uma raça, você deve escolher qual será sua especialização… sua p
 #### 🏴‍☠️ Comandante
 **Requisito:** Influência
 
-* **Nível 1 | Avante!:** *Companheiros, é hora de DESCER O CACETE!!!* Ao início de um combate, escolha aliados igual ao seu **PODER**; eles irão receber um ganho no teste de iniciativa.
+* **Nível 1 | Avante!:** *Companheiros, é hora de DESCER O CACETE!!!* Ao início de um combate, escolha um aliado; ele irá receber um ganho no teste de iniciativa.
 * **Nível 5 | Cai Pra Porrada!:** *Por que não pega alguém do seu tamanho?* Caso um aliado em alcance curto vá receber um ataque, como reação pode gastar 4 PM e girar um teste de Poder contra a Resistência do atacante. Se vencer, o ataque será direcionado a você e tu possuis 1 ganho no teste de defesa.
 * **Nível 10 | Eu Confio no Seu Potencial:** *Eu confio que você irá ANIQUILAR os inimigos!* Durante um combate, no seu turno, pode gastar uma ação completa para ceder uma ação a mais para um aliado em alcance curto de ti.
 * **Nível 15 | Não Toque na Minha Tripulação!:** *Ver aliados próximos serem derrotados… EU NÃO ACEITO ISSO!!* Pra cada aliado que você presenciar ser derrotado, você recebe 20 PV temporários e 20 PM temporários, além de 2 PA durante a cena.

@@ -743,8 +743,11 @@ function _htmlInventario(ficha) {
 
     const badgeAtk = (temAtk && item.equipadoAtaque)
       ? `<span class="cfc-inv-badge cfc-inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
-    const badgeDef = (temDef && item.equipadoDefesa)
-      ? `<span class="cfc-inv-badge cfc-inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
+    const badgeDef = (temDef && item.equipadoDefesa) ? (() => {
+      const b = Number(item.bonusDefesa)||0; const p = Math.max(1,Number(item.prioridadeDefesa)||1); const e = Math.trunc(b/p)
+      const prioBadge = p > 1 ? ` <span style="font-size:10px;opacity:0.7">÷${p}</span>` : ""
+      return `<span class="cfc-inv-badge cfc-inv-badge-def" title="Bônus bruto: ${b} ÷ prioridade ${p} = ${e}">🛡️ +${e}${prioBadge}</span>`
+    })() : ""
 
     const checkAtk = temAtk ? `
       <label class="cfc-inv-check${item.equipadoAtaque ? " atk-ativo" : ""}" title="Ativar bônus de ataque">
@@ -762,6 +765,10 @@ function _htmlInventario(ficha) {
     const encantsBadges = encants.map(e =>
       `<span class="cfc-inv-badge cfc-inv-badge-encant" title="${_esc(e.desc ?? "")}">${e.emoji ?? "✨"} ${_esc(e.nome)}${e.extra ? " ("+_esc(e.extra)+")" : ""}</span>`
     ).join("")
+
+    const alcanceLabels = {corpo_a_corpo:"🤜 Corpo a corpo",curto:"📏 Curto",longo:"📐 Longo",muito_longo:"🎯 Muito longo",fora_de_alcance:"❌ Fora de alcance"}
+    const badgeAlcance = (temAtk && item.alcanceIdeal)
+      ? `<span class="cfc-inv-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa;border-color:rgba(167,139,250,0.3)">${alcanceLabels[item.alcanceIdeal] ?? item.alcanceIdeal}</span>` : ""
 
     const temDetalhe = !!(item.descricao || encants.length)
     const seta = temDetalhe ? `<span class="cfc-inv-seta">▾</span>` : ""
@@ -786,7 +793,7 @@ function _htmlInventario(ficha) {
       <div class="cfc-inv-item${isEquip ? " equip" : ""}${temDetalhe ? " expansivel" : ""}">
         <div class="cfc-inv-item-topo">
           <div class="cfc-inv-item-info">
-            <div class="cfc-inv-item-nome">${_esc(item.nome)}${badgeAtk}${badgeDef}${encantsBadges}</div>
+            <div class="cfc-inv-item-nome">${_esc(item.nome)}${badgeAtk}${badgeDef}${badgeAlcance}${encantsBadges}</div>
           </div>
           <div class="cfc-inv-item-direita">
             <span class="cfc-inv-peso-tag" style="${(item.peso??0)<0?"color:#4ade80":""}">⚖️ ${item.peso ?? 0}</span>
@@ -843,11 +850,17 @@ function _bindGavetas(card, ficha) {
         if (nomeEl) {
           const badgeAtk = (item.usadoAtaque && item.equipadoAtaque)
             ? `<span class="cfc-inv-badge cfc-inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ""
-          const badgeDef = (item.usadoDefesa && item.equipadoDefesa)
-            ? `<span class="cfc-inv-badge cfc-inv-badge-def">🛡️ +${item.bonusDefesa ?? 0}</span>` : ""
+          const badgeDef = (item.usadoDefesa && item.equipadoDefesa) ? (() => {
+            const b = Number(item.bonusDefesa)||0; const p = Math.max(1,Number(item.prioridadeDefesa)||1); const ef = Math.trunc(b/p)
+            const prioBadge = p > 1 ? ` <span style="font-size:10px;opacity:0.7">÷${p}</span>` : ""
+            return `<span class="cfc-inv-badge cfc-inv-badge-def" title="Bônus bruto: ${b} ÷ prioridade ${p} = ${ef}">🛡️ +${ef}${prioBadge}</span>`
+          })() : ""
+          const _alcLabels = {corpo_a_corpo:"🤜 Corpo a corpo",curto:"📏 Curto",longo:"📐 Longo",muito_longo:"🎯 Muito longo",fora_de_alcance:"❌ Fora de alcance"}
+          const badgeAlcance = (item.usadoAtaque && item.equipadoAtaque && item.alcanceIdeal)
+            ? `<span class="cfc-inv-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa;border-color:rgba(167,139,250,0.3)">${_alcLabels[item.alcanceIdeal] ?? item.alcanceIdeal}</span>` : ""
           // Remove badges antigos e reinsere
           nomeEl.querySelectorAll(".cfc-inv-badge").forEach(b => b.remove())
-          nomeEl.insertAdjacentHTML("beforeend", badgeAtk + badgeDef)
+          nomeEl.insertAdjacentHTML("beforeend", badgeAtk + badgeDef + badgeAlcance)
         }
       }
 
