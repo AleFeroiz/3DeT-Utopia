@@ -60,7 +60,7 @@ export const TABELAS = {
     tipo: "unico",
     dados: [
       { nome: "Padrão (Base)",  orcamento: 0, pm:  0, gratuita: true },
-      { nome: "Completa",       orcamento: 2, pm:  3 },
+      { nome: "Completa",       orcamento: 2, pm:  -3 },
       { nome: "Movimento",      orcamento: 8, pm:  3 },
       { nome: "Reação",         orcamento: 6, pm:  2 }
     ]
@@ -231,8 +231,8 @@ export const TABELAS_PASSIVA = {
   duracao: {
     label: "Duração do Efeito",
     base: "Instantânea — gratuito",
-    descricao: "Duração do efeito produzido quando a passiva dispara. A habilidade em si existe permanentemente.",
-    tipo: "unico",
+    descricao: "Escolha um tipo de duração e empilhe ele. Trocar de linha descarta o stack anterior.",
+    tipo: "empilhavel_mono",
     dados: [
       { nome: "Instantânea (Base)", orcamento: 0,  gratuita: true },
       { nome: "1 Rodada",           orcamento: 2  },
