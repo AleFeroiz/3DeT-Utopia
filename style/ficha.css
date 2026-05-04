@@ -2028,3 +2028,16 @@ hr {
   border-radius: 4px;
   white-space: nowrap;
 }
+
+/* ── Modal de Item: scroll sempre acessível independente do zoom ── */
+#modalItem {
+  align-items: flex-start;
+  padding: 20px 12px;
+  overflow-y: auto;
+}
+#modalItem .modal-content {
+  max-height: none;
+  overflow-y: visible;
+  margin: auto;
+  flex-shrink: 0;
+}
