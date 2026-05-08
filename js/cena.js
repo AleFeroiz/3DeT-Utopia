@@ -24,7 +24,8 @@ let _cenas        = []
 let _cenaAtual    = null
 let _fichasMestre = []
 let _logado       = false
-let _recarregando = false   // guard: evita reloads concorrentes
+let _fechando     = false  // guard: evita focus handler interferir durante fecharCena
+let _recarregando = false  // guard: evita reloads concorrentes
 let _bootstrapFeito = false // guard: evita _recarregarDados antes do bootstrap
 
 // ── Save indicator ────────────────────────────────────────
@@ -261,14 +262,21 @@ async function abrirCena(id) {
 }
 
 window.fecharCena = async function() {
+  _fechando  = true
   _cenaAtual = null
-  document.getElementById("painelCena").style.display  = "none"
-  // Recarrega direto, sem depender de guards (_bootstrapFeito/_recarregando),
-  // para garantir que a lista apareça populada ao voltar
+  document.getElementById("painelCena").style.display = "none"
+
+  // Espera qualquer _recarregarDados em andamento terminar antes de carregar
+  const esperar = () => new Promise(r => { if (!_recarregando) r(); else setTimeout(() => esperar().then(r), 50) })
+  await esperar()
+
+  // Carrega dados frescos diretamente (sem guards de bootstrap/recarregando)
   await Promise.all([_carregarCenas(), _carregarFichasMestre()])
   _resincCenaAtual()
+
   document.getElementById("painelLista").style.display = "block"
   renderListaCenas()
+  _fechando = false
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1162,7 +1170,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // (gavetas abertas, scroll position, edições em andamento).
   // Apenas atualiza _cenas e _fichasMestre em memória + re-sinc _cenaAtual,
   // garantindo que o próximo save use dados frescos do Firestore.
-  window.addEventListener("focus", () => _recarregarDados({ renderizarCena: false }))
+  window.addEventListener("focus", () => {
+    if (_fechando) return  // fecharCena está no meio da operação — não interfere
+    _recarregarDados({ renderizarCena: false })
+  })
 })
 
 async function _bootstrapFirebaseCenas() {
