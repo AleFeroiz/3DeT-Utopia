@@ -25,6 +25,7 @@ let _cenaAtual    = null
 let _fichasMestre = []
 let _logado       = false
 let _recarregando = false   // guard: evita reloads concorrentes
+let _bootstrapFeito = false // guard: evita _recarregarDados antes do bootstrap
 
 // ── Save indicator ────────────────────────────────────────
 function _setSaveStatus(estado) {
@@ -112,12 +113,16 @@ function _resincCenaAtual() {
 /**
  * Recarrega cenas + fichas de forma segura:
  * - Guard contra reloads concorrentes (_recarregando)
+ * - Guard contra rodar antes do bootstrap do Firebase estar pronto
  * - Sempre re-sincroniza _cenaAtual após carregar
  * - Re-renderiza a cena aberta APENAS se solicitado (padrão: não)
  *   → evita destruir state de UI (gavetas abertas, scroll) em trocas de aba
  */
 async function _recarregarDados({ renderizarCena = false } = {}) {
   if (_recarregando) return
+  // Não recarrega se logado mas bootstrap ainda não rodou
+  // (firebaseCenas.js estaria com _fns = null → cairia no localStorage vazio)
+  if (_logado && estaConfigurado() && !_bootstrapFeito) return
   _recarregando = true
   try {
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
@@ -253,10 +258,13 @@ async function abrirCena(id) {
   renderSidebar()
 }
 
-window.fecharCena = function() {
+window.fecharCena = async function() {
   _cenaAtual = null
   document.getElementById("painelLista").style.display = "block"
   document.getElementById("painelCena").style.display  = "none"
+  // Recarrega dados frescos do Firestore antes de mostrar a lista
+  // (garante que cenas criadas/editadas na sessão apareçam corretamente)
+  await _recarregarDados({ renderizarCena: false })
   renderListaCenas()
 }
 
@@ -1161,6 +1169,9 @@ async function _bootstrapFirebaseCenas() {
       await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
     const db   = getFirestore()
     const user = getUser()
-    if (db && user) inicializarFirebaseCenas(db, user, { doc, setDoc, getDoc })
+    if (db && user) {
+      inicializarFirebaseCenas(db, user, { doc, setDoc, getDoc })
+      _bootstrapFeito = true
+    }
   } catch(e) { console.warn("[cena.js] Bootstrap Firebase Cenas:", e) }
 }
