@@ -1108,12 +1108,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = getUser()
   _logado = !!user
 
+  // CRÍTICO: bootstrap DEVE completar antes de qualquer _carregarCenas().
+  // _bootstrapFirebaseCenas faz import() dinâmico do SDK — se _carregarCenas()
+  // rodar antes, _ok() em firebaseCenas.js retorna false e cai no localStorage
+  // (vazio), sobrescrevendo as cenas reais do Firestore na próxima escrita.
   if (_logado && estaConfigurado()) await _bootstrapFirebaseCenas()
+
+  // Só carrega após bootstrap garantido
+  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+  _resincCenaAtual()
+  await _limparFichasOrfas()
+  renderListaCenas()
 
   onLogin(async u => {
     _logado = true
     setUserCenas(u)
-    await _bootstrapFirebaseCenas()
+    await _bootstrapFirebaseCenas()   // re-inicializa com novo user
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
     _resincCenaAtual()
     await _limparFichasOrfas()
@@ -1124,17 +1134,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   onLogout(async () => {
     _logado = false
     setUserCenas(null)
+    _cenaAtual = null   // fecha cena aberta ao deslogar
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
     _resincCenaAtual()
     await _limparFichasOrfas()
     renderListaCenas()
-    if (_cenaAtual) { renderCena(); renderSidebar() }
+    // volta para lista (painel de cena não faz sentido sem login)
+    const painelLista = document.getElementById("painelLista")
+    const painelCena  = document.getElementById("painelCena")
+    if (painelLista) painelLista.style.display = "block"
+    if (painelCena)  painelCena.style.display  = "none"
   })
-
-  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
-  _resincCenaAtual()
-  await _limparFichasOrfas()
-  renderListaCenas()
 
   // Recarrega dados silenciosamente ao retornar à aba.
   // NÃO re-renderiza a cena aberta para não destruir estado de UI
