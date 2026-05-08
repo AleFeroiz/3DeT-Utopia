@@ -120,9 +120,11 @@ function _resincCenaAtual() {
  */
 async function _recarregarDados({ renderizarCena = false } = {}) {
   if (_recarregando) return
-  // Não recarrega se logado mas bootstrap ainda não rodou
-  // (firebaseCenas.js estaria com _fns = null → cairia no localStorage vazio)
-  if (_logado && estaConfigurado() && !_bootstrapFeito) return
+  // Se logado mas bootstrap ainda não foi feito, tenta agora antes de prosseguir
+  if (_logado && estaConfigurado() && !_bootstrapFeito) {
+    await _bootstrapFirebaseCenas()
+    if (!_bootstrapFeito) return  // bootstrap falhou — não carrega para não sobrescrever com vazio
+  }
   _recarregando = true
   try {
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
@@ -260,11 +262,12 @@ async function abrirCena(id) {
 
 window.fecharCena = async function() {
   _cenaAtual = null
-  document.getElementById("painelLista").style.display = "block"
   document.getElementById("painelCena").style.display  = "none"
-  // Recarrega dados frescos do Firestore antes de mostrar a lista
-  // (garante que cenas criadas/editadas na sessão apareçam corretamente)
-  await _recarregarDados({ renderizarCena: false })
+  // Recarrega direto, sem depender de guards (_bootstrapFeito/_recarregando),
+  // para garantir que a lista apareça populada ao voltar
+  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+  _resincCenaAtual()
+  document.getElementById("painelLista").style.display = "block"
   renderListaCenas()
 }
 
