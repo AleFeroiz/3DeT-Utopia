@@ -24,6 +24,7 @@ let _cenas        = []
 let _cenaAtual    = null
 let _fichasMestre = []
 let _logado       = false
+let _recarregando = false   // guard: evita reloads concorrentes
 
 // ── Save indicator ────────────────────────────────────────
 function _setSaveStatus(estado) {
@@ -73,7 +74,12 @@ async function _salvarFicha(ficha) {
   if (idx !== -1) _fichasMestre[idx] = ficha
 
   if (_logado && estaConfigurado()) {
-    await salvarFichaFirestore(ficha.toJSON(), "mestre").catch(console.error)
+    try {
+      await salvarFichaFirestore(ficha.toJSON(), "mestre")
+    } catch(e) {
+      console.error("[Cena] salvar ficha:", e)
+      toastErro("Erro ao salvar ficha. Verifique sua conexão.")
+    }
   } else {
     const raw = Storage.carregarFichas("mestre")
     const ri  = raw.findIndex(f => f.id === ficha.id)
@@ -92,6 +98,38 @@ async function _carregarCenas() {
   _cenas = StorageCenas.carregar()
 }
 
+/**
+ * Após qualquer _carregarCenas(), re-aponta _cenaAtual para o objeto
+ * dentro do novo array _cenas (evita referência stale que sobrescreveria
+ * a versão recém-carregada do Firestore ao salvar).
+ */
+function _resincCenaAtual() {
+  if (!_cenaAtual) return
+  const nova = _cenas.find(c => c.id === _cenaAtual.id)
+  if (nova) _cenaAtual = nova
+}
+
+/**
+ * Recarrega cenas + fichas de forma segura:
+ * - Guard contra reloads concorrentes (_recarregando)
+ * - Sempre re-sincroniza _cenaAtual após carregar
+ * - Re-renderiza a cena aberta APENAS se solicitado (padrão: não)
+ *   → evita destruir state de UI (gavetas abertas, scroll) em trocas de aba
+ */
+async function _recarregarDados({ renderizarCena = false } = {}) {
+  if (_recarregando) return
+  _recarregando = true
+  try {
+    await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    _resincCenaAtual()
+    await _limparFichasOrfas()
+    renderListaCenas()
+    if (renderizarCena && _cenaAtual) { renderCena(); renderSidebar() }
+  } finally {
+    _recarregando = false
+  }
+}
+
 // Após carregar cenas e fichas, remove fichaIds que não existem mais
 async function _limparFichasOrfas() {
   const idsValidos = new Set(_fichasMestre.map(f => f.id))
@@ -102,6 +140,8 @@ async function _limparFichasOrfas() {
     if (fichaIds.length !== antes) houveLimpeza = true
     return { ...cena, fichaIds }
   })
+  // Re-sinc após mapear (map cria novo array, referência stale novamente)
+  _resincCenaAtual()
   if (houveLimpeza) {
     StorageCenas.salvar(_cenas)
     if (_logado && estaConfigurado()) await salvarCenasFirestore(_cenas)
@@ -1068,13 +1108,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = getUser()
   _logado = !!user
 
+  // CRÍTICO: bootstrap DEVE completar antes de qualquer _carregarCenas().
+  // _bootstrapFirebaseCenas faz import() dinâmico do SDK — se _carregarCenas()
+  // rodar antes, _ok() em firebaseCenas.js retorna false e cai no localStorage
+  // (vazio), sobrescrevendo as cenas reais do Firestore na próxima escrita.
   if (_logado && estaConfigurado()) await _bootstrapFirebaseCenas()
+
+  // Só carrega após bootstrap garantido
+  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+  _resincCenaAtual()
+  await _limparFichasOrfas()
+  renderListaCenas()
 
   onLogin(async u => {
     _logado = true
     setUserCenas(u)
-    await _bootstrapFirebaseCenas()
+    await _bootstrapFirebaseCenas()   // re-inicializa com novo user
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    _resincCenaAtual()
     await _limparFichasOrfas()
     renderListaCenas()
     if (_cenaAtual) { renderCena(); renderSidebar() }
@@ -1083,25 +1134,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   onLogout(async () => {
     _logado = false
     setUserCenas(null)
+    _cenaAtual = null   // fecha cena aberta ao deslogar
     await Promise.all([_carregarCenas(), _carregarFichasMestre()])
+    _resincCenaAtual()
     await _limparFichasOrfas()
     renderListaCenas()
-    if (_cenaAtual) { renderCena(); renderSidebar() }
+    // volta para lista (painel de cena não faz sentido sem login)
+    const painelLista = document.getElementById("painelLista")
+    const painelCena  = document.getElementById("painelCena")
+    if (painelLista) painelLista.style.display = "block"
+    if (painelCena)  painelCena.style.display  = "none"
   })
 
-  await Promise.all([_carregarCenas(), _carregarFichasMestre()])
-    await _limparFichasOrfas()
-  renderListaCenas()
-
-  // Recarrega cenas quando o usuário volta para esta aba
-  // (ex: excluiu ficha no index.html em outra aba)
-  // Usa window "focus" pois é o evento que dispara ao trocar abas no navegador
-  window.addEventListener("focus", async () => {
-    await Promise.all([_carregarCenas(), _carregarFichasMestre()])
-    await _limparFichasOrfas()
-    renderListaCenas()
-    if (_cenaAtual) { renderCena(); renderSidebar() }
-  })
+  // Recarrega dados silenciosamente ao retornar à aba.
+  // NÃO re-renderiza a cena aberta para não destruir estado de UI
+  // (gavetas abertas, scroll position, edições em andamento).
+  // Apenas atualiza _cenas e _fichasMestre em memória + re-sinc _cenaAtual,
+  // garantindo que o próximo save use dados frescos do Firestore.
+  window.addEventListener("focus", () => _recarregarDados({ renderizarCena: false }))
 })
 
 async function _bootstrapFirebaseCenas() {
