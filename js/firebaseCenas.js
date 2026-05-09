@@ -1,52 +1,41 @@
 // ============================================================
-//  firebaseCenas.js — Funções Firestore para Cenas
-//  Segue exatamente o mesmo padrão de firebase.js (fichas)
-//  Estrutura: users/{uid}/dados/cenas_mestre → { cenas: [...] }
+//  firebaseCenas.js — Funções Firestore para Cenas  v3
 //
-//  NÃO inicializa Firebase sozinho — depende de firebase.js ter
-//  sido inicializado antes (compartilha _db e _user via getters).
+//  NÃO mantém estado próprio de Firebase.
+//  Usa getDb() / getUser() / getFirebaseFns() de firebase.js,
+//  que são os mesmos objetos já inicializados — elimina
+//  completamente o risco de estado desincronizado entre módulos.
 // ============================================================
 
-// Importa helpers de autenticação/instância do firebase.js principal
-// Os getters _getDb e _getUser são expostos como funções de conveniência
-// para não duplicar a lógica de inicialização do Firebase SDK.
+import { getDb, getUser, getFirebaseFns } from "./firebase.js"
 
-let _db = null, _user = null, _fns = null
+// Retorna true apenas quando firebase.js está totalmente inicializado
+// e há um usuário autenticado — sem bootstrap extra necessário.
+const _ok = () => !!(getDb() && getUser() && getFirebaseFns())
 
-/**
- * Deve ser chamado logo após inicializarFirebase() do firebase.js.
- * Recebe as mesmas instâncias já criadas para não duplicar o SDK.
- */
-export function inicializarFirebaseCenas(db, user, fns) {
-  _db   = db
-  _user = user
-  _fns  = fns
+const _docCenas = () => {
+  const fns  = getFirebaseFns()
+  const db   = getDb()
+  const user = getUser()
+  return fns.doc(db, "users", user.uid, "dados", "cenas_mestre")
 }
-
-/** Atualiza o user quando o auth muda (onLogin / onLogout) */
-export function setUserCenas(user) { _user = user }
-
-const _ok = () => _db && _user && _fns
-
-const _docCenas = () =>
-  _fns.doc(_db, "users", _user.uid, "dados", "cenas_mestre")
 
 // ── CRUD de Cenas ─────────────────────────────────────────
 
-/** Carrega todas as cenas do usuário logado. Retorna [] se não existir. */
+/** Carrega todas as cenas do usuário logado. Retorna [] se não existir, null em caso de erro. */
 export async function carregarCenasFirestore() {
   if (!_ok()) return null
   try {
-    const snap = await _fns.getDoc(_docCenas())
+    const snap = await getFirebaseFns().getDoc(_docCenas())
     return snap.exists() ? (snap.data().cenas ?? []) : []
   } catch(e) { console.error("[Firestore/Cenas] carregar:", e); return null }
 }
 
-/** Salva o array completo de cenas. */
+/** Salva o array completo de cenas. Retorna true/false. */
 export async function salvarCenasFirestore(cenas) {
   if (!_ok()) return false
   try {
-    await _fns.setDoc(_docCenas(), {
+    await getFirebaseFns().setDoc(_docCenas(), {
       cenas,
       updatedAt: new Date().toISOString()
     })
@@ -57,7 +46,7 @@ export async function salvarCenasFirestore(cenas) {
 /** Salva/atualiza uma cena específica dentro do array. */
 export async function salvarCenaFirestore(cena, todasCenas) {
   if (!_ok()) return false
-  const idx = todasCenas.findIndex(c => c.id === cena.id)
+  const idx  = todasCenas.findIndex(c => c.id === cena.id)
   const novas = [...todasCenas]
   if (idx !== -1) novas[idx] = cena
   else novas.push(cena)

@@ -22,6 +22,8 @@ const _loginCbs = [], _logoutCbs = []
 export const onLogin  = (fn) => _loginCbs.push(fn)
 export const onLogout = (fn) => _logoutCbs.push(fn)
 export const getUser          = () => _user
+export const getDb            = () => _db
+export const getFirebaseFns   = () => _firebaseFns
 export const estaConfigurado  = () => FIREBASE_CONFIGURED
 export const aguardarAuth     = () => _authReady
 
