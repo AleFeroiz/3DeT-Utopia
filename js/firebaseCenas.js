@@ -24,7 +24,10 @@ const _docCenas = () => {
 
 /** Carrega todas as cenas do usuário logado. Retorna [] se não existir, null em caso de erro. */
 export async function carregarCenasFirestore() {
-  if (!_ok()) return null
+  if (!_ok()) {
+    console.warn("[Firestore/Cenas] carregarCenasFirestore: não pronto", { db: !!getDb(), user: !!getUser(), fns: !!getFirebaseFns() })
+    return null
+  }
   try {
     const snap = await getFirebaseFns().getDoc(_docCenas())
     return snap.exists() ? (snap.data().cenas ?? []) : []
@@ -33,7 +36,10 @@ export async function carregarCenasFirestore() {
 
 /** Salva o array completo de cenas. Retorna true/false. */
 export async function salvarCenasFirestore(cenas) {
-  if (!_ok()) return false
+  if (!_ok()) {
+    console.warn("[Firestore/Cenas] salvarCenasFirestore: não pronto", { db: !!getDb(), user: !!getUser(), fns: !!getFirebaseFns() })
+    return false
+  }
   try {
     await getFirebaseFns().setDoc(_docCenas(), {
       cenas,

@@ -259,17 +259,9 @@ async function abrirCena(id) {
   renderSidebar()
 }
 
-window.fecharCena = async function() {
+window.fecharCena = function() {
   _cenaAtual = null
-  document.getElementById("painelCena").style.display = "none"
-
-  // Aguarda qualquer reload em andamento para não criar leituras concorrentes
-  let t = 0
-  while (_recarregando && t++ < 20) await new Promise(r => setTimeout(r, 50))
-
-  // Só precisa das cenas para montar a lista — fichas não são necessárias aqui
-  await _carregarCenas()
-  _resincCenaAtual()
+  document.getElementById("painelCena").style.display  = "none"
   document.getElementById("painelLista").style.display = "block"
   renderListaCenas()
 }
