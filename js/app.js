@@ -2042,11 +2042,11 @@ function expor() {
       usadoAtaque:    usaAtk,
       usadoDefesa:    usaDef,
       bonusAtaque:    usaAtk ? (+document.getElementById("itemBonusAtaque").value || 0) : 0,
-      alcanceIdeal:   usaAtk ? (document.getElementById("itemAlcanceIdeal").value || "corpo_a_corpo") : undefined,
+      alcanceIdeal:   usaAtk ? (document.getElementById("itemAlcanceIdeal").value || "corpo_a_corpo") : null,
       bonusDefesa:    usaDef ? (+document.getElementById("itemBonusDefesa").value || 0) : 0,
       prioridadeDefesa: usaDef ? (Math.max(1, +document.getElementById("itemPrioridadeDefesa").value || 1)) : 1,
       // Encantamentos e categoria (só para equipamentos)
-      catEquip:       cat === "equipamento" ? _itemCategoria : undefined,
+      catEquip:       cat === "equipamento" ? _itemCategoria : null,
       encantamentos:  cat === "equipamento" ? JSON.parse(JSON.stringify(_itemEncantamentos)) : [],
       restricoes:     cat === "equipamento" ? JSON.parse(JSON.stringify(_itemRestricoes))     : [],
       // equipadoAtaque/Defesa: se era item existente preserva; se novo inicializa como true (se tiver o bônus)
