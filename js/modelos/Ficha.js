@@ -36,7 +36,8 @@ export class Ficha {
     imagemUrl = null,
     imagemThumb = null,
     corTema = "#3b82f6",
-    versatilidade = { slot1: null, slot2: null }
+    versatilidade = { slot1: null, slot2: null },
+    reputacao = { poder: 5, evolucao: 5, uniao: 5 }
   } = {}) {
     this.id          = id ?? crypto.randomUUID()
     this.nome        = nome
@@ -74,6 +75,11 @@ export class Ficha {
     this.versatilidade = {
       slot1: versatilidade?.slot1 ?? null,
       slot2: versatilidade?.slot2 ?? null,
+    }
+    this.reputacao = {
+      poder:   reputacao?.poder   ?? 5,
+      evolucao: reputacao?.evolucao ?? 5,
+      uniao:   reputacao?.uniao   ?? 5,
     }
     this.pericias    = { ...pericias }
     this.elementos   = elementos.map(e =>
@@ -299,6 +305,7 @@ export class Ficha {
       imagemThumb: this.imagemThumb ?? null,
       corTema:     this.corTema     ?? "#3b82f6",
       versatilidade: this.versatilidade ?? { slot1: null, slot2: null },
+      reputacao: this.reputacao ?? { poder: 5, evolucao: 5, uniao: 5 },
     }
   }
 

@@ -64,6 +64,7 @@
       <div class="tab"        onclick="trocarAba(7)">Profissão</div>
       <div class="tab"        onclick="trocarAba(8)">📝 Anotações</div>
       <div class="tab"        onclick="trocarAba(9)">🎒 Inventário</div>
+      <div class="tab"        onclick="trocarAba(10)">⚖️ Reputação</div>
     </div>
 
     <!-- ABA 0: ATRIBUTOS -->
@@ -201,6 +202,85 @@
         <button class="inv-btn-add" onclick="abrirModalItem()">＋ Adicionar Item</button>
       </div>
       <div id="listaItens" class="inv-lista"></div>
+    </div>
+
+    <!-- ABA 10: REPUTAÇÃO -->
+    <div class="section rep-section">
+      <div class="rep-intro">
+        <p>Sua reputação é medida separadamente por cada Pilar filosófico do mundo. Os efeitos se aplicam apenas em regiões dominadas pelo respectivo Pilar.</p>
+      </div>
+      <div class="rep-medidores">
+
+        <!-- PODER -->
+        <div class="rep-card" data-pilar="poder">
+          <div class="rep-card-header">
+            <img src="img-poder.png" class="rep-icon" alt="Poder">
+            <div class="rep-card-titulo">
+              <span class="rep-nome">Poder</span>
+              <span class="rep-frase">"A liberdade só pode ser conquistada."</span>
+            </div>
+          </div>
+          <div class="rep-medidor">
+            <button class="rep-btn rep-btn-menos" onclick="mudarReputacao('poder', -1)">−</button>
+            <div class="rep-barra-wrap">
+              <div class="rep-barra-bg">
+                <div class="rep-barra-fill rep-fill-poder" id="repBarraPoder"></div>
+              </div>
+              <div class="rep-pips" id="repPipsPoder"></div>
+            </div>
+            <button class="rep-btn rep-btn-mais" onclick="mudarReputacao('poder', 1)">+</button>
+            <span class="rep-valor" id="repValorPoder">5</span>
+          </div>
+          <div class="rep-faixa-label" id="repFaixaPoder"></div>
+        </div>
+
+        <!-- EVOLUÇÃO -->
+        <div class="rep-card" data-pilar="evolucao">
+          <div class="rep-card-header">
+            <img src="img-evolucao.png" class="rep-icon" alt="Evolução">
+            <div class="rep-card-titulo">
+              <span class="rep-nome">Evolução</span>
+              <span class="rep-frase">"A liberdade precisa ser criada."</span>
+            </div>
+          </div>
+          <div class="rep-medidor">
+            <button class="rep-btn rep-btn-menos" onclick="mudarReputacao('evolucao', -1)">−</button>
+            <div class="rep-barra-wrap">
+              <div class="rep-barra-bg">
+                <div class="rep-barra-fill rep-fill-evolucao" id="repBarraEvolucao"></div>
+              </div>
+              <div class="rep-pips" id="repPipsEvolucao"></div>
+            </div>
+            <button class="rep-btn rep-btn-mais" onclick="mudarReputacao('evolucao', 1)">+</button>
+            <span class="rep-valor" id="repValorEvolucao">5</span>
+          </div>
+          <div class="rep-faixa-label" id="repFaixaEvolucao"></div>
+        </div>
+
+        <!-- UNIÃO -->
+        <div class="rep-card" data-pilar="uniao">
+          <div class="rep-card-header">
+            <img src="img-uniao.png" class="rep-icon" alt="União">
+            <div class="rep-card-titulo">
+              <span class="rep-nome">União</span>
+              <span class="rep-frase">"A liberdade nasce da harmonia."</span>
+            </div>
+          </div>
+          <div class="rep-medidor">
+            <button class="rep-btn rep-btn-menos" onclick="mudarReputacao('uniao', -1)">−</button>
+            <div class="rep-barra-wrap">
+              <div class="rep-barra-bg">
+                <div class="rep-barra-fill rep-fill-uniao" id="repBarraUniao"></div>
+              </div>
+              <div class="rep-pips" id="repPipsUniao"></div>
+            </div>
+            <button class="rep-btn rep-btn-mais" onclick="mudarReputacao('uniao', 1)">+</button>
+            <span class="rep-valor" id="repValorUniao">5</span>
+          </div>
+          <div class="rep-faixa-label" id="repFaixaUniao"></div>
+        </div>
+
+      </div>
     </div>
 
   </div><!-- /main -->

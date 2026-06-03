@@ -2042,3 +2042,166 @@ hr {
   margin: auto;
   flex-shrink: 0;
 }
+
+/* ── REPUTAÇÃO ──────────────────────────────────────────────── */
+.rep-section { display: flex; flex-direction: column; gap: 20px; }
+
+.rep-intro p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 4px 0;
+  line-height: 1.5;
+}
+
+.rep-medidores {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rep-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 16px 18px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.rep-card[data-pilar="poder"]   { border-left: 3px solid #dc2626; }
+.rep-card[data-pilar="evolucao"]{ border-left: 3px solid #ca8a04; }
+.rep-card[data-pilar="uniao"]   { border-left: 3px solid #0ea5e9; }
+
+.rep-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rep-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.15));
+}
+
+.rep-card-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rep-nome {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.rep-frase {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.rep-medidor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rep-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.rep-btn:hover { background: #334155; border-color: #64748b; }
+
+.rep-barra-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+}
+
+.rep-barra-bg {
+  height: 14px;
+  background: #0f172a;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.rep-barra-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.3s ease;
+}
+
+.rep-fill-poder   { background: linear-gradient(90deg, #7f1d1d, #dc2626); }
+.rep-fill-evolucao{ background: linear-gradient(90deg, #713f12, #ca8a04); }
+.rep-fill-uniao   { background: linear-gradient(90deg, #0c4a6e, #0ea5e9); }
+
+.rep-pips {
+  display: flex;
+  gap: 3px;
+  justify-content: space-between;
+  padding: 0 1px;
+}
+
+.rep-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #334155;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.rep-pip.ativo-poder   { background: #dc2626; }
+.rep-pip.ativo-evolucao{ background: #ca8a04; }
+.rep-pip.ativo-uniao   { background: #0ea5e9; }
+
+.rep-valor {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e2e8f0;
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rep-faixa-label {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  align-self: flex-start;
+  letter-spacing: 0.02em;
+}
+
+/* Faixas por pilar */
+.rep-card[data-pilar="poder"]    .rep-faixa-label { background: rgba(220,38,38,0.15); color: #fca5a5; }
+.rep-card[data-pilar="evolucao"] .rep-faixa-label { background: rgba(202,138,4,0.15); color: #fde68a; }
+.rep-card[data-pilar="uniao"]    .rep-faixa-label { background: rgba(14,165,233,0.15); color: #7dd3fc; }
+
+@media (max-width: 480px) {
+  .rep-card { padding: 12px 14px; }
+  .rep-icon { width: 36px; height: 36px; }
+  .rep-nome { font-size: 14px; }
+  .rep-valor { font-size: 18px; }
+}

@@ -579,7 +579,48 @@ function renderTudo() {
   }, _somenteLeitura)
   _renderAnotacoes()
   _renderInventario()
+  _renderReputacao()
   _atualizarUILogin()
+}
+
+function _repFaixa(val) {
+  if (val <= 1)  return "Inimigo Declarado"
+  if (val <= 3)  return "Suspeito"
+  if (val === 4) return "Mal Visto"
+  if (val === 5) return "Neutro"
+  if (val === 6) return "Conhecido"
+  if (val <= 8)  return "Respeitado"
+  return "Lendário"
+}
+
+function _renderReputacaoPilar(pilar) {
+  const val = Math.max(0, Math.min(10, ficha.reputacao?.[pilar] ?? 5))
+  const id  = pilar.charAt(0).toUpperCase() + pilar.slice(1)
+
+  const barra = document.getElementById("repBarra" + id)
+  if (barra) barra.style.width = (val / 10 * 100) + "%"
+
+  const valor = document.getElementById("repValor" + id)
+  if (valor) valor.textContent = val
+
+  const pips = document.getElementById("repPips" + id)
+  if (pips) {
+    pips.innerHTML = ""
+    for (let i = 1; i <= 10; i++) {
+      const pip = document.createElement("div")
+      pip.className = "rep-pip" + (i <= val ? " ativo-" + pilar : "")
+      pips.appendChild(pip)
+    }
+  }
+
+  const faixa = document.getElementById("repFaixa" + id)
+  if (faixa) faixa.textContent = _repFaixa(val)
+}
+
+function _renderReputacao() {
+  _renderReputacaoPilar("poder")
+  _renderReputacaoPilar("evolucao")
+  _renderReputacaoPilar("uniao")
 }
 
 function _renderNivel() {
@@ -1840,6 +1881,14 @@ function expor() {
     ficha.calcularStatus(); ficha.calcularPontos()
     renderStatus(ficha); renderPontos(ficha)
     _renderInventario()
+    salvar()
+  }
+
+  // Reputação
+  window.mudarReputacao = (pilar, delta) => {
+    if (!ficha.reputacao) ficha.reputacao = { poder: 5, evolucao: 5, uniao: 5 }
+    ficha.reputacao[pilar] = Math.max(0, Math.min(10, (ficha.reputacao[pilar] ?? 5) + delta))
+    _renderReputacao()
     salvar()
   }
 

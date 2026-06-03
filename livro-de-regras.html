@@ -103,6 +103,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-si
 .callout-warning{background:rgba(212,172,86,.08);border-color:rgba(212,172,86,.3);color:#c9a355}.callout-warning .callout-title{color:#d4ac56}
 .callout-danger{background:rgba(224,92,92,.08);border-color:rgba(224,92,92,.3);color:#cc7070}.callout-danger .callout-title{color:#e05c5c}
 .callout-success{background:rgba(92,184,122,.08);border-color:rgba(92,184,122,.3);color:#6dbf88}.callout-success .callout-title{color:#5cb87a}
+.wiki-img-wrap{display:flex;justify-content:center;margin:1.5rem 0}
+.wiki-img{max-width:180px;height:auto;opacity:.92;filter:drop-shadow(0 0 12px rgba(255,255,255,.08));transition:opacity .2s}
+.wiki-img:hover{opacity:1}
 .callout-note{background:rgba(155,126,212,.08);border-color:rgba(155,126,212,.3);color:#b09ad8}.callout-note .callout-title{color:#9b7ed4}
 .callout-tip{background:rgba(92,184,122,.06);border-color:rgba(92,184,122,.25);color:#70b088}.callout-tip .callout-title{color:#5cb87a}
 .callout-abstract{background:rgba(91,155,213,.06);border-color:rgba(91,155,213,.2);color:#7aaed4}.callout-abstract .callout-title{color:#5b9bd5}
@@ -213,9 +216,19 @@ function wrapTables(html) {
     .replace(/<\/table>/g, '</table></div>');
 }
 
+// ── WIKILINKS DE IMAGEM (Obsidian: ![[arquivo.png]]) ──────────────
+function processWikiImages(text) {
+  // Converte ![[nome.png]] em markdown padrão antes do marked
+  return text.replace(/!\[\[([^\]]+\.(png|jpg|jpeg|gif|webp|svg))\]\]/gi, (_, filename) => {
+    const encoded = encodeURIComponent(filename);
+    return `<div class="wiki-img-wrap"><img src="img/${encoded}" alt="${filename}" class="wiki-img" loading="lazy"></div>`;
+  });
+}
+
 // ── RENDER MARKDOWN ────────────────────────────────────────────────
 function renderMD(text) {
-  let html = marked.parse(text, { gfm: true, breaks: false });
+  let processed = processWikiImages(text);
+  let html = marked.parse(processed, { gfm: true, breaks: false });
   html = processCallouts(html);
   html = wrapTables(html);
   return html;
