@@ -1,256 +1,288 @@
 // ============================================================
-//  dados/racas.js — Raças do sistema (Livro págs. 2–7)
+//  dados/racas.js — Raças do sistema (Livro de Regras 3DeT Utopia)
 // ============================================================
 
 export const RACAS = [
   {
-    id: "anao",
-    nome: "Anões (Tontatas)",
-    emoji: "🌱",
+    id: "humano",
+    nome: "Humanos",
+    emoji: "🧑",
     custo: 0,
-    extras: ["Esquiva +3", "Perícia: Manha (grátis)"],
+    extras: ["+2 PA"],
     vantagens: [
-      { nome: "Mestre do Sumiço", desc: "Anões são mestres em desaparecer sem deixar rastro. Enquanto estiver furtivo, você soma 1× Habilidade em testes de ataque, defesa e resistência." },
-      { nome: "Cadê o Pequeno?", desc: "Pela sua natureza, anões são complicados de serem avistados. Em testes de furtividade, você recebe 2× nível de bônus no teste, e pode gastar 3 PM para adicionar mais um Ganho." }
+      { nome: "Adaptação", desc: "Humanos são um faz-tudo. Escolha três perícias para serem treinadas gratuitamente na criação do personagem." },
+      { nome: "Esforçados", desc: "Humanos sempre precisaram trabalhar duro para se tornarem alguém. Comece sua ficha com +2 Pontos de Ficha adicionais." }
     ],
     desvantagens: [
-      { nome: "Ingenuidade", desc: "Anões são seres ingênuos e tendem a acreditar em tudo, independente com quem conversam! Sofra perda e a falha crítica passa a ser 1 e 2 em qualquer situação que possa duvidar da veracidade do comunicador." },
-      { nome: "Corpo Fraco", desc: "Anões, por serem pequenos, não possuem uma constituição comum. Sofra perda ao realizar qualquer teste que se baseie em RESISTÊNCIA pelo porte FÍSICO (vigor)." }
+      { nome: "Aspectos Humanos", desc: "Escolha um dos seguintes defeitos:\n• Ganância: Sempre que esteja diante de um tesouro ou oportunidade de lucro, qualquer teste relacionado recebe Perda.\n• Gula: Sempre que estiver perto de comida, terá que comê-la. Caso queira resistir, teste Resistência (9). Em combate, essa distração custa sua Ação.\n• Inveja: Ao ver outro personagem tirar um Sucesso Crítico, receba automaticamente -3 no seu próximo teste.\n• Ira: Você falha automaticamente em testes de Resistência contra provocações.\n• Luxúria: Sofre -3 em testes de Resistência e Defesa contra seres pelos quais sente atração.\n• Preguiça: Leva o dobro do tempo para completar um Descanso Longo e não recupera recursos em Descansos Curtos normalmente.\n• Orgulho: Em todo tipo de situação social, sofre -3 no total do teste." },
+      { nome: "Cicatrizes do Mundo Antigo", desc: "Escolha um trauma. Sempre que a situação do trauma se apresentar, teste Resistência DT 9 — se passar, supera a cicatriz e age normalmente. Se falhar, sofre o efeito:\n• Poder: Em confronto direto onde claramente é o mais fraco, sua ação é forçadamente defensiva ou de fuga naquele turno.\n• Evolução: Ao se deparar com algo novo para aprender, resolver ou se adaptar, sofre Perda no teste.\n• União: Quando uma ação beneficia aliados mas não a si mesmo, não consegue executá-la naquele turno." }
     ],
     evolucoes: [
       {
         nivel: 3,
-        nome: "Sombra Persistente",
-        desc: "O Anão domina o ambiente ao seu redor de forma assustadora. As seguintes habilidades são desbloqueadas:\n• Piscar (2 PM): Teleporte curto. Caso faça isso para se esconder, recebe 1 Ganho no teste. Pode ser feito uma quantidade de vezes igual à sua Habilidade por combate.\n• Hospedeiro: Pode se esconder dentro das roupas de um ser próximo, recebendo Ganho na furtividade. Caso o hospedeiro receba dano, você recebe metade do dano e perde a furtividade.\n• Ataque Sorrateiro: Sempre que atacar enquanto furtivo, seu teste de ataque pode ser baseado como um teste de furtividade."
+        nome: "Diversificado",
+        desc: "Humanos têm 1 Maestria a mais como limite permanente, e o custo de Maestria é reduzido para 1 ponto."
       },
       {
-        nivel: 5,
-        nome: "Pequeno mas Traiçoeiro",
-        desc: "O Anão aprendeu que ser subestimado é sua maior arma. Em situações sociais onde o interlocutor o subestime por seu tamanho ou aparência — o que é quase sempre — você recebe Ganho em testes de blefe, negociação e persuasão."
+        nivel: 6,
+        nome: "Treinado",
+        desc: "Escolha uma das Técnicas de Anima para desbloquear — seu custo de aquisição é reduzido em 1 ponto (exceto Anima da Pressão, caso não possua o requisito)."
+      },
+      {
+        nivel: 10,
+        nome: "Sortudo",
+        desc: "Uma vez por turno, pode gastar 5 PV para ganhar 1 PA temporário."
+      }
+    ]
+  },
+  {
+    id: "mirrin",
+    nome: "Mirrins",
+    emoji: "🌿",
+    custo: 0,
+    extras: ["Esquiva +3", "Perícia: Manha (grátis)"],
+    vantagens: [
+      { nome: "Presença Insignificante", desc: "Em testes de furtividade, receba 2 × Nível de bônus. Em situações sociais onde o interlocutor claramente te subestime, receba Ganho em testes de blefe, negociação e persuasão." },
+      { nome: "Golpe Calculado", desc: "Sempre que atacar um alvo que não sabe da sua presença, o teste de ataque pode ser baseado em Manha no lugar do atributo normal." },
+      { nome: "Furtividade Irrestrita", desc: "Pode tentar se esconder em qualquer situação — mesmo sem cobertura ou escuridão. Em ambientes sem condições favoráveis, receba Perda no teste em vez de ser negado automaticamente." }
+    ],
+    desvantagens: [
+      { nome: "Corpo Frágil", desc: "Sofra Perda em testes de Resistência que envolvam esforço físico." },
+      { nome: "Inofensivo", desc: "Testes de intimidação falham automaticamente. Em situações que dependam de causar medo ou impor presença física, a falha crítica passa a ser 1, 2 e 3." },
+      { nome: "Custo da Confiança", desc: "Quando alguém em quem confia te trai, sofre Perda em todos os testes pela cena inteira." }
+    ],
+    evolucoes: [
+      {
+        nivel: 3,
+        nome: "Agilidade",
+        desc: "Duas habilidades são desbloqueadas:\n• Dash (Ação Livre): Gaste PM para aumentar seu deslocamento atual em +2 metros por PM gasto. Limite: Habilidade PM por uso.\n• Esquiva Ativa (1 PM): Ao ser alvo de um ataque, declare Esquiva Ativa — o teste de defesa passa a ser baseado em Manha no lugar do atributo normal."
+      },
+      {
+        nivel: 6,
+        nome: "Informação",
+        desc: "Duas habilidades são desbloqueadas:\n• Leitura de Intenções (passiva): Ao interagir com qualquer ser, você automaticamente recebe uma leitura de intenção — o Mestre indica se a intenção do ser é hostil, neutra ou amigável, sem necessidade de teste.\n• Eu Conheço Alguém (1× por missão): Acione um contato na região onde o grupo se encontra. O contato pode ajudar com informação, abrigo, equipamento, conserto ou recursos — validado pelo Mestre com base no local atual e na história do personagem."
       },
       {
         nivel: 10,
         nome: "Das Sombras, Sempre",
-        desc: "O Anão tornou-se uma presença que ninguém consegue fixar. Sempre que atacar enquanto furtivo e acertar, pode gastar 6 PM para se esconder novamente como ação livre imediatamente após o golpe. Caso fracasse no ataque, o custo cai para 3 PM."
+        desc: "Ao atacar enquanto furtivo e acertar, gaste 6 PM para se esconder novamente como Ação Livre imediatamente após o golpe. Se falhar no ataque, o custo cai para 3 PM."
       }
     ]
   },
   {
-    id: "celestial",
-    nome: "Celestiais",
-    emoji: "🪽",
-    custo: 0,
-    extras: ["Resistência a vento", "Perícia: Influência (grátis)"],
-    vantagens: [
-      { nome: "Voo", desc: "Você pode voar! Pode usar sua ação de movimento para voar seguindo o mesmo deslocamento. Em combate, levantar voo quando você está no chão usa um movimento e gasta 1 PM. Você não precisa gastar mais PM para manter-se no ar, mas gasta se quiser levantar voo novamente após pousar (ou cair) por qualquer motivo." },
-      { nome: "Oh Belo Ser…", desc: "Seres celestiais são belos e com uma forte presença, capazes de persuadir qualquer ser mais facilmente. Em situações sociais onde você precisa convencer alguém, você recebe um Ganho." },
-      { nome: "Ataque Aéreo", desc: "Quando atacar do ar contra um alvo que esteja no solo, você recebe um Ganho no ataque. Caso o alvo esteja em alcance médio, pode gastar 3 PM adicionais para um Ataque de Mergulho: aplique mais um Ganho no ataque, mas irá até o solo e próximo ao alvo." }
-    ],
-    desvantagens: [
-      { nome: "Anjo Caído", desc: "Os celestiais estão acostumados com a atmosfera dos céus. Caso esteja em ambientes fechados (casas, prédios, etc.) receba perda em qualquer situação de agilidade e em testes de defesa." },
-      { nome: "O Chão me Incomoda", desc: "Os celestiais lutam nos céus, lutar em terra não é uma boa ideia para eles. Caso entre em luta corpo a corpo sem estar em voo, seu teste de defesa recebe perda no total." },
-      { nome: "Pureza Frágil", desc: "Celestiais têm uma constituição física delicada por natureza. Quando atingidos por dano de tipo Veneno ou Doença, o efeito é tratado como um grau acima do normal. Representa o corpo etéreo deles sendo pouco adaptado às impurezas do mundo terrestre." }
-    ],
-    evolucoes: [
-      {
-        nivel: 3,
-        nome: "Asa Leve",
-        desc: "As asas se tornam mais resistentes e você aprende manobras aéreas. Levantar voo não possui custo. Pode gastar 2 PM para recuperar uma ação de movimento no ar."
-      },
-      {
-        nivel: 6,
-        nome: "Auréola de Influência",
-        desc: "Sua presença celestial é notória; seu prestígio abre portas e protege. Recebe maestria de INFLUÊNCIA (não considera limite de maestria). Você recebe resistência a ataques e efeitos envolvendo o mental."
-      },
-      {
-        nivel: 10,
-        nome: "Exaltação / Queda Redentora",
-        desc: "O ápice da natureza celestial se manifesta de duas formas dependendo de onde você está.\n• Modo Exaltado (passiva): Enquanto voando, você soma seu atributo de ataque novamente em testes de ataque.\n• Queda Redentora (reação, 8 PM): Ao pousar involuntariamente ou ser derrubado ao solo, pode ativar como reação. Solte uma onda de presença celestial — todos em alcance curto devem testar Poder contra o seu Poder. Quem falhar sofre Perda em todos os testes por 1D rodadas. Uso limitado a 1 vez por combate."
-      }
-    ]
-  },
-  {
-    id: "lunario",
-    nome: "Lunarios",
+    id: "lumari",
+    nome: "Lumaris",
     emoji: "🔥",
     custo: 0,
-    extras: ["Resistência a fogo", "Perícia: Mística (grátis)"],
+    extras: ["Resistência a Fogo", "Perícia: Mística (grátis)"],
     vantagens: [
-      { nome: "Voo", desc: "Você pode voar! Pode usar sua ação de movimento para voar seguindo o mesmo deslocamento. Em combate, levantar voo quando você está no chão usa um movimento e gasta 1 PM. Você não precisa gastar mais PM para manter-se no ar, mas gasta se quiser levantar voo novamente após pousar (ou cair)." },
-      { nome: "O Domo do Fogo!", desc: "Lunarios possuem uma chama em suas costas que permite grande amplitude de utilidades. Seu domo de fogo te fornece: Ataque Flamejante (3 PM) — mude o tipo de dano do seu ataque para fogo; Haja Luz! (1 PM) — crie um fogo em um ponto que ilumina os arredores em alcance curto." }
+      { nome: "Voo", desc: "Pode usar sua Ação de Movimento para voar com deslocamento padrão. Levantar voo do chão usa um Movimento e custa 1 PM. Manter-se no ar não tem custo — apenas levantar novamente após pousar ou cair." },
+      { nome: "Domo de Chama", desc: "A chama nas costas não é apenas símbolo — é ferramenta. Permite os seguintes usos:\n• Ataque Flamejante (3 PM): Mude o tipo de dano do seu ataque para Fogo.\n• Haja Luz! (1 PM): Projete a chama para iluminar um ponto em alcance Curto ao redor." }
     ],
     desvantagens: [
-      { nome: "Caçados", desc: "Os lunarios são constantemente caçados por ser uma espécie extremamente rara. Sua reputação naturalmente tem -3." },
-      { nome: "Isolados", desc: "Os lunarios viveram a maior parte de suas vidas isolados das sociedades. Em situações sociais que exijam qualquer teste, sofra perda, e caso seja detestado pelo opositor, o opositor possuirá Ganho." }
+      { nome: "Caçados", desc: "Sempre que for caçado, os caçadores são 1 grau acima de dificuldade." },
+      { nome: "Isolados", desc: "Em situações sociais que exijam testes, sofra Perda. Caso o interlocutor já demonstre hostilidade, ele recebe Ganho contra você." }
     ],
     evolucoes: [
       {
         nivel: 3,
         nome: "Expansão do Domo",
-        desc: "O Domo de Fogo cresce e revela novas possibilidades. Habilidades desbloqueadas permanentemente enquanto o Domo estiver nas suas costas:\n• Reação Flamejante (4 PM): Ao receber dano de um ataque, pode como reação ativar uma explosão de fogo. Ataque com Mística e 2 Ganhos, causando dano de fogo a todos em alcance curto.\n• Modo Ofensivo (2 PM): Todos os ataques somam o atributo de ataque 2 vezes e você recebe uma movimentação extra caso esteja voando, mas se torna Indefeso.\n• Modo Defensivo (2 PM): Some sua Resistência novamente e 1 Ganho na defesa, mas recebe Perda em testes de ataque.\nApenas um Modo pode estar ativo por vez. Alternar entre Modos custa 2 PM no início do seu turno."
+        desc: "Três habilidades são desbloqueadas:\n• Reação Flamejante (4 PM): Ao receber dano de um ataque, como Reação, libere uma explosão de chama — ataque com Mística com 2 Ganhos, causando dano de Fogo a todos em alcance Curto.\n• Modo Ofensivo (2 PM): Some seu atributo de ataque duas vezes e receba um Movimento extra caso esteja voando — mas fica Indefeso.\n• Modo Defensivo (2 PM): Some sua Resistência novamente e receba 1 Ganho na Defesa — mas recebe Perda em testes de ataque.\nApenas um Modo pode estar ativo por vez. Alternar entre Modos custa 2 PM no início do seu turno."
       },
       {
         nivel: 7,
         nome: "Chama Interior",
-        desc: "Anos de isolamento e sobrevivência forjaram algo inabalável dentro de você. Sua chama não é só externa — ela queima por dentro também.\n• Você se torna imune a condições mentais de Grau Leve e recebe resistência a condições mentais de Grau Moderado — o teste de Resistência para se livrar delas é feito com Ganho.\n• Você pode gastar 1 PV para recuperar 1 PM, representando a força de vontade que transforma dor em combustível. Não há limite de usos por turno, mas o custo mínimo de qualquer habilidade continua sendo 2 PM."
+        desc: "A chama não é só externa — ela queima por dentro também.\n• Você se torna imune a condições mentais de Grau Leve e recebe resistência a condições mentais de Grau Moderado — testes para se livrar delas são feitos com Ganho.\n• Pode gastar 1 PV para recuperar 1 PM como ação livre e pode repetir o processo como ação livre."
       },
       {
         nivel: 12,
         nome: "Eu Sou Seu Pesadelo",
-        desc: "Você quer muito me destruir? Que pena… Quando estiver com o Domo de Fogo ativado em suas costas, gaste 15 PM e não efetue ações ofensivas para se tornar completamente invulnerável e imune a qualquer efeito negativo e ataque durante a rodada."
-      }
-    ]
-  },
-  {
-    id: "mink",
-    nome: "Minks",
-    emoji: "🐾",
-    custo: 0,
-    extras: ["Resistência a choque", "Esquiva +3"],
-    vantagens: [
-      { nome: "Super Choque", desc: "Seu ataque é legal… mas e se tiver RAIOS nele? Quando efetuar um ataque, pode gastar 2 PM para mudar o tipo de dano para choque." },
-      { nome: "Velocidade Animalesca", desc: "Minks, por sua fisionomia animal, conseguem ter velocidades além do normal. Minks possuem uma ação de movimento extra." },
-      { nome: "Forma Sulong", desc: "A luz da lua cheia é maravilhosa… Ao presenciar a lua cheia, seu corpo é totalmente modificado e sua mente dominada; entra em um estado de fúria e temporariamente seus atributos aumentam +4 e recebe metade do seu limite máximo em PV E PM temporários até o fim da cena." }
-    ],
-    desvantagens: [
-      { nome: "Instinto Animal", desc: "Escolha \"algo\" para ser sua obsessão animal, coerente ao seu tipo (um coelho seria uma cenoura). Toda vez que avistar esse \"algo\", faça um teste de Resistência (9) para evitar ficar DISTRAÍDO." },
-      { nome: "Adoro um Humano!", desc: "Minks são fascinados pelos humanos, tendendo a gostar e apoiar muito qualquer humano! Em situações onde estiver com um humano, qualquer teste que envolva convencer ou ferir o humano recebe uma perda." },
-      { nome: "Forma Sulong (Descontrole)", desc: "Ao presenciar a lua cheia, seu corpo é totalmente modificado e sua mente dominada. Entra em estado de fúria e, toda vez que for agir, deve fazer um teste de Resistência (12) — o bônus temporário de atributo não conta para esse teste. Se passar, tem controle total; caso contrário, ataca o ser mais próximo. A cada turno, perde 1D6 de PM; ao chegar a 0 PM, entra em estado Morrendo direto. Para evitar, pode sair da forma transformada evitando olhar a lua (1 rodada completa sem enxergá-la)." }
-    ],
-    evolucoes: [
-      {
-        nivel: 1,
-        nome: "Poder Animal I",
-        desc: "Ser um animal possui suas características natas! Crie uma habilidade especial de Mink representando seu animal de Escala de Poder 3."
-      },
-      {
-        nivel: 9,
-        nome: "Poder Animal II",
-        desc: "Melhore sua habilidade especial de Mink representando seu animal para Escala de Poder 4."
-      },
-      {
-        nivel: 14,
-        nome: "Poder Animal III",
-        desc: "Melhore sua habilidade especial de Mink representando seu animal para Escala de Poder 5."
+        desc: "Com o Domo ativo, gaste 15 PM e não efetue ações ofensivas — você se torna completamente invulnerável e imune a qualquer efeito negativo e ataque durante a rodada. Uso limitado a 1 vez por combate."
       }
     ]
   },
   {
     id: "gigante",
     nome: "Gigantes",
-    emoji: "🏔",
+    emoji: "🏔️",
     custo: 0,
-    extras: ["Resistência a impacto", "Contra-ataque +3"],
+    extras: ["Resistência a Impacto", "+20 PV"],
     vantagens: [
-      { nome: "Força Colossal", desc: "Seu tamanho lhe oferece uma grande força para lidar com coisas extremamente pesadas… ou só pra literalmente descer a porrada mesmo! Em situações que exigem força física ou ataques corpo a corpo, o crítico passa a ser 5 e 6." },
-      { nome: "Corpo Assustador", desc: "Com seu corpo gigantesco, não é qualquer um que consegue bater de frente! Gigantes em situações que estão intimidando ou botando medo recebem +3 no total do teste." },
-      { nome: "Lento, mas Grande", desc: "Apesar de ser lento, gigantes têm a perna bem longa (literalmente) e seu deslocamento é fora do comum! Seu deslocamento de movimento é o dobro do comum (18m)." }
+      { nome: "Força Colossal", desc: "Em situações que exigem força física ou ataques corpo a corpo, o crítico passa a ser 5 e 6." },
+      { nome: "Corpo Assustador", desc: "Quando intimidando ou causando medo, receba +3 no total do teste." },
+      { nome: "Passada Longa", desc: "Seu deslocamento de Movimento é o dobro do padrão (18m)." }
     ],
     desvantagens: [
-      { nome: "Corpo Devagar", desc: "Gigantes geralmente tendem a ser devagar em reações ágeis por seu tamanho brutamontes! Em testes de agilidade, receba uma perda no teste." },
-      { nome: "Que Diabos é Isso?", desc: "Gigantes são seres mais \"vikings\" e por isso não entendem muito de tecnologias ou histórias. Situações onde você precisa raciocinar textos complicados, enigmas, entrelinhas sociais e lidar com máquinas sofrem 1 perda e a falha crítica se torna 1 e 2." },
-      { nome: "Acerta o Grandão Ali!", desc: "Acertar um gigante por conta do seu tamanho é algo extremamente mais fácil do que acertar seres pequenos. Em testes de esquiva, você recebe uma perda." }
+      { nome: "Corpo Devagar", desc: "Em testes de agilidade, receba Perda." },
+      { nome: "Que Diabos É Isso?", desc: "Em enigmas, textos complexos, entrelinhas sociais e máquinas, sofra Perda nesses testes — a falha crítica passa a ser 1 e 2." },
+      { nome: "Acerta o Grandão!", desc: "Em testes de Esquiva, receba Perda. Acertar um Gigante é mais fácil — eles simplesmente aguentam." }
     ],
     evolucoes: [
       {
         nivel: 3,
         nome: "O Grandão Vai Te Pegar",
-        desc: "Com sua força enorme, gigantes têm extrema facilidade pra imobilizar um ou múltiplos alvos. Ao usar a manobra agarrar, receberá 3× Nível de bônus no teste para agarrar."
+        desc: "Ao usar a manobra de Agarrar, receba 3 × Nível de bônus no teste."
       },
       {
         nivel: 6,
-        nome: "Fúria Viking",
-        desc: "A batalha acende algo ancestral; quanto mais sangue, mais forte o grito. Quando você estiver abaixo da metade do seu PV, entra em estado de Fúria enquanto estiver em combate, recebendo 1 Ganho em todos os testes de ataque e resistência. Além disso, uma vez por cena ao entrar em Fúria, você solta um Grito de Guerra instintivo: todos os aliados em alcance médio removem imediatamente uma condição negativa de Grau Leve e recebem +3 em testes de ataque até o fim do seu próximo turno."
+        nome: "Fúria de Guerra",
+        desc: "Quando estiver abaixo da metade do PV, entra em estado de Fúria enquanto em combate — recebe 1 Ganho em todos os testes de ataque e Resistência. Uma vez por cena ao entrar em Fúria, solta um Grito de Guerra: todos os aliados em alcance Médio removem uma condição negativa de Grau Leve e recebem +3 em testes de ataque até o fim do próximo turno."
       },
       {
         nivel: 10,
         nome: "Sumam da Vista!",
-        desc: "Seus ataques são destrutivos demais; o mais simples ataque não leva só um, como vários! Quando você efetuar um ataque corpo a corpo, o ataque pega em todos que estejam a um alcance curto do alvo principal."
+        desc: "Seus ataques corpo a corpo atingem todos os alvos em alcance Curto do alvo principal simultaneamente."
       }
     ]
   },
   {
-    id: "povo_mar",
-    nome: "Povo do Mar",
-    emoji: "🦈",
+    id: "celestial",
+    nome: "Celestiais",
+    emoji: "🪶",
     custo: 0,
-    extras: ["Resistência a impacto", "Contra-ataque +3"],
+    extras: ["Resistência a Vento", "Perícia: Influência (grátis)"],
     vantagens: [
-      { nome: "Sangue do Mar", desc: "O sangue do Povo do Mar carrega a força do oceano. Gaste 4 PM para ativar um dos seguintes efeitos:\n• Pressão Profunda: Some sua Resistência novamente em um teste de ataque corpo a corpo.\n• Pulso Vital: Toque um aliado e cure 1D de PV.\n• Barreira de Maré: Some sua Resistência novamente no próximo teste de defesa." },
-      { nome: "Vem pra Porrada Aquática", desc: "Por natureza sempre viverem na água, são acostumados a lutar dentro dela. Em situações de combate (defender e atacar), você recebe um Ganho no total do teste caso estiver dentro da água." },
-      { nome: "Respiração Aquática", desc: "Você pode respirar debaixo da água e tem o triplo do deslocamento dentro dela." }
+      { nome: "Voo", desc: "Pode usar sua Ação de Movimento para voar com deslocamento padrão. Levantar voo do chão usa um Movimento e custa 1 PM. Manter-se no ar não tem custo — apenas levantar novamente após pousar ou cair." },
+      { nome: "Presença Celestial", desc: "Em situações sociais que exijam testes, receba Ganho — exceto intimidação." },
+      { nome: "Pacifista", desc: "Em conflitos diplomáticos, receba Ganho na iniciativa e +2 em testes de ataque social." }
     ],
     desvantagens: [
-      { nome: "Tanto Rancor", desc: "O Povo do Mar carrega gerações de conflito no sangue. Escolha uma raça que seu personagem odeia profundamente. Em situações onde estiver na presença de um ser dessa raça, você instintivamente deseja confrontá-lo. A primeira vez que o vir, caso queira resistir, gire um teste de Resistência (12). Deverá segurar seus instintos novamente caso esse ser apresente desrespeito ou qualquer ameaça." },
-      { nome: "Cadê Minha Água?", desc: "EU NÃO VIVO SEM ÁGUA!!! Quando estiver em um ambiente seco ou quente, você recebe perda em qualquer tipo de teste que envolva físico (incluindo combate)." },
-      { nome: "Memória das Correntes", desc: "O Povo do Mar carrega no sangue a memória coletiva da opressão. Em situações onde sua liberdade ou autonomia são ameaçadas — captura, aprisionamento, ordens diretas de autoridades — faça um teste de Resistência (9). Se falhar, reage com hostilidade imediata e não consegue agir diplomaticamente até o fim da cena." }
-    ],
-    evolucoes: [
-      {
-        nivel: 1,
-        nome: "10× Mais Fortes",
-        desc: "Povos do mar são conhecidos por serem 10 vezes mais fortes que o homem! Sempre que subir de nível e você for de nível igual ou inferior a 10, escolha PODER ou RESISTÊNCIA para subir um ponto (respeitando o limite de atributo por nível)."
-      },
-      {
-        nivel: 5,
-        nome: "Potencial Aquático",
-        desc: "Quando usar uma técnica ofensiva, caso esteja submerso ou próximo de água à sua disposição, pode gastar 4 PM para aprimorar seu ataque, somando Poder no ataque.\nFora da água, pode gastar 6 PM para conjurar água do próprio corpo — suspendendo os efeitos de Cadê Minha Água? por uma cena inteira. Você tem esse uso igual à metade do seu Poder por descanso longo."
-      },
-      {
-        nivel: 10,
-        nome: "Rei das Profundezas",
-        desc: "O mar está em mim, e onde eu estiver, o mar estará também. Os efeitos de Cadê Minha Água? são suspensos permanentemente.\nAlém disso, pode ativar a Pressão das Profundezas uma vez por cena:\n• Pressão Leve (6 PM): Todos em alcance curto testam Resistência contra seu Poder. Quem falhar sofre Incapacitação Leve (deslocamento reduzido à metade) por 1 rodada.\n• Pressão Moderada (10 PM): Todos em alcance curto testam Resistência contra seu Poder. Quem falhar sofre Incapacitação Moderada (deve escolher entre Ação ou Movimento no turno) por 1 rodada.\nO peso do oceano não discrimina aliados de inimigos. Todos em área são afetados."
-      }
-    ]
-  },
-  {
-    id: "humano",
-    nome: "Humanos",
-    emoji: "🧍",
-    custo: 0,
-    extras: ["2 PA"],
-    vantagens: [
-      { nome: "Adaptação", desc: "Humanos, em sua maioria, sempre foram um faz-tudo. Escolha três perícias para serem treinadas." },
-      { nome: "Esforçados", desc: "Humanos sempre precisaram trabalhar duro para se tornarem alguém! Comece sua ficha com 2 Pontos adicionais." }
-    ],
-    desvantagens: [
-      { nome: "Aspectos Humanos", desc: "Escolha um dos seguintes defeitos:\n• Ganância: Sempre que esteja na frente de um tesouro, qualquer teste relacionado recebe perda.\n• Gula: Sua fome é insaciável. Sempre que estiver perto de comida, terá que comê-la. Caso queira resistir, faça um teste de Resistência (9). Em batalha, isso custa sua ação.\n• Inveja: Ao ver um ser ter um sucesso crítico, recebe -3 no seu próximo teste.\n• Ira: Você falha automaticamente em testes de resistência contra provocações.\n• Luxúria: Você sofre -3 em testes de resistência e defesa contra seres do sexo pelo qual você se sente atraído.\n• Preguiça: Você leva o dobro do tempo para considerar um descanso longo e não recebe recuperações em descanso curto.\n• Orgulho: Em todo tipo de situação social, sofre -3 no total do teste." }
+      { nome: "Filho do Céu", desc: "Em ambientes fechados (casas, estruturas, cavernas), receba Perda em situações de agilidade e testes de Defesa." },
+      { nome: "Pureza Frágil", desc: "Ao receber dano do tipo Veneno, some +3 no dano recebido." },
+      { nome: "Pacifista", desc: "Em combates violentos, receba Perda na iniciativa e -2 em todos os testes de ataque físico." }
     ],
     evolucoes: [
       {
         nivel: 3,
-        nome: "Diversificado",
-        desc: "O potencial dos humanos se baseou em sempre serem diversificados. Os humanos sempre terão 1 maestria a mais como limite, e seu custo de maestria é reduzido a 1 ponto."
+        nome: "Asa Leve",
+        desc: "Levantar voo não possui custo. Pode gastar 2 PM para recuperar uma Ação de Movimento enquanto no ar."
       },
       {
         nivel: 6,
-        nome: "Treinado",
-        desc: "Os Haki são grandes formas de lutar e aquelas das quais os humanos mais tiram proveito. Ao desbloquear esta evolução, escolha um dos Haki para desbloquear (exceto Haki do Rei, caso não possua); seu custo será reduzido em 1 ponto no próximo upgrade."
+        nome: "Auréola de Influência",
+        desc: "Receba Maestria em Influência (sem contar no limite de Maestrias). Você recebe resistência a ataques e efeitos de natureza mental."
       },
       {
         nivel: 10,
-        nome: "Sortudo",
-        desc: "Sempre dando um jeito, mesmo quando a situação não lhe é nada favorável. Pode gastar 5 PV em troca de 1 PA temporário uma vez por turno."
+        nome: "Exaltação / Queda Redentora",
+        desc: "O ápice da natureza celestial se manifesta de duas formas:\n• Exaltado (passiva): Enquanto voando, some seu atributo de ataque novamente em testes de ataque.\n• Queda Redentora (Reação, 8 PM): Ao pousar involuntariamente ou ser derrubado, ative como Reação — libere uma onda de presença ao redor. Todos em alcance Curto testam Poder contra o seu Poder. Quem falhar recebe Perda em todos os testes por 1D rodadas. Uso limitado a 1 vez por combate."
+      }
+    ]
+  },
+  {
+    id: "primal_terrestre",
+    nome: "Primal Terrestre",
+    emoji: "🌿",
+    custo: 0,
+    extras: ["Esquiva +3", "Resistência a Veneno"],
+    vantagens: [
+      { nome: "Faro Aguçado", desc: "Receba Ganho em todos os testes de Percepção baseados em olfato, audição ou rastreamento. Você recebe 2 × Nível em testes para evitar ser surpreendido por inimigos em até alcance Médio." },
+      { nome: "Forma Fera", desc: "Quando ativada: PODER e RESISTÊNCIA recebem +4, além de PV e PM temporários (metade de seu PV/PM máximo). Custo de manutenção: 2 PM por turno. No início de cada turno na Forma, teste Resistência DT 12 — se falhar, ataca o ser mais próximo. Para sair voluntariamente: DT começa em 12, aumenta +3 a cada turno. Saída forçada: PM zerado, inconsciente ou estado Morrendo." }
+    ],
+    desvantagens: [
+      { nome: "Forma Fera (Descontrole)", desc: "Caso PM chegue a zero dentro da Forma, o personagem entra diretamente em estado Morrendo — sem passar por inconsciente." },
+      { nome: "Territorial", desc: "Em situações onde seu clã, seu território ou alguém sob sua proteção é ameaçado diretamente, teste Resistência DT 12. Se falhar, reage de forma instintiva e agressiva — ação diplomática fica impossível até o fim da cena." }
+    ],
+    evolucoes: [
+      {
+        nivel: 1,
+        nome: "Poder Animal I",
+        desc: "Crie uma característica especial representando seu animal de Escala de Poder 3, definida junto ao Mestre com base na linhagem do personagem."
+      },
+      {
+        nivel: 9,
+        nome: "Poder Animal II",
+        desc: "Melhore sua característica para Escala de Poder 4. Além disso, passa a manter +2 em PODER ou RESISTÊNCIA (escolha na evolução) permanentemente."
+      },
+      {
+        nivel: 14,
+        nome: "Poder Animal III — Fusão",
+        desc: "Melhore sua característica para Escala de Poder 5. O custo de manutenção da Forma Fera cai para 1 PM/turno. A Forma Fera não possui mais limite diário. Ao falhar no teste de controle dentro da Forma, em vez de atacar o mais próximo automaticamente, você escolhe o alvo."
+      }
+    ]
+  },
+  {
+    id: "primal_aquatico",
+    nome: "Primal Aquático",
+    emoji: "🌊",
+    custo: 0,
+    extras: ["Resistência a Impacto", "Contra-ataque +3"],
+    vantagens: [
+      { nome: "Corpo Abissal", desc: "Primais Aquáticos são 10 vezes mais fortes que um humano comum. Receba +3 em testes de força física bruta (mover objetos pesados, arrombar estruturas, resistir a imobilização). A cada nível até o 10, escolha PODER ou RESISTÊNCIA para aumentar em +1 gratuitamente." },
+      { nome: "Domínio Aquático", desc: "Em combate dentro ou imediatamente próximo à água, receba Ganho em testes de ataque e defesa. Pode respirar debaixo da água indefinidamente e tem 3 vezes o deslocamento padrão dentro dela." }
+    ],
+    desvantagens: [
+      { nome: "Rancor das Correntes", desc: "Escolha uma raça que seu personagem carrega rancor profundo. Na primeira cena com um ser dessa raça, teste Resistência DT 12 para não agir de forma hostil. Qualquer desrespeito ou ameaça desse ser dispara o teste automaticamente novamente." },
+      { nome: "Sede do Mar", desc: "Em ambientes secos ou quentes, receba Perda em todos os testes físicos (incluindo combate)." }
+    ],
+    evolucoes: [
+      {
+        nivel: 1,
+        nome: "Poder Animal I + Sangue do Mar",
+        desc: "Crie uma característica especial representando seu animal aquático de Escala de Poder 3. Além disso, pode gastar 4 PM para ativar um dos seguintes efeitos:\n• Pressão Profunda: Some sua Resistência novamente em um ataque corpo a corpo.\n• Pulso Vital: Cure 1D de PV em si mesmo ou em um aliado ao toque.\n• Barreira de Maré: Some sua Resistência novamente no próximo teste de Defesa."
+      },
+      {
+        nivel: 9,
+        nome: "Poder Animal II + Potencial Aquático",
+        desc: "Melhore sua característica para Escala de Poder 4. Quando usar uma técnica ofensiva estando submerso ou próximo de água disponível, gaste 4 PM para somar PODER no resultado. Fora da água, pode gastar 6 PM para conjurar umidade do próprio corpo, suspendendo Sede do Mar por uma cena. Uso limitado a metade do PODER por Descanso Longo."
+      },
+      {
+        nivel: 14,
+        nome: "Poder Animal III — Rei das Profundezas",
+        desc: "Melhore sua característica para Escala de Poder 5. Os efeitos de Sede do Mar são suspensos permanentemente. Uma vez por cena, ative a Pressão das Profundezas:\n• Pressão Leve (6 PM): Todos em alcance Curto testam Resistência contra seu Poder — quem falhar sofre Incapacitação Leve por 1 rodada.\n• Pressão Moderada (10 PM): Todos em alcance Curto testam Resistência contra seu Poder — quem falhar sofre Incapacitação Moderada por 1 rodada."
+      }
+    ]
+  },
+  {
+    id: "primal_voador",
+    nome: "Primal Voador",
+    emoji: "🌬️",
+    custo: 0,
+    extras: ["Esquiva +3", "Resistência a Vento"],
+    vantagens: [
+      { nome: "Voo Natural", desc: "Levantar voo não tem custo de PM. Pode usar sua Ação de Movimento para voar com deslocamento padrão — ou gastar 2 PM para voar com deslocamento dobrado em linha reta naquele turno." },
+      { nome: "Visão de Predador", desc: "Receba Ganho em testes de Percepção visual a longa distância. Nunca sofre penalidade de alcance em testes de Percepção." },
+      { nome: "Laço do Bando", desc: "Quando estiver em combate ao lado de pelo menos um aliado, receba +2 em testes de Defesa." }
+    ],
+    desvantagens: [
+      { nome: "Sem Bando", desc: "Quando estiver sozinho em combate (sem aliados em alcance Médio), sofra Perda em testes de Defesa." },
+      { nome: "Ossos Leves", desc: "Quando atingido por dano do tipo Impacto ou Pancada, o dano recebido soma +2." }
+    ],
+    evolucoes: [
+      {
+        nivel: 1,
+        nome: "Poder Animal I + Manobra Aérea",
+        desc: "Crie uma característica especial representando seu animal de Escala de Poder 3. Além disso, duas manobras são desbloqueadas:\n• Mergulho Rasante (3 PM): Como parte de um ataque, mergulhe em alta velocidade — receba Ganho no ataque e, se acertar, o alvo testa Resistência contra seu Poder ou é empurrado para alcance Curto.\n• Saída em Voo (Reação, 2 PM): Ao ser alvo de ataque corpo a corpo, desloque-se verticalmente antes da resolução — o atacante ainda rola, mas com Perda."
+      },
+      {
+        nivel: 9,
+        nome: "Poder Animal II + Vínculo do Bando",
+        desc: "Melhore sua característica para Escala de Poder 4. Uma vez por cena, gaste 4 PM para o Chamado — todos os aliados que ouvirem você recebem 1 Ganho no próximo teste. Enquanto voando, pode usar sua Ação de Movimento para reposicionar um aliado de tamanho igual ou menor até alcance Curto."
+      },
+      {
+        nivel: 14,
+        nome: "Poder Animal III — Tempestade Viva",
+        desc: "Melhore sua característica para Escala de Poder 5. Enquanto voando, você pode se mover através de alvos sem provocar ataques de oportunidade. Uma vez por combate, realize um Sobrevoo Devastador — mova-se em linha reta atingindo até 3 alvos em sequência com um único teste de ataque (role uma vez, aplique contra todos)."
       }
     ]
   },
   {
     id: "mestico",
     nome: "Mestiço",
-    emoji: "🧬",
+    emoji: "🔀",
     custo: 1,
-    extras: ["Escolha 1 extra de cada raça escolhida"],
+    extras: ["Escolha 1 extra de cada raça de origem"],
     vantagens: [
-      { nome: "Herança Dupla", desc: "Escolha 1 vantagem de cada raça escolhida." }
+      { nome: "Herança Dupla", desc: "Escolha 1 vantagem de cada uma das duas raças de origem." }
     ],
     desvantagens: [
-      { nome: "Conflito Genético", desc: "Escolha 1 desvantagem de cada raça escolhida." }
+      { nome: "Conflito Genético", desc: "Escolha 1 desvantagem de cada uma das duas raças de origem." }
     ],
     evolucoes: [
       {
         nivel: null,
         nome: "Evoluções Mistas",
-        desc: "Escolha evoluções de ambas as raças, não podendo ser inteiramente de uma raça só. A escolha é feita na criação da ficha e não pode ser alterada posteriormente:\n• Evolução do primeiro nível de uma das raças.\n• Evolução do segundo nível de uma das raças.\n• Evolução do terceiro nível de uma das raças."
+        desc: "Escolha quais evoluções serão adotadas de ambas as raças — não podendo ser todas de apenas uma. A escolha é feita na criação e não pode ser alterada:\n• Evolução do 1º nível de uma das raças.\n• Evolução do 2º nível de uma das raças.\n• Evolução do 3º nível de uma das raças."
       }
     ]
   },
@@ -259,18 +291,18 @@ export const RACAS = [
     nome: "Modificado",
     emoji: "⚙️",
     custo: 1,
-    extras: ["1 extra da raça original + 1 extra coerente com a modificação"],
+    extras: ["1 extra da raça de origem + 1 extra coerente com a modificação"],
     vantagens: [
-      { nome: "Aprimoramento", desc: "1 vantagem da raça escolhida com coerência ao seu personagem e 1 vantagem fruto da sua modificação." }
+      { nome: "Aprimoramento", desc: "1 vantagem da raça de origem + 1 vantagem decorrente da modificação." }
     ],
     desvantagens: [
-      { nome: "Efeito Colateral", desc: "1 desvantagem da raça escolhida com coerência ao seu personagem e 1 desvantagem fruto da sua modificação." }
+      { nome: "Efeito Colateral", desc: "1 desvantagem da raça de origem + 1 desvantagem decorrente da modificação." }
     ],
     evolucoes: [
       {
         nivel: null,
         nome: "Evoluções Narrativas",
-        desc: "Escolha evoluções de sua raça principal caso sejam coerentes. Se não forem, serão criadas evoluções narrativas e mecânicas frutos da sua modificação."
+        desc: "Escolha evoluções da raça de origem que sejam coerentes com o estado atual do personagem. Caso não sejam, crie com o Mestre evoluções narrativas e mecânicas que reflitam o caminho específico da modificação — sem molde fixo, sem padrão definido."
       }
     ]
   }

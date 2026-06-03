@@ -1,5 +1,5 @@
 // ============================================================
-//  modelos/Fonte.js — Fonte de Poder (Akuma no Mi, Haki…)
+//  modelos/Fonte.js — Fonte de Poder (Frutas do Desejo, Anima…)
 // ============================================================
 
 import { ElementoFicha  } from "./Elemento.js"

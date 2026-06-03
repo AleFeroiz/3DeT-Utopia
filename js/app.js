@@ -1305,7 +1305,7 @@ function _abrirExpandirFonte(fonte) {
   }
   if (fonte.subtipo === "logia" && fonte.passivos?.elemento) {
     passivosHTML += `<div class="passivo-tag">🌊 Elemento: <strong>${fonte.passivos.elemento}</strong></div>`
-    passivosHTML += `<div class="passivo-tag">✨ Imune a danos mundanos (exceto Haki)</div>`
+    passivosHTML += `<div class="passivo-tag">✨ Imune a danos mundanos (exceto Anima)</div>`
   }
 
   const caracts = fonte.caracteristicas.length
@@ -2207,8 +2207,8 @@ function expor() {
       desc:"No primeiro acerto crítico, o Poder é somado três vezes ao dano. Incompatível com Acurado.", extra:null },
     { id:"obrapima",   emoji:"🎨", nome:"Obra-Prima",   custo:1, repetivel:false, incompativel:[],
       desc:"Escolha uma perícia. Gaste 3 PM para receber Ganho em testes com ela enquanto usa o equipamento.", extraLabel:"Perícia potencializada", extraPlaceholder:"Ex: Luta" },
-    { id:"fruta",      emoji:"🍎", nome:"Fruta (Akuma no Mi)", custo:0, repetivel:false, incompativel:["__todos__"],
-      desc:"O item 'come' uma Akuma no Mi. Ganha as habilidades da fruta, mas não aceita nenhum outro encantamento.", extra:null },
+    { id:"fruta",      emoji:"🍎", nome:"Fruta do Desejo", custo:0, repetivel:false, incompativel:["__todos__"],
+      desc:"O item 'come' uma Fruta do Desejo. Ganha as habilidades da fruta, mas não aceita nenhum outro encantamento.", extra:null },
   ]
 
   const CAT_INFO = {

@@ -650,132 +650,143 @@ Efeito
 Escolha dois tipos de dano. Sempre que sofrer dano desses tipos, o valor final recebido é dobrado.`
   },
 
+  // ── TÉCNICAS: ANIMA DO CORPO ──────────────────────────────
+  // Requisito Mínimo: Resistência 3
   {
     id: "endurecimento",
     nome: "Endurecimento",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisito: Resistência 3] Gaste 2 PM antes de um Bloqueio ou Ataque Corpo a Corpo para somar +(2 x Nível) ao teste.`
+    descricao: `[Anima do Corpo | Requisito: Resistência 3] Gaste 2 PM antes de um Bloqueio ou Ataque Corpo a Corpo para somar +(2 × Nível) ao teste.`
   },
   {
     id: "infusao",
     nome: "Infusão",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisitos: Resistência 3, Nvl 3] Gaste 6 PM: Arma causa dano de HAKI e recebe +(2 x Nível) em ataques pela cena.`
-  },
-  {
-    id: "fluxo",
-    nome: "Fluxo",
-    tipo: "tecnica",
-    custo: 2,
-    descricao: `[Requisitos: Resistência 3, Nvl 5] Habilidades com dano tipo HAKI recebem um Ganho naturalmente.`
+    descricao: `[Anima do Corpo | Requisitos: Resistência 3, Nvl 3] Gaste 6 PM: Arma causa dano de Anima e recebe +(2 × Nível) em ataques pela cena.`
   },
   {
     id: "emissao",
     nome: "Emissão",
     tipo: "tecnica",
     custo: 2,
-    descricao: `[Requisitos: Resistência 3, Nvl 6] Ataque menos previsível: soma o dano base da sua arma duas vezes ao golpe. além de que danos a distâncias além do normal se mantém como dano de HAKI.`
+    descricao: `[Anima do Corpo | Requisitos: Resistência 3, Nvl 5] Ataque menos previsível: pode gastar 3 PM para somar seu atributo ao ataque novamente, podendo repetir isso uma quantidade de vezes igual a PODER, gastando os PM subsequentes.`
   },
   {
-    id: "ryuo",
-    nome: "Ryuo",
+    id: "penetracao",
+    nome: "Penetração",
     tipo: "tecnica",
     custo: 3,
-    descricao: `[Requisitos: Resistência 3, Nvl 10] Gaste 8 PM: diminui a margem de crítico da defesa em -2`
+    descricao: `[Anima do Corpo | Requisitos: Resistência 3, Nvl 10] Gaste 8 PM: diminui a margem de crítico da defesa em -2.`
   },
   {
     id: "lamina_negra",
     nome: "Lâmina Negra",
     tipo: "tecnica",
     custo: 3,
-    descricao: `[Requisitos: Resistência 3, Nvl 12] se concentre em  um descanso longo inteiro a isso, sua arma principal recebe o bônus de Infusão permanentemente. mas não permite você usar Infusão novamente, exceto que desative sua infusão.`
+    descricao: `[Anima do Corpo | Requisitos: Resistência 3, Nvl 12] Dedique um Descanso Longo inteiro a isso — sua arma principal recebe o bônus de Infusão permanentemente. Não permite usar Infusão novamente, exceto ao desativar a infusão permanente.`
   },
 
-  // ── TÉCNICAS: HAKI DA OBSERVAÇÃO (Kenbunshoku Haki) ───────
-  // Nota: Não é possível utilizar mais de uma habilidade de Observação ao mesmo tempo.
+  // ── TÉCNICAS: ANIMA DA MENTE ───────────────────────────────
+  // Requisito Mínimo: Habilidade 3
+  // Nota: Não é possível utilizar mais de uma habilidade de Mente ao mesmo tempo.
   {
     id: "presenca_aguda",
     nome: "Presença Aguda",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisito: Habilidade 3] +(2 x Nível) para detectar auras. Gaste 4/8 PM para notar presenças escondidas em alcance Longe/M. Longe.`
+    descricao: `[Anima da Mente | Requisito: Habilidade 3] +(2 × Nível) para detectar presenças. Gaste 4/8 PM para notar presenças escondidas em alcance Longe/Muito Longe.`
   },
   {
     id: "instinto_apurado",
     nome: "Instinto Apurado",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisitos: Habilidade 3, Nvl 2] Recebe +(2 x Nível) em testes para evitar ficar Desprevenido.`
+    descricao: `[Anima da Mente | Requisitos: Habilidade 3, Nvl 2] Recebe +(2 × Nível) em testes para evitar ficar Desprevenido.`
   },
   {
     id: "intencao",
     nome: "Intenção",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisitos: Habilidade 3, Nvl 2] Gaste 2 PM: Teste de Influência vs Manha do alvo para ler se a intenção dele é Hostil, Amigável ou Neutra.`
+    descricao: `[Anima da Mente | Requisitos: Habilidade 3, Nvl 2] Gaste 2 PM: Teste de Influência vs Manha do alvo para ler se a intenção dele é Hostil, Amigável ou Neutra.`
   },
   {
     id: "previsao",
     nome: "Previsão",
     tipo: "tecnica",
     custo: 2,
-    descricao: `[Requisitos: Habilidade 3, Nvl 5] Gaste 4 PM: Se um ataque te acertar, você pode refazer seu teste de defesa (1x por rodada).`
+    descricao: `[Anima da Mente | Requisitos: Habilidade 3, Nvl 5] Gaste 4 PM: Se um ataque te acertar, você pode refazer seu teste de defesa (1× por rodada).`
   },
   {
     id: "visao_do_futuro",
     nome: "Visão do Futuro",
     tipo: "tecnica",
     custo: 3,
-    descricao: `[Requisitos: Habilidade 3, Nvl 12] Gaste 6 PM: soma HABILIDADE duas vezes a sua Esquiva novamente. Uso limitado a [Habilidade] vezes por batalha.`
+    descricao: `[Anima da Mente | Requisitos: Habilidade 3, Nvl 12] Gaste 6 PM: soma HABILIDADE duas vezes à sua Esquiva novamente. Uso limitado a [Habilidade] vezes por batalha.`
   },
 
-  // ── TÉCNICAS: HAKI DO REI (Haoshoku Haki) ─────────────────
+  // ── TÉCNICAS: ANIMA DA PRESSÃO ─────────────────────────────
+  // Requisito Mínimo: Poder 3
   {
     id: "presenca_marcante",
     nome: "Presença Marcante",
     tipo: "tecnica",
     custo: 1,
-    descricao: `[Requisitos: Poder 3, Comprado no Nível 1] Gaste 4 PM: Seres com Poder inferior em alcance Médio devem testar Poder ou ficam Inconscientes por 1D rodadas.`
+    descricao: `[Anima da Pressão | Requisitos: Poder 3, adquirido no Nível 1] Gaste 4 PM: seres com Poder igual ou inferior em alcance Médio testam Poder — se falharem, sofrem Incapacitação Moderada por 1D rodadas (apenas UMA ação Padrão OU Movimento por turno).`
   },
   {
-    id: "opressao_do_rei",
-    nome: "Opressão do Rei",
+    id: "intimidacao",
+    nome: "Intimidação",
+    tipo: "tecnica",
+    custo: 1,
+    descricao: `[Anima da Pressão | Requisitos: Poder 3, adquirido no Nível 1, Nvl 2] Reação (3 PM): quando alguém te ataca em alcance Corpo a Corpo, o atacante sofre Perda no teste de ataque.`
+  },
+  {
+    id: "suprimir",
+    nome: "Suprimir",
     tipo: "tecnica",
     custo: 2,
-    descricao: `[Requisitos: Poder 3, Comprado no Nível 1, Nvl 5] Reação (6 PM): Anula o Haki de Observação de um alvo próximo (Teste de Poder vs Resistência).`
+    descricao: `[Anima da Pressão | Requisitos: Poder 3, adquirido no Nível 1, Nvl 5] Reação (6 PM): quando o alvo ativar qualquer habilidade que custe PM, teste Poder vs Resistência — se vencer, a habilidade é cancelada e o PM é desperdiçado.`
   },
   {
-    id: "revestimento",
-    nome: "Revestimento",
+    id: "dominio",
+    nome: "Domínio",
+    tipo: "tecnica",
+    custo: 2,
+    descricao: `[Anima da Pressão | Requisitos: Poder 3, adquirido no Nível 1, Nvl 7] Gaste 6 PM: teste de Poder vs Resistência — se falhar, o alvo não pode usar habilidades que custem PM no próximo turno.`
+  },
+  {
+    id: "quebrar_a_alma",
+    nome: "Quebrar a Alma",
     tipo: "tecnica",
     custo: 3,
-    descricao: `[Requisitos: Poder 3, Comprado no Nível 1, Nvl 12] Gaste 8 PM: você pode rerolar seu teste de ataque até 3 vezes, parando quando sair um Sucesso Crítico ou ao esgotar as tentativas. Se ao fim das tentativas nenhum crítico ocorreu, o melhor resultado entre as rolagens é usado. Limitado a Poder vezes por batalha.`
+    descricao: `[Anima da Pressão | Requisitos: Poder 3, adquirido no Nível 1, Nvl 12] Gaste 10 PM: teste de Poder vs Resistência — se falhar, o alvo perde Poder × 3 PM e sofre Perda em todos os testes por 1D rodadas. Com Resistência Parcial: metade do PM drenado, sem Perda.`
   }
 ];
 
 // ── PERICIAS (do livro) ───────────────────────────────────
 export const LISTA_PERICIAS = [
   { id: "animais",    nome: "Animais",    emoji: "🐾", desc: "Você sabe cuidar, adestrar, cavalgar e lidar com animais e outras criaturas irracionais. Pode substituir Medicina (apenas para animais). Com bons resultados nos testes, você consegue até se comunicar com animais." },
-  { id: "artes",      nome: "Artes",      emoji: "🎭", desc: "Você sabe fazer performances artísticas como cantar, dançar, tocar música, cozinhar, fazer cosplay (e se disfarçar), desenhar, avaliar objetos de arte e outras." },
-  { id: "esportes",   nome: "Esportes",   emoji: "🏃", desc: "Você conhece os muitos tipos de esportes e suas regras, além de ser capacitado em atividades físicas como correr, escalar, nadar, fazer acrobacias, equilibrar-se, saltar e outras." },
+  { id: "artes",      nome: "Arte",       emoji: "🎭", desc: "Você sabe fazer performances artísticas como cantar, dançar, tocar música, cozinhar, fazer cosplay (e se disfarçar), desenhar, avaliar objetos de arte e outras." },
+  { id: "esportes",   nome: "Esporte",    emoji: "🏃", desc: "Você conhece os muitos tipos de esportes e suas regras, além de ser capacitado em atividades físicas como correr, escalar, nadar, fazer acrobacias, equilibrar-se, saltar e outras." },
   { id: "influencia", nome: "Influência", emoji: "🗣️", desc: "Você sabe convencer outros a acreditar em algo ou fazer o que você quer. Envolve coisas como diplomacia, liderança, intimidação, sedução, blefe, hipnose, lábia, barganha, obter informações e outros." },
   { id: "luta",       nome: "Luta",       emoji: "⚔️", desc: "Você sabe atacar e se defender em combate, seja corpo a corpo ou à distância. Perícia fundamental para qualquer combatente." },
   { id: "manha",      nome: "Manha",      emoji: "🕵️", desc: "Você sabe fazer coisas malandras ou ilegais, como construir (e sabotar) armadilhas, arrombar portas e fechaduras, bater carteiras, criar (e decifrar) mensagens criptografadas, se disfarçar, falsificar objetos, ser furtivo, intimidar, rastrear pistas e pegadas." },
-  { id: "maquinas",   nome: "Máquinas",   emoji: "⚙️", desc: "Você sabe operar, construir e consertar máquinas, veículos e aparelhos de todo tipo. Também sabe lidar com computadores, hackear sistemas e agir em simulações. Pode substituir Medicina (apenas para construtos)." },
+  { id: "maquinas",   nome: "Máquinas",   emoji: "⚙️", desc: "Você sabe operar, construir e consertar máquinas, veículos e aparelhos de todo tipo. Também sabe lidar com computadores, hackear sistemas, vasculhar a internet, jogar games ou agir em simulações e realidades virtuais. Pode substituir Medicina (apenas para construtos)." },
   { id: "medicina",   nome: "Medicina",   emoji: "🩺", desc: "Você sabe realizar primeiros socorros, diagnósticos, tratar doenças e venenos, realizar cirurgias e todo tipo de conhecimento de saúde. Pode despertar um personagem inconsciente ou estabilizar um personagem quase morto." },
   { id: "mistica",    nome: "Mística",    emoji: "✨", desc: "Você sabe sobre forças sobrenaturais e artes místicas. Quando atacar ou se defender com poderes mágicos ou sobrenaturais, use esta perícia. Também é usada para reconhecer, contra-atacar e teorizar sobre conhecimentos ocultos, magia e criaturas mágicas." },
   { id: "percepcao",  nome: "Percepção",  emoji: "👁️", desc: "Você sabe usar seus sentidos para perceber melhor o mundo ao redor. Usada para ouvir ruídos baixos, notar coisas distantes ou escondidas, ler lábios, rastrear pistas, evitar ser surpreendido e até notar se alguém está mentindo." },
   { id: "saber",      nome: "Saber",      emoji: "📚", desc: "Você sabe tudo sobre tudo — qualquer conhecimento teórico em ciências, idiomas e até assuntos sobrenaturais, ou como e onde pesquisá-los. Perícia ampla, própria para cientistas e super nerds que sabem de tudo!" },
-  { id: "sustento",   nome: "Sustento",   emoji: "🏕️", desc: "Você sabe subsistir e se orientar em condições adversas. Pode encontrar e produzir alimento, construir abrigos, rastrear pistas, reconhecer criaturas selvagens, construir armadilhas, ser furtivo, nadar e prever o clima." }
+  { id: "sustento",   nome: "Sustento",   emoji: "🏕️", desc: "Você sabe subsistir e se orientar em condições adversas. Pode encontrar e produzir alimento, construir abrigos, rastrear pistas, reconhecer criaturas selvagens, construir e sabotar armadilhas, ser furtivo, nadar, prever o clima, entre outros." }
 ];
 
 // ── SUBTIPOS DE FONTE DE PODER ────────────────────────────
 export const SUBTIPOS_FONTE = [
-  { id: "paramecia", nome: "Paramecia (Akuma no Mi)",  custo: 1 },
-  { id: "zoan",      nome: "Zoan (Akuma no Mi)",       custo: 2 },
-  { id: "logia",     nome: "Logia (Akuma no Mi)",      custo: 3 },
-  { id: "haki",      nome: "Haki",                     custo: 1 },
-  { id: "livre",     nome: "Fonte Livre / Homebrew",   custo: 1 }
+  { id: "paramecia", nome: "Paramecia (Fruta do Desejo)",  custo: 1 },
+  { id: "zoan",      nome: "Zoan (Fruta do Desejo)",       custo: 2 },
+  { id: "logia",     nome: "Logia (Fruta do Desejo)",      custo: 3 },
+  { id: "anima",     nome: "Anima",                        custo: 1 },
+  { id: "livre",     nome: "Fonte Livre / Homebrew",       custo: 1 }
 ];

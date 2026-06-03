@@ -50,7 +50,7 @@ function _escolhasIniciais(tabelas = TABELAS) {
 const TIPOS_DANO = [
   "Corte","Perfuração","Pancada","Veneno","Ácido",
   "Água","Fogo","Lava","Ar","Gás","Terra","Areia",
-  "Eletricidade","Luz","Gelo","Fuligem","Sombras","Haki"
+  "Eletricidade","Luz","Gelo","Fuligem","Sombras","Anima"
 ]
 
 // ── Registro ──────────────────────────────────────────────
@@ -280,7 +280,7 @@ function _renderPassivosConfig() {
         <input id="logiaElemento" placeholder="Ex: Fogo, Gelo, Eletricidade..."
           value="${elAtual}" style="${inputStyle}"
           oninput="_salvarElementoLogia(this.value)">
-        <p style="font-size:12px;opacity:0.6;margin-top:8px">→ Imune ao elemento escolhido<br>→ Imune a danos mundanos (exceto Haki)</p>
+        <p style="font-size:12px;opacity:0.6;margin-top:8px">→ Imune ao elemento escolhido<br>→ Imune a danos mundanos (exceto Anima)</p>
       </div>`
     container.appendChild(logiaDiv)
   }
