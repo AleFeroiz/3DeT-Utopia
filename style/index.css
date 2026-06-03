@@ -10,6 +10,7 @@
   flex-wrap: wrap;
 }
 .btn-pasta { background: #7c3aed; }
+.btn-veiculo { background: #0e7490; }
 
 /* ── FICHAS SEM PASTA ────────────────────────────────────── */
 #areaSemPasta {

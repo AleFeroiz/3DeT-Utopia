@@ -2083,8 +2083,7 @@ hr {
   height: 44px;
   object-fit: contain;
   flex-shrink: 0;
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.2));
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.3));
 }
 
 .rep-card-titulo {

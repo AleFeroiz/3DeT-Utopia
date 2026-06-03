@@ -687,6 +687,60 @@ document.getElementById("btnNovaPasta").addEventListener("click",      () => _ab
 document.getElementById("btnNovaMestre").addEventListener("click",     () => criarFicha(null, "mestre"))
 document.getElementById("btnNovaPastaMestre").addEventListener("click",() => _abrirModal(null, "mestre"))
 
+// ── VEÍCULOS ──────────────────────────────────────────────
+document.getElementById("btnNovoVeiculo").addEventListener("click", () => {
+  const id = crypto.randomUUID()
+  localStorage.setItem(`veiculo_${id}`, JSON.stringify({ id, nome: '', escala: 'media', atribs: { pod: 0, hab: 0, res: 0 }, hpAtual: 0, modificacoes: [] }))
+  const indice = JSON.parse(localStorage.getItem('veiculos_indice') || '[]')
+  indice.push({ id, nome: 'Novo Veículo', escala: 'media' })
+  localStorage.setItem('veiculos_indice', JSON.stringify(indice))
+  window.location.href = `veiculo.html?id=${id}`
+})
+
+function renderVeiculos() {
+  const lista = document.getElementById('listaVeiculos')
+  if (!lista) return
+  const indice = JSON.parse(localStorage.getItem('veiculos_indice') || '[]')
+  if (indice.length === 0) { lista.innerHTML = ''; return }
+
+  const titulo = document.createElement('div')
+  titulo.style.cssText = 'font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:10px;'
+  titulo.textContent = '🚢 Veículos'
+  lista.innerHTML = ''
+  lista.appendChild(titulo)
+
+  const grid = document.createElement('div')
+  grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;'
+
+  indice.forEach(v => {
+    const card = document.createElement('div')
+    card.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px;min-width:200px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:border-color .15s;'
+    card.onmouseenter = () => card.style.borderColor = '#3b82f6'
+    card.onmouseleave = () => card.style.borderColor = '#334155'
+    card.innerHTML = `
+      <div style="font-weight:700;font-size:15px;">🚢 ${v.nome || 'Sem Nome'}</div>
+      <div style="font-size:12px;color:#64748b;">Escala: ${v.escala || '—'}</div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button style="flex:1;padding:5px;border-radius:6px;border:1px solid #3b82f6;background:transparent;color:#3b82f6;font-size:12px;font-weight:600;cursor:pointer;" onclick="event.stopPropagation();window.location.href='veiculo.html?id=${v.id}'">Abrir</button>
+        <button style="padding:5px 8px;border-radius:6px;border:1px solid #ef4444;background:transparent;color:#ef4444;font-size:12px;cursor:pointer;" onclick="event.stopPropagation();deletarVeiculo('${v.id}')">🗑️</button>
+      </div>`
+    card.querySelector('div').onclick = () => window.location.href = `veiculo.html?id=${v.id}`
+    grid.appendChild(card)
+  })
+
+  lista.appendChild(grid)
+}
+
+window.deletarVeiculo = (id) => {
+  if (!confirm('Excluir este veículo?')) return
+  localStorage.removeItem(`veiculo_${id}`)
+  const indice = JSON.parse(localStorage.getItem('veiculos_indice') || '[]').filter(v => v.id !== id)
+  localStorage.setItem('veiculos_indice', JSON.stringify(indice))
+  renderVeiculos()
+}
+
+renderVeiculos()
+
 document.getElementById("btnMigrar")?.addEventListener("click", () => {
   const result = Storage.migrarTudo()
   if (result.player.changed || result.mestre.changed) {

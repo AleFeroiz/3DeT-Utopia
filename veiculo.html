@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha de Veículo</title>
+  <link rel="stylesheet" href="style/global.css">
+  <link rel="stylesheet" href="style/toast.css">
+  <link rel="stylesheet" href="style/veiculo.css">
+</head>
+<body>
+
+<div class="v-container">
+
+  <!-- ── TOPBAR ─────────────────────────────────────────── -->
+  <div class="v-topbar">
+    <a href="index.html" class="btn-voltar">← Fichas</a>
+    <div class="v-topbar-nome">
+      <span class="v-icone">🚢</span>
+      <input id="vNome" class="v-nome-input" placeholder="Nome do Veículo" maxlength="60">
+    </div>
+    <div class="v-topbar-right">
+      <span id="vSalvoLabel" class="v-salvo-label">✓ Salvo</span>
+    </div>
+  </div>
+
+  <!-- ── TABS ───────────────────────────────────────────── -->
+  <div class="v-tabs">
+    <div class="v-tab active" onclick="trocarAbaV(0)">⚙️ Atributos</div>
+    <div class="v-tab" onclick="trocarAbaV(1)">🔧 Modificações</div>
+  </div>
+
+  <div class="v-content">
+
+    <!-- ── ABA 0: ATRIBUTOS ──────────────────────────────── -->
+    <div class="v-section active">
+      <div class="v-atrib-grid">
+
+        <!-- Escala -->
+        <div class="v-card v-card-escala">
+          <div class="v-card-label">Escala</div>
+          <div class="v-escala-btns">
+            <button class="v-escala-btn" data-escala="pequena" onclick="setEscala('pequena')">Pequena</button>
+            <button class="v-escala-btn" data-escala="media"   onclick="setEscala('media')">Média</button>
+            <button class="v-escala-btn" data-escala="grande"  onclick="setEscala('grande')">Grande</button>
+          </div>
+          <div class="v-escala-info" id="vEscalaInfo"></div>
+        </div>
+
+        <!-- Atributos -->
+        <div class="v-card v-card-atribs">
+          <div class="v-card-label">Atributos <span class="v-pontos-label">(<span id="vPontosGastos">0</span>/5 pontos)</span></div>
+          <div class="v-atrib-row">
+            <div class="v-atrib-bloco">
+              <div class="v-atrib-nome">POD</div>
+              <div class="v-atrib-sub">Poder</div>
+              <div class="v-stepper">
+                <button onclick="mudarAtrib('pod',-1)">−</button>
+                <span id="vPod">0</span>
+                <button onclick="mudarAtrib('pod',1)">+</button>
+              </div>
+            </div>
+            <div class="v-atrib-bloco">
+              <div class="v-atrib-nome">HAB</div>
+              <div class="v-atrib-sub">Habilidade</div>
+              <div class="v-stepper">
+                <button onclick="mudarAtrib('hab',-1)">−</button>
+                <span id="vHab">0</span>
+                <button onclick="mudarAtrib('hab',1)">+</button>
+              </div>
+            </div>
+            <div class="v-atrib-bloco">
+              <div class="v-atrib-nome">RES</div>
+              <div class="v-atrib-sub">Resistência</div>
+              <div class="v-stepper">
+                <button onclick="mudarAtrib('res',-1)">−</button>
+                <span id="vRes">0</span>
+                <button onclick="mudarAtrib('res',1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="v-pontos-restantes">
+            Pontos restantes: <strong id="vPontosRestantes">5</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Status derivado -->
+      <div class="v-status-grid" id="vStatusGrid">
+        <div class="v-status-bloco">
+          <div class="v-status-label">Modif. disponíveis</div>
+          <div class="v-status-valor" id="vModifDisp">—</div>
+        </div>
+        <div class="v-status-bloco">
+          <div class="v-status-label">Nível máx. modif.</div>
+          <div class="v-status-valor" id="vModifMax">—</div>
+        </div>
+        <div class="v-status-bloco">
+          <div class="v-status-label">Passos</div>
+          <div class="v-status-valor" id="vPassos">—</div>
+        </div>
+        <div class="v-status-bloco">
+          <div class="v-status-label">Defesa base</div>
+          <div class="v-status-valor" id="vDefesa">—</div>
+        </div>
+        <div class="v-status-bloco">
+          <div class="v-status-label">Inventário</div>
+          <div class="v-status-valor" id="vInventario">—</div>
+        </div>
+      </div>
+
+      <!-- HP & Estado -->
+      <div class="v-card v-card-hp">
+        <div class="v-hp-header">
+          <div class="v-card-label">HP — Pontos de Vida</div>
+          <div class="v-estado-badge" id="vEstadoBadge">Normal</div>
+        </div>
+
+        <!-- Barra de HP -->
+        <div class="v-hp-barra-wrap">
+          <div class="v-hp-barra-bg">
+            <div class="v-hp-barra-fill" id="vHpBarraFill"></div>
+            <!-- Marcadores de threshold -->
+            <div class="v-hp-threshold" id="vThreshAvariado" title="50% — Avariado"></div>
+            <div class="v-hp-threshold v-hp-threshold-critico" id="vThreshCritico" title="15% — Crítico"></div>
+          </div>
+          <div class="v-hp-numeros">
+            <span id="vHpAtual">0</span> / <span id="vHpMax">0</span>
+          </div>
+        </div>
+
+        <!-- Controles HP -->
+        <div class="v-hp-controles">
+          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-1)" title="−1 HP">−1</button>
+          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-5)" title="−5 HP">−5</button>
+          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-10)" title="−10 HP">−10</button>
+          <input type="number" id="vHpInput" class="v-hp-input" placeholder="valor" min="1">
+          <button class="v-hp-btn v-hp-dmg-custom" onclick="aplicarHpCustom(-1)" title="Aplicar dano">💥 Dano</button>
+          <button class="v-hp-btn v-hp-heal-custom" onclick="aplicarHpCustom(1)" title="Aplicar cura">💚 Cura</button>
+          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(5)" title="+5 HP">+5</button>
+          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(10)" title="+10 HP">+10</button>
+        </div>
+
+        <!-- Aviso de limite por estado -->
+        <div class="v-estado-aviso" id="vEstadoAviso" style="display:none"></div>
+
+        <!-- Troca manual de estado (só aparece quando está bloqueado) -->
+        <div class="v-estado-override" id="vEstadoOverride" style="display:none">
+          <span>Alterar estado manualmente:</span>
+          <div class="v-estado-btns">
+            <button class="v-estado-btn" data-estado="normal"   onclick="forcarEstado('normal')">Normal</button>
+            <button class="v-estado-btn" data-estado="avariado" onclick="forcarEstado('avariado')">Avariado</button>
+            <button class="v-estado-btn" data-estado="critico"  onclick="forcarEstado('critico')">Crítico</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ABA 0 -->
+
+    <!-- ── ABA 1: MODIFICAÇÕES ───────────────────────────── -->
+    <div class="v-section">
+
+      <!-- Resumo de pontos -->
+      <div class="v-modif-resumo">
+        <div class="v-modif-resumo-item">
+          <span class="v-modif-resumo-label">Disponíveis</span>
+          <span class="v-modif-resumo-valor" id="mDisp">0</span>
+        </div>
+        <div class="v-modif-resumo-sep">·</div>
+        <div class="v-modif-resumo-item">
+          <span class="v-modif-resumo-label">Usados</span>
+          <span class="v-modif-resumo-valor" id="mUsados">0</span>
+        </div>
+        <div class="v-modif-resumo-sep">·</div>
+        <div class="v-modif-resumo-item">
+          <span class="v-modif-resumo-label">Restantes</span>
+          <span class="v-modif-resumo-valor" id="mRestantes">0</span>
+        </div>
+        <div class="v-modif-resumo-sep">·</div>
+        <div class="v-modif-resumo-item">
+          <span class="v-modif-resumo-label">Nível máx.</span>
+          <span class="v-modif-resumo-valor" id="mNivelMax">—</span>
+        </div>
+      </div>
+
+      <!-- Botão criar -->
+      <button class="v-btn-criar-modif" onclick="abrirModalModif()">+ Nova Modificação</button>
+
+      <!-- Lista de modificações -->
+      <div id="vListaModif" class="v-lista-modif"></div>
+
+    </div><!-- /ABA 1 -->
+
+  </div><!-- /v-content -->
+</div>
+
+<!-- ── MODAL CRIAR/EDITAR MODIFICAÇÃO ────────────────────── -->
+<div id="modalModif" class="v-modal-overlay" style="display:none" onclick="fecharModalModifOverlay(event)">
+  <div class="v-modal">
+    <div class="v-modal-header">
+      <h3 id="modalModifTitulo">Nova Modificação</h3>
+      <button class="v-modal-fechar" onclick="fecharModalModif()">✕</button>
+    </div>
+    <div class="v-modal-body">
+
+      <label class="v-form-label">Nome</label>
+      <input id="mfNome" class="v-form-input" placeholder="Ex: Canhão Principal" maxlength="60">
+
+      <label class="v-form-label">Tipo</label>
+      <div class="v-tipo-grid">
+        <button class="v-tipo-btn" data-tipo="ofensiva"    onclick="selecionarTipo('ofensiva')">⚔️ Ofensiva</button>
+        <button class="v-tipo-btn" data-tipo="defensiva"   onclick="selecionarTipo('defensiva')">🛡️ Defensiva</button>
+        <button class="v-tipo-btn" data-tipo="mobilidade"  onclick="selecionarTipo('mobilidade')">💨 Mobilidade</button>
+        <button class="v-tipo-btn" data-tipo="suporte"     onclick="selecionarTipo('suporte')">🔭 Suporte</button>
+        <button class="v-tipo-btn v-tipo-btn-inventario" data-tipo="inventario" onclick="selecionarTipo('inventario')">📦 +Inventário</button>
+      </div>
+
+      <label class="v-form-label">Nível <span id="mfNivelMaxLabel" class="v-form-hint"></span></label>
+      <div class="v-nivel-btns" id="mfNivelBtns">
+        <button class="v-nivel-btn" data-nivel="1" onclick="selecionarNivel(1)">1</button>
+        <button class="v-nivel-btn" data-nivel="2" onclick="selecionarNivel(2)">2</button>
+        <button class="v-nivel-btn" data-nivel="3" onclick="selecionarNivel(3)">3</button>
+        <button class="v-nivel-btn" data-nivel="4" onclick="selecionarNivel(4)">4</button>
+      </div>
+
+      <div id="mfBonusInfo" class="v-bonus-info" style="display:none"></div>
+
+      <label class="v-form-label">Pontos de modificação gastos</label>
+      <div class="v-stepper v-stepper-modif">
+        <button onclick="mudarPtsModif(-1)">−</button>
+        <span id="mfPtos">1</span>
+        <button onclick="mudarPtsModif(1)">+</button>
+      </div>
+      <div class="v-form-hint" id="mfPtosHint"></div>
+
+      <label class="v-form-label">Descrição <span class="v-form-hint">(opcional)</span></label>
+      <textarea id="mfDesc" class="v-form-textarea" placeholder="Descreva o armamento, blindagem, etc..." rows="3"></textarea>
+
+    </div>
+    <div class="v-modal-footer">
+      <button class="v-btn-cancelar" onclick="fecharModalModif()">Cancelar</button>
+      <button class="v-btn-confirmar" onclick="confirmarModif()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ──────────────────────────────────────────────── -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script type="module" src="js/veiculo.js"></script>
+</body>
+</html>
