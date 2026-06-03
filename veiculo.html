@@ -28,6 +28,7 @@
   <div class="v-tabs">
     <div class="v-tab active" onclick="trocarAbaV(0)">⚙️ Atributos</div>
     <div class="v-tab" onclick="trocarAbaV(1)">🔧 Modificações</div>
+    <div class="v-tab" onclick="trocarAbaV(2)">🎒 Inventário</div>
   </div>
 
   <div class="v-content">
@@ -132,14 +133,12 @@
 
         <!-- Controles HP -->
         <div class="v-hp-controles">
-          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-1)" title="−1 HP">−1</button>
-          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-5)" title="−5 HP">−5</button>
-          <button class="v-hp-btn v-hp-dmg" onclick="mudarHp(-10)" title="−10 HP">−10</button>
-          <input type="number" id="vHpInput" class="v-hp-input" placeholder="valor" min="1">
-          <button class="v-hp-btn v-hp-dmg-custom" onclick="aplicarHpCustom(-1)" title="Aplicar dano">💥 Dano</button>
-          <button class="v-hp-btn v-hp-heal-custom" onclick="aplicarHpCustom(1)" title="Aplicar cura">💚 Cura</button>
-          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(5)" title="+5 HP">+5</button>
-          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(10)" title="+10 HP">+10</button>
+          <button class="v-hp-btn v-hp-dmg"  onclick="mudarHp(-10)" title="−10 HP">−10</button>
+          <button class="v-hp-btn v-hp-dmg"  onclick="mudarHp(-5)"  title="−5 HP">−5</button>
+          <button class="v-hp-btn v-hp-dmg"  onclick="mudarHp(-1)"  title="−1 HP">−1</button>
+          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(1)"   title="+1 HP">+1</button>
+          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(5)"   title="+5 HP">+5</button>
+          <button class="v-hp-btn v-hp-heal" onclick="mudarHp(10)"  title="+10 HP">+10</button>
         </div>
 
         <!-- Aviso de limite por estado -->
@@ -192,7 +191,60 @@
 
     </div><!-- /ABA 1 -->
 
+    <!-- ── ABA 2: INVENTÁRIO ─────────────────────────────── -->
+    <div class="v-section">
+
+      <!-- Cabeçalho de carga -->
+      <div class="v-inv-header">
+        <div class="v-inv-peso-bloco">
+          <div class="v-inv-peso-label">⚖️ Carga</div>
+          <div class="v-inv-peso-valores">
+            <span id="vInvPesoAtual" class="v-inv-peso-atual">0</span>
+            <span class="v-inv-peso-sep">/</span>
+            <span id="vInvPesoMax" class="v-inv-peso-max">0</span>
+          </div>
+          <div class="v-inv-barra-bg">
+            <div id="vInvBarraFill" class="v-inv-barra-fill"></div>
+          </div>
+          <div id="vInvPesoInfo" class="v-inv-peso-info"></div>
+        </div>
+        <button class="v-btn-criar-modif" onclick="abrirModalVItem()">＋ Adicionar Item</button>
+      </div>
+
+      <!-- Lista de itens -->
+      <div id="vListaItens" class="v-inv-lista"></div>
+
+    </div><!-- /ABA 2 -->
+
   </div><!-- /v-content -->
+</div>
+
+<!-- ── MODAL ITEM DO VEÍCULO ─────────────────────────────── -->
+<div id="modalVItem" class="v-modal-overlay" style="display:none" onclick="fecharModalVItemOverlay(event)">
+  <div class="v-modal">
+    <div class="v-modal-header">
+      <h3 id="modalVItemTitulo">Novo Item</h3>
+      <button class="v-modal-fechar" onclick="fecharModalVItem()">✕</button>
+    </div>
+    <div class="v-modal-body">
+      <label class="v-form-label">Nome</label>
+      <input id="vItemNome" class="v-form-input" placeholder="Ex: Caixas de munição" maxlength="80">
+
+      <label class="v-form-label">Peso <span class="v-form-hint">(unidades de carga)</span></label>
+      <div class="v-stepper v-stepper-modif">
+        <button onclick="mudarPesoVItem(-1)">−</button>
+        <span id="vItemPesoVal">0</span>
+        <button onclick="mudarPesoVItem(1)">+</button>
+      </div>
+
+      <label class="v-form-label">Descrição <span class="v-form-hint">(opcional)</span></label>
+      <textarea id="vItemDesc" class="v-form-textarea" placeholder="Descreva o item..." rows="3"></textarea>
+    </div>
+    <div class="v-modal-footer">
+      <button class="v-btn-cancelar" onclick="fecharModalVItem()">Cancelar</button>
+      <button class="v-btn-confirmar" onclick="confirmarVItem()">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── MODAL CRIAR/EDITAR MODIFICAÇÃO ────────────────────── -->

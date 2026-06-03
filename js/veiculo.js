@@ -2,7 +2,7 @@
 //  veiculo.js — Lógica completa da Ficha de Veículo
 // ============================================================
 
-import { inicializar, getUser, onAuthChange, login, logout } from './firebase.js'
+// veiculo.js usa apenas localStorage — sem Firebase
 
 // ── TABELAS DE REGRA ──────────────────────────────────────
 const ESCALA = {
@@ -62,6 +62,7 @@ function _novoVeiculo() {
     hpAtual:     0,
     modificacoes: [],  // { id, nome, tipo, nivel, pontos, desc, desativadaManual }
     _estadoForcado: null,
+    inventario:  { itens: [] },  // { itens: [{ id, nome, peso, desc }] }
   }
 }
 
@@ -155,6 +156,8 @@ function carregar(id) {
   if (!raw) return false
   try {
     veiculo = JSON.parse(raw)
+    // Migração: fichas antigas sem inventário
+    if (!veiculo.inventario) veiculo.inventario = { itens: [] }
     return true
   } catch { return false }
 }
@@ -168,6 +171,7 @@ function renderTudo() {
   renderHp()
   renderModifs()
   renderModifResumo()
+  renderInventario()
 }
 
 function renderNome() {
@@ -379,14 +383,6 @@ window.mudarHp = (delta) => {
   _aplicarDeltaHp(delta)
 }
 
-window.aplicarHpCustom = (sinal) => {
-  const input = document.getElementById('vHpInput')
-  const val   = parseInt(input.value)
-  if (isNaN(val) || val <= 0) { _toast('Digite um valor válido.', 'warn'); return }
-  _aplicarDeltaHp(sinal * val)
-  input.value = ''
-}
-
 function _aplicarDeltaHp(delta) {
   const { hpMax } = derivados()
   const novoHp = Math.max(0, Math.min(hpMax, veiculo.hpAtual + delta))
@@ -592,6 +588,126 @@ window.confirmarModif = () => {
 
   fecharModalModif()
   renderModifs(); renderModifResumo(); renderStatus(); salvar()
+}
+
+// ── INVENTÁRIO ────────────────────────────────────────────
+function renderInventario() {
+  // Garantir que o campo existe (fichas antigas)
+  if (!veiculo.inventario) veiculo.inventario = { itens: [] }
+  const itens    = veiculo.inventario.itens ?? []
+  const d        = derivados()
+  const pesoMax  = d.inventario
+  const pesoAtual = itens.reduce((s, i) => s + (i.peso ?? 0), 0)
+
+  // Barra de carga
+  const elAtual = document.getElementById('vInvPesoAtual')
+  const elMax   = document.getElementById('vInvPesoMax')
+  const elFill  = document.getElementById('vInvBarraFill')
+  const elInfo  = document.getElementById('vInvPesoInfo')
+
+  if (elAtual) { elAtual.textContent = pesoAtual; elAtual.style.color = pesoAtual > pesoMax ? '#ef4444' : '#22c55e' }
+  if (elMax)   elMax.textContent = pesoMax
+  if (elFill) {
+    const ratio = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
+    const over  = pesoAtual > pesoMax
+    elFill.style.width      = (ratio * 100).toFixed(1) + '%'
+    elFill.style.background = over
+      ? 'linear-gradient(90deg,#ef4444,#fca5a5)'
+      : ratio > 0.75
+        ? 'linear-gradient(90deg,#f59e0b,#fcd34d)'
+        : 'linear-gradient(90deg,#16a34a,#4ade80)'
+  }
+  if (elInfo) elInfo.textContent = `Capacidade da escala ${ESCALA[veiculo.escala].label}`
+
+  // Lista
+  const lista = document.getElementById('vListaItens')
+  if (!lista) return
+  lista.innerHTML = ''
+
+  if (!itens.length) {
+    lista.innerHTML = '<div style="text-align:center;color:#64748b;padding:32px 0;font-size:14px;">Nenhum item no inventário.</div>'
+    return
+  }
+
+  itens.forEach(item => {
+    const card = document.createElement('div')
+    card.className = 'v-inv-item-card'
+    card.innerHTML = `
+      <div class="v-inv-item-info">
+        <div class="v-inv-item-nome">${_esc(item.nome || 'Sem nome')}</div>
+        ${item.desc ? `<div class="v-inv-item-desc">${_esc(item.desc)}</div>` : ''}
+      </div>
+      <div class="v-inv-item-direita">
+        <span class="v-inv-item-peso">⚖️ ${item.peso ?? 0}</span>
+        <div class="v-inv-item-acoes">
+          <button class="v-modif-btn" onclick="editarVItem('${item.id}')">✏️</button>
+          <button class="v-modif-btn v-modif-btn-del" onclick="deletarVItem('${item.id}')">🗑️</button>
+        </div>
+      </div>`
+    lista.appendChild(card)
+  })
+}
+
+let _vItemEditandoId = null
+let _vItemPesoAtual  = 0
+
+window.abrirModalVItem = () => {
+  _vItemEditandoId = null
+  _vItemPesoAtual  = 0
+  document.getElementById('modalVItemTitulo').textContent = 'Novo Item'
+  document.getElementById('vItemNome').value  = ''
+  document.getElementById('vItemDesc').value  = ''
+  document.getElementById('vItemPesoVal').textContent = '0'
+  document.getElementById('modalVItem').style.display = 'flex'
+}
+
+window.fecharModalVItem = () => {
+  document.getElementById('modalVItem').style.display = 'none'
+  _vItemEditandoId = null; _vItemPesoAtual = 0
+}
+
+window.fecharModalVItemOverlay = (e) => {
+  if (e.target === document.getElementById('modalVItem')) fecharModalVItem()
+}
+
+window.mudarPesoVItem = (delta) => {
+  _vItemPesoAtual = Math.max(0, _vItemPesoAtual + delta)
+  document.getElementById('vItemPesoVal').textContent = _vItemPesoAtual
+}
+
+window.editarVItem = (id) => {
+  if (!veiculo.inventario) return
+  const item = veiculo.inventario.itens.find(i => i.id === id)
+  if (!item) return
+  _vItemEditandoId = id
+  _vItemPesoAtual  = item.peso ?? 0
+  document.getElementById('modalVItemTitulo').textContent = 'Editar Item'
+  document.getElementById('vItemNome').value  = item.nome || ''
+  document.getElementById('vItemDesc').value  = item.desc || ''
+  document.getElementById('vItemPesoVal').textContent = _vItemPesoAtual
+  document.getElementById('modalVItem').style.display = 'flex'
+}
+
+window.deletarVItem = (id) => {
+  if (!veiculo.inventario) return
+  veiculo.inventario.itens = veiculo.inventario.itens.filter(i => i.id !== id)
+  renderInventario(); salvar()
+}
+
+window.confirmarVItem = () => {
+  const nome = document.getElementById('vItemNome').value.trim()
+  if (!nome) { _toast('Digite um nome para o item.', 'erro'); return }
+  const desc = document.getElementById('vItemDesc').value.trim()
+  if (!veiculo.inventario) veiculo.inventario = { itens: [] }
+
+  if (_vItemEditandoId) {
+    const item = veiculo.inventario.itens.find(i => i.id === _vItemEditandoId)
+    if (item) { item.nome = nome; item.peso = _vItemPesoAtual; item.desc = desc }
+  } else {
+    veiculo.inventario.itens.push({ id: crypto.randomUUID(), nome, peso: _vItemPesoAtual, desc })
+  }
+  fecharModalVItem()
+  renderInventario(); salvar()
 }
 
 // ── TOAST ─────────────────────────────────────────────────

@@ -362,34 +362,6 @@
   border-color: rgba(34,197,94,0.3);
 }
 .v-hp-heal:hover { background: rgba(34,197,94,0.25); }
-.v-hp-dmg-custom {
-  background: rgba(239,68,68,0.15);
-  color: var(--cor-critico);
-  border-color: rgba(239,68,68,0.4);
-  padding: 6px 10px;
-}
-.v-hp-dmg-custom:hover { background: rgba(239,68,68,0.3); }
-.v-hp-heal-custom {
-  background: rgba(34,197,94,0.15);
-  color: var(--cor-normal);
-  border-color: rgba(34,197,94,0.4);
-  padding: 6px 10px;
-}
-.v-hp-heal-custom:hover { background: rgba(34,197,94,0.3); }
-
-.v-hp-input {
-  width: 72px;
-  padding: 6px 8px;
-  background: var(--bg-deep);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 7px;
-  font-size: 14px;
-  text-align: center;
-  -moz-appearance: textfield;
-}
-.v-hp-input::-webkit-inner-spin-button,
-.v-hp-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* Aviso de estado */
 .v-estado-aviso {
@@ -841,4 +813,137 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* ── INVENTÁRIO DO VEÍCULO ───────────────────────────── */
+.v-inv-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.v-inv-peso-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.v-inv-peso-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.v-inv-peso-valores {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.v-inv-peso-atual {
+  font-size: 22px;
+  font-weight: 700;
+  color: #22c55e;
+  transition: color 0.2s;
+}
+
+.v-inv-peso-sep {
+  font-size: 16px;
+  color: #475569;
+}
+
+.v-inv-peso-max {
+  font-size: 16px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.v-inv-barra-bg {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.v-inv-barra-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg,#16a34a,#4ade80);
+  transition: width 0.3s ease, background 0.3s ease;
+  width: 0%;
+}
+
+.v-inv-peso-info {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.v-inv-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v-inv-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: border-color 0.15s;
+}
+
+.v-inv-item-card:hover { border-color: #475569; }
+
+.v-inv-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.v-inv-item-nome {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-inv-item-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-inv-item-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.v-inv-item-peso {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.v-inv-item-acoes {
+  display: flex;
+  gap: 4px;
 }
