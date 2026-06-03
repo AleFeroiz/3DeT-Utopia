@@ -608,7 +608,7 @@ function _renderReputacaoPilar(pilar) {
     pips.innerHTML = ""
     for (let i = 1; i <= 10; i++) {
       const pip = document.createElement("div")
-      pip.className = "rep-pip" + (i <= val ? " ativo-" + pilar : "")
+      pip.className = "rep-pip" + (i <= val ? " ativo" : "")
       pips.appendChild(pip)
     }
   }
