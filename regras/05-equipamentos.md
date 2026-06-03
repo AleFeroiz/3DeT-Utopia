@@ -6,14 +6,14 @@ No mundo de One Piece, o seu equipamento pode ser a diferença entre a glória e
 
 Equipamentos são itens permanentes que acompanham o herói. Eles utilizam o **Sistema de Categorias** para definir seu impacto mecânico. Quanto maior a Categoria, mais rara e poderosa é a peça.
 
-| Categoria | Faixa de Bônus | Raridade Sugerida           |
-| --------- | -------------- | --------------------------- |
-| **1**     | 0 a 6          | Comum (Itens de loja)       |
-| **2**     | 6 a 12         | Incomum (Qualidade militar) |
-| **3**     | 12 a 18        | Raro (Wazamono)             |
-| **4**     | 18 a 24        | Épico (O Wazamono)          |
-| **5**     | 24 a 30        | Lendário (Saijo O Wazamono) |
-| **6**     | 30 a 36        | Mítico (Tesouros do Mundo)  |
+| Categoria | Faixa de Bônus | Raridade Sugerida |
+| --------- | -------------- | ----------------- |
+| **1**     | 0 a 6          | Comum             |
+| **2**     | 6 a 12         | Incomum           |
+| **3**     | 12 a 18        | Raro              |
+| **4**     | 18 a 24        | Épico             |
+| **5**     | 24 a 30        | Lendário          |
+| **6**     | 30 a 36        | Mítico            |
 
 > [!abstract] Definindo o Bônus Ao obter um equipamento, o mestre define o bônus de duas formas:
 > 

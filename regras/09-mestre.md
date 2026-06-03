@@ -1,4 +1,4 @@
-O papel do Mestre neste sistema não é apenas arbitrar regras, mas gerenciar a escala de poder cinematográfica de _One Piece_.
+O papel do Mestre neste sistema não é apenas arbitrar regras, mas gerenciar a escala de poder cinematográfica do mundo.
 
 ## 1. Anatomia dos NPCs
 
@@ -32,12 +32,12 @@ Estes exigem ficha completa. Eles seguem a mesma progressão dos jogadores e pos
 
 A dificuldade de um encontro é definida pela comparação entre a soma dos **Pontos de Ficha** do bando contra os pontos do inimigo.
 
-|**Categoria**|**Comparação de Pontos**|**Sensação em Jogo**|
-|---|---|---|
-|**Pífio**|$< 75\%$ dos pontos dos players|O bando se sente invencível; serve para mostrar evolução.|
-|**Equilibrado**|$95\% \text{ a } 110\%$ dos pontos|Combate justo. Exige gastos de PM e estratégia de Reações.|
-|**Tenso**|$120\% \text{ a } 140\%$ dos pontos|Risco real de **Dano Massivo**. Alguém pode cair.|
-|**Lendário**|$> 150\%$ dos pontos|Um "Yonkou" ou Almirante. Fuga costuma ser a melhor opção.|
+| **Categoria**   | **Comparação de Pontos**            | **Sensação em Jogo**                                             |
+| --------------- | ----------------------------------- | ---------------------------------------------------------------- |
+| **Pífio**       | $< 75\%$ dos pontos dos players     | O bando se sente invencível; serve para mostrar evolução.        |
+| **Equilibrado** | $95\% \text{ a } 110\%$ dos pontos  | Combate justo. Exige gastos de PM e estratégia de Reações.       |
+| **Tenso**       | $120\% \text{ a } 140\%$ dos pontos | Risco real de **Dano Massivo**. Alguém pode cair.                |
+| **Lendário**    | $> 150\%$ dos pontos                | _Um inimigo de escala absurda. Fuga costuma ser a melhor opção._ |
 
 > [!NOTE] Lembre-se: como o dano é calculado por
 > 
@@ -51,8 +51,8 @@ A dificuldade de um encontro é definida pela comparação entre a soma dos **Po
 
 Para tornar as lutas memoráveis como no anime, adicione mecânicas que forcem o bando a pensar:
 
-- **Mudança de Fase:** Ao chegar em 50% de PV, o chefe destrói o cenário, mudando a **Distância** de todos para "Muito Longe" ou ativando uma nova Forma Zoan.
+- **Mudança de Fase:** Ao chegar em 50% de PV, o chefe destrói o cenário, mudando a **Distância** de todos para "Muito Longe" ou ativando uma nova forma de sua Fonte de Poder.
     
 - **Contagem Regressiva:** O chefe está carregando um **Ataque Concentrado** massivo (Escala 5). Os jogadores têm 2 turnos para quebrar a postura dele ou sofrerão um "nuke".
     
-- **Ambiente Hostil:** A luta ocorre em uma ilha onde chove água do mar (Penalidade para usuários de Akuma no Mi) ou ventos fortes que impõem **Perda** em ataques à distância.
+- **Ambiente Hostil:** A luta ocorre em um ambiente que impõe condições adversas — ventos fortes que aplicam **Perda** em ataques à distância, calor extremo que drena PM por turno, ou qualquer elemento que force o grupo a adaptar a estratégia.

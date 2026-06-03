@@ -23,7 +23,7 @@ Um efeito irritante e focado. Atrapalha a tática inimiga, mas não paralisa o c
     
 - **Obstrução:** Penalidade fixa de **-2** focada em **apenas 1** Atributo, **1** Perícia específica, ou na Defesa do alvo.
     
-- **Incapacitação:** O alvo tem seu Deslocamento reduzido pela metade **OU** não pode utilizar Reações (como *proteger*,  Adiar Ação, etc).
+- **Incapacitação:** O alvo tem seu Deslocamento reduzido pela metade
     
 
 #### 🟡 Moderado (Debilitado)

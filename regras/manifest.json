@@ -1,37 +1,314 @@
 [
-  { "file": "01-sinopse-do-mundo.md",            "id": "sec-1",    "num": "1",    "emoji": "🌍", "titulo": "Sinopse do Mundo",               "sub": false },
-  { "file": "02-criacao-de-personagem.md",       "id": "sec-2",    "num": "2",    "emoji": "🎲", "titulo": "Criação de Personagem",          "sub": false },
-  { "file": "03-fundamentos.md",                 "id": "sec-3",    "num": "3",    "emoji": "📐", "titulo": "Fundamentos do Sistema",         "sub": false },
-  { "file": "04-racas.md",                       "id": "sec-4",    "num": "4",    "emoji": "🐾", "titulo": "Raças",                          "sub": false },
-  { "file": "05-profissoes.md",                  "id": "sec-5",    "num": "5",    "emoji": "⚒️", "titulo": "Profissões",                     "sub": false },
-  { "file": "06-pericias.md",                    "id": "sec-6",    "num": "6",    "emoji": "🎯", "titulo": "Perícias",                       "sub": false },
-  { "file": "07-vantagens.md",                   "id": "sec-7",    "num": "7",    "emoji": "⭐", "titulo": "Vantagens",                      "sub": false },
-  { "file": "08-desvantagens.md",                "id": "sec-8",    "num": "8",    "emoji": "⚠️", "titulo": "Desvantagens",                   "sub": false },
-  { "file": "09-progressao-e-niveis.md",         "id": "sec-9",    "num": "9",    "emoji": "📈", "titulo": "Progressão e Níveis",            "sub": false },
-  { "file": "10-fontes-de-poder.md",             "id": "sec-10",   "num": "10",   "emoji": "💥", "titulo": "Fontes de Poder",                "sub": false },
-  { "file": "10.1-akuma-no-mi.md",               "id": "sec-10-1", "num": "10.1", "emoji": "🍎", "titulo": "Akuma no Mi",                    "sub": true  },
-  { "file": "10.2-tecnicas-especiais.md",        "id": "sec-10-2", "num": "10.2", "emoji": "⚡", "titulo": "Técnicas Especiais",             "sub": true  },
-  { "file": "11-combate.md",                     "id": "sec-11",   "num": "11",   "emoji": "⚔️", "titulo": "Combate",                        "sub": false },
-  { "file": "11.1-distancias.md",                "id": "sec-11-1", "num": "11.1", "emoji": "📏", "titulo": "Distâncias",                     "sub": true  },
-  { "file": "11.2-manobras-de-combate.md",       "id": "sec-11-2", "num": "11.2", "emoji": "🥷", "titulo": "Manobras de Combate",            "sub": true  },
-  { "file": "11.3-acoes.md",                     "id": "sec-11-3", "num": "11.3", "emoji": "✨", "titulo": "Ações",                          "sub": true  },
-  { "file": "11.4-dano-e-elementos.md",          "id": "sec-11-4", "num": "11.4", "emoji": "🔥", "titulo": "Dano e Elementos",               "sub": true  },
-  { "file": "11.5-derrota-e-morte.md",           "id": "sec-11-5", "num": "11.5", "emoji": "💀", "titulo": "Derrota & Morte",                "sub": true  },
-  { "file": "11.6-darma-e-karma.md",             "id": "sec-11-6", "num": "11.6", "emoji": "☯️", "titulo": "Darma e Karma",                  "sub": true  },
-  { "file": "12-equipamentos.md",                "id": "sec-12",   "num": "12",   "emoji": "🗡️", "titulo": "Equipamentos",                   "sub": false },
-  { "file": "12.1-itens.md",                     "id": "sec-12-1", "num": "12.1", "emoji": "🎒", "titulo": "Itens",                          "sub": true  },
-  { "file": "12.2-encantamentos.md",             "id": "sec-12-2", "num": "12.2", "emoji": "✨", "titulo": "Encantamentos",                  "sub": true  },
-  { "file": "12.3-inventario.md",                "id": "sec-12-3", "num": "12.3", "emoji": "📦", "titulo": "Inventário",                     "sub": true  },
-  { "file": "12.4-multiplos-equipamentos.md",    "id": "sec-12-4", "num": "12.4", "emoji": "🔧", "titulo": "Múltiplos Equipamentos",          "sub": true  },
-  { "file": "12.5-aquisicao-e-evolucao-de-equipamentos.md", "id": "sec-12-5", "num": "12.5", "emoji": "⬆️", "titulo": "Aquisição e Evolução de Equipamentos", "sub": true  },
-  { "file": "13-veiculos.md",                    "id": "sec-13",   "num": "13",   "emoji": "⛵", "titulo": "Veículos",                        "sub": false },
-  { "file": "14-viagens-e-deslocamento.md",      "id": "sec-14",   "num": "14",   "emoji": "🗺️", "titulo": "Viagens e Deslocamento",         "sub": false },
-  { "file": "14.1-descanso.md",                  "id": "sec-14-1", "num": "14.1", "emoji": "🌙", "titulo": "Descanso",                       "sub": true  },
-  { "file": "14.2-clima.md",                     "id": "sec-14-2", "num": "14.2", "emoji": "🌩️", "titulo": "Clima",                          "sub": true  },
-  { "file": "15-condicoes.md",                   "id": "sec-15",   "num": "15",   "emoji": "🚨", "titulo": "Condições",                      "sub": false },
-  { "file": "16-reputacao.md",                   "id": "sec-16",   "num": "16",   "emoji": "⚖️", "titulo": "Reputação",                      "sub": false },
-  { "file": "16.1-recompensas.md",               "id": "sec-16-1", "num": "16.1", "emoji": "🏅", "titulo": "Recompensas",                    "sub": true  },
-  { "file": "17-exploracao-e-investigacao.md",   "id": "sec-17",   "num": "17",   "emoji": "🔍", "titulo": "Exploração & Investigação",      "sub": false },
-  { "file": "18-economia-dinamica.md",           "id": "sec-18",   "num": "18",   "emoji": "💰", "titulo": "Economia Dinâmica",              "sub": false },
-  { "file": "19-mestre.md",                      "id": "sec-19",   "num": "19",   "emoji": "📜", "titulo": "Mestre",                         "sub": false }
+  {
+    "file": "01-o-mundo.md",
+    "id": "sec-1",
+    "num": "1",
+    "emoji": "🌍",
+    "titulo": "O Mundo",
+    "sub": false
+  },
+  {
+    "file": "01.1-abstinencia-da-utopia.md",
+    "id": "sec-1-1",
+    "num": "1.1",
+    "emoji": "🔔",
+    "titulo": "A Abstinência da Utopia",
+    "sub": true
+  },
+  {
+    "file": "01.2-o-mundo-antigo.md",
+    "id": "sec-1-2",
+    "num": "1.2",
+    "emoji": "⚔️",
+    "titulo": "O Mundo Antigo",
+    "sub": true
+  },
+  {
+    "file": "01.3-bases-filosoficas.md",
+    "id": "sec-1-3",
+    "num": "1.3",
+    "emoji": "🌭",
+    "titulo": "Bases Filosóficas",
+    "sub": true
+  },
+  {
+    "file": "01.4-vazio-da-liberdade.md",
+    "id": "sec-1-4",
+    "num": "1.4",
+    "emoji": "🌀",
+    "titulo": "Vazio da Liberdade",
+    "sub": true
+  },
+  {
+    "file": "02-criacao-de-personagem.md",
+    "id": "sec-2",
+    "num": "2",
+    "emoji": "🎲",
+    "titulo": "Criação de Personagem",
+    "sub": false
+  },
+  {
+    "file": "02.1-fundamentos.md",
+    "id": "sec-2-1",
+    "num": "2.1",
+    "emoji": "📐",
+    "titulo": "Fundamentos",
+    "sub": true
+  },
+  {
+    "file": "02.2-racas.md",
+    "id": "sec-2-2",
+    "num": "2.2",
+    "emoji": "🐾",
+    "titulo": "Raças",
+    "sub": true
+  },
+  {
+    "file": "02.3-profissoes.md",
+    "id": "sec-2-3",
+    "num": "2.3",
+    "emoji": "⚒️",
+    "titulo": "Profissões",
+    "sub": true
+  },
+  {
+    "file": "02.4-pericias.md",
+    "id": "sec-2-4",
+    "num": "2.4",
+    "emoji": "🎯",
+    "titulo": "Perícias",
+    "sub": true
+  },
+  {
+    "file": "02.5-vantagens.md",
+    "id": "sec-2-5",
+    "num": "2.5",
+    "emoji": "⭐",
+    "titulo": "Vantagens",
+    "sub": true
+  },
+  {
+    "file": "02.6-desvantagens.md",
+    "id": "sec-2-6",
+    "num": "2.6",
+    "emoji": "⚠️",
+    "titulo": "Desvantagens",
+    "sub": true
+  },
+  {
+    "file": "02.7-progressao-e-niveis.md",
+    "id": "sec-2-7",
+    "num": "2.7",
+    "emoji": "📈",
+    "titulo": "Progressão e Níveis",
+    "sub": true
+  },
+  {
+    "file": "03-fontes-de-poder.md",
+    "id": "sec-3",
+    "num": "3",
+    "emoji": "💥",
+    "titulo": "Fontes de Poder",
+    "sub": false
+  },
+  {
+    "file": "03.1-frutas-do-desejo.md",
+    "id": "sec-3-1",
+    "num": "3.1",
+    "emoji": "🍎",
+    "titulo": "Frutas do Desejo",
+    "sub": true
+  },
+  {
+    "file": "03.2-tecnicas-especiais.md",
+    "id": "sec-3-2",
+    "num": "3.2",
+    "emoji": "⚡",
+    "titulo": "Técnicas Especiais",
+    "sub": true
+  },
+  {
+    "file": "04-combate.md",
+    "id": "sec-4",
+    "num": "4",
+    "emoji": "⚔️",
+    "titulo": "Combate",
+    "sub": false
+  },
+  {
+    "file": "04.1-distancias.md",
+    "id": "sec-4-1",
+    "num": "4.1",
+    "emoji": "📏",
+    "titulo": "Distâncias",
+    "sub": true
+  },
+  {
+    "file": "04.2-manobras-de-combate.md",
+    "id": "sec-4-2",
+    "num": "4.2",
+    "emoji": "🥷",
+    "titulo": "Manobras de Combate",
+    "sub": true
+  },
+  {
+    "file": "04.3-acoes.md",
+    "id": "sec-4-3",
+    "num": "4.3",
+    "emoji": "✨",
+    "titulo": "Ações",
+    "sub": true
+  },
+  {
+    "file": "04.4-dano-e-elementos.md",
+    "id": "sec-4-4",
+    "num": "4.4",
+    "emoji": "🔥",
+    "titulo": "Dano e Elementos",
+    "sub": true
+  },
+  {
+    "file": "04.5-derrota-e-morte.md",
+    "id": "sec-4-5",
+    "num": "4.5",
+    "emoji": "💀",
+    "titulo": "Derrota & Morte",
+    "sub": true
+  },
+  {
+    "file": "05-equipamentos.md",
+    "id": "sec-5",
+    "num": "5",
+    "emoji": "🗡️",
+    "titulo": "Equipamentos",
+    "sub": false
+  },
+  {
+    "file": "05.1-itens.md",
+    "id": "sec-5-1",
+    "num": "5.1",
+    "emoji": "🎒",
+    "titulo": "Itens",
+    "sub": true
+  },
+  {
+    "file": "05.2-encantamentos.md",
+    "id": "sec-5-2",
+    "num": "5.2",
+    "emoji": "✨",
+    "titulo": "Encantamentos",
+    "sub": true
+  },
+  {
+    "file": "05.3-inventario.md",
+    "id": "sec-5-3",
+    "num": "5.3",
+    "emoji": "📦",
+    "titulo": "Inventário",
+    "sub": true
+  },
+  {
+    "file": "05.4-multiplos-equipamentos.md",
+    "id": "sec-5-4",
+    "num": "5.4",
+    "emoji": "🔧",
+    "titulo": "Múltiplos Equipamentos",
+    "sub": true
+  },
+  {
+    "file": "05.5-aquisicao-e-evolucao.md",
+    "id": "sec-5-5",
+    "num": "5.5",
+    "emoji": "⬆️",
+    "titulo": "Aquisição e Evolução de Equipamentos",
+    "sub": true
+  },
+  {
+    "file": "06-viagens-e-deslocamento.md",
+    "id": "sec-6",
+    "num": "6",
+    "emoji": "🗺️",
+    "titulo": "Viagens e Deslocamento",
+    "sub": false
+  },
+  {
+    "file": "06.1-veiculos.md",
+    "id": "sec-6-1",
+    "num": "6.1",
+    "emoji": "⛵",
+    "titulo": "Veículos",
+    "sub": true
+  },
+  {
+    "file": "06.2-descanso.md",
+    "id": "sec-6-2",
+    "num": "6.2",
+    "emoji": "🌙",
+    "titulo": "Descanso",
+    "sub": true
+  },
+  {
+    "file": "06.3-clima.md",
+    "id": "sec-6-3",
+    "num": "6.3",
+    "emoji": "🌩️",
+    "titulo": "Clima",
+    "sub": true
+  },
+  {
+    "file": "06.4-exploracao-e-investigacao.md",
+    "id": "sec-6-4",
+    "num": "6.4",
+    "emoji": "🔍",
+    "titulo": "Exploração & Investigação",
+    "sub": true
+  },
+  {
+    "file": "06.5-reputacao.md",
+    "id": "sec-6-5",
+    "num": "6.5",
+    "emoji": "⚖️",
+    "titulo": "Reputação",
+    "sub": true
+  },
+  {
+    "file": "06.6-recompensas.md",
+    "id": "sec-6-6",
+    "num": "6.6",
+    "emoji": "🏅",
+    "titulo": "Recompensas",
+    "sub": true
+  },
+  {
+    "file": "06.7-economia-dinamica.md",
+    "id": "sec-6-7",
+    "num": "6.7",
+    "emoji": "💰",
+    "titulo": "Economia Dinâmica",
+    "sub": true
+  },
+  {
+    "file": "07-condicoes.md",
+    "id": "sec-7",
+    "num": "7",
+    "emoji": "🚨",
+    "titulo": "Condições",
+    "sub": false
+  },
+  {
+    "file": "08-darma-e-karma.md",
+    "id": "sec-8",
+    "num": "8",
+    "emoji": "☯️",
+    "titulo": "Darma e Karma",
+    "sub": false
+  },
+  {
+    "file": "09-mestre.md",
+    "id": "sec-9",
+    "num": "9",
+    "emoji": "📜",
+    "titulo": "Mestre",
+    "sub": false
+  }
 ]
