@@ -55,9 +55,14 @@ function _novoVeiculo() {
     escala:       'media',
     atribs:       { pod: 0, hab: 0, res: 0 },
     hpAtual:      0,
-    estadoManual: null,   // 'normal' | 'avariado' | 'critico' | null
+    estadoManual: null,
     modificacoes: [],
     inventario:   { itens: [], offsetPeso: 0 },
+    corTema:      '#3b82f6',
+    imagemUrl:    null,
+    imagemThumb:  null,
+    isPublic:     false,
+    editPublic:   false,
   }
 }
 
@@ -191,8 +196,8 @@ function renderAtribs() {
   document.getElementById('vPod').textContent = veiculo.atribs.pod
   document.getElementById('vHab').textContent = veiculo.atribs.hab
   document.getElementById('vRes').textContent = veiculo.atribs.res
-  document.getElementById('vPontosGastos').textContent = total
-  document.getElementById('vPontosRestantes').textContent = 5 - total
+  document.getElementById('vPontosGastos').textContent  = total
+  document.getElementById('vPontosRestantes').textContent = 15 - total
 }
 
 function renderStatus() {
@@ -366,11 +371,22 @@ function renderInventario() {
   const elFill   = document.getElementById('invBarraFill')
   const elOffset = document.getElementById('invPesoOffset')
 
+  // invBase = base da escala + offset manual (o que o usuário edita)
+  const invBase = ESCALA[veiculo.escala].inventarioBase + (inv.offsetPeso ?? 0)
+  // modInv = bônus das modificações de inventário
+  const modInvBonus = pesoMax - invBase
+
   if (elAtual) { elAtual.textContent = pesoAtual; elAtual.style.color = pesoAtual > pesoMax ? '#ef4444' : '#22c55e' }
+  // Exibir apenas base+offset no contenteditable (sem modInv), evitando o bug de soma dupla
   if (elMax && document.activeElement !== elMax) {
-    elMax.innerText   = pesoMax
+    elMax.innerText = invBase
   }
-  if (elOffset) elOffset.textContent = `(base ${ESCALA[veiculo.escala].inventarioBase}${inv.offsetPeso ? (inv.offsetPeso > 0 ? ' +' : ' ') + inv.offsetPeso : ''})`
+  const elModInv = document.getElementById('invPesoModInv')
+  if (elModInv) elModInv.textContent = modInvBonus > 0 ? `+${modInvBonus} (modif.)` : ''
+  if (elOffset) {
+    const off = inv.offsetPeso ?? 0
+    elOffset.textContent = off !== 0 ? `base ${ESCALA[veiculo.escala].inventarioBase} ${off > 0 ? '+' : ''}${off} (manual)` : `base ${ESCALA[veiculo.escala].inventarioBase}`
+  }
   if (elFill) {
     const ratio = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
     const over  = pesoAtual > pesoMax
@@ -466,15 +482,15 @@ window.setEscala = (e) => {
 window.mudarAtrib = (attr, delta) => {
   const total = veiculo.atribs.pod + veiculo.atribs.hab + veiculo.atribs.res
   const val   = veiculo.atribs[attr]
-  if (delta > 0 && total >= 5) return
-  if (delta < 0 && val <= 0)  return
+  if (delta > 0 && total >= 15) { _toast('⛔ Limite de 15 pontos de atributo atingido.', 'erro'); return }
+  if (delta < 0 && val <= 0)    return
   veiculo.atribs[attr] = val + delta
   if (attr === 'res') {
     const d = derivados()
     if (veiculo.hpAtual > d.hpMax) veiculo.hpAtual = d.hpMax
     if (veiculo.hpAtual === 0)     veiculo.hpAtual = d.hpMax
   }
-  renderTudo(); salvar()
+  renderAtribs(); renderStatus(); renderHp(); renderModifResumo(); salvar()
 }
 
 window.mudarHp = (delta) => {
@@ -697,6 +713,7 @@ window.confirmarModif = () => {
 // ── INVENTÁRIO: AÇÕES ─────────────────────────────────────
 
 window.editarPesoMaxVInv = (val) => {
+  // O contenteditable mostra base+offset, não inclui modInv
   const novo = parseInt(val) || 0
   const base = ESCALA[veiculo.escala].inventarioBase
   veiculo.inventario.offsetPeso = novo - base
@@ -1192,6 +1209,187 @@ function _esc(s) {
 const vSalvoLabel = document.getElementById('vSalvoLabel')
 
 // ── INIT ──────────────────────────────────────────────────
+// ── COR TEMA ──────────────────────────────────────────────
+function _aplicarCorTema(cor) {
+  function _darken(hex, f) {
+    let c = hex.replace('#','')
+    if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2]
+    const r = Math.round(parseInt(c.slice(0,2),16)*f)
+    const g = Math.round(parseInt(c.slice(2,4),16)*f)
+    const b = Math.round(parseInt(c.slice(4,6),16)*f)
+    const d = v => v.toString(16).padStart(2,'0')
+    return `#${d(r)}${d(g)}${d(b)}`
+  }
+  document.documentElement.style.setProperty('--cor-tema',      cor)
+  document.documentElement.style.setProperty('--cor-tema-dark', _darken(cor, 0.7))
+  document.documentElement.style.setProperty('--cor-tema-dim',  cor + '22')
+  document.documentElement.style.setProperty('--cor-tema-mid',  cor + '55')
+}
+
+function _bindCorTema() {
+  const input = document.getElementById('vCorInput')
+  const wrap  = document.getElementById('vCorWrap')
+  if (!input) return
+  const cor = veiculo.corTema ?? '#3b82f6'
+  input.value = cor
+  _aplicarCorTema(cor)
+  if (!_vDono) { if(wrap){wrap.style.opacity='0.4';wrap.style.pointerEvents='none'} return }
+  input.addEventListener('input',  () => { veiculo.corTema = input.value; _aplicarCorTema(input.value) })
+  input.addEventListener('change', () => { veiculo.corTema = input.value; _aplicarCorTema(input.value); salvar() })
+}
+
+// ── RETRATO ──────────────────────────────────────────────
+function _gerarThumb(base64, tam=80) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = tam; c.height = tam
+      const ctx = c.getContext('2d')
+      const lado = Math.min(img.width, img.height)
+      ctx.drawImage(img, (img.width-lado)/2, (img.height-lado)/2, lado, lado, 0, 0, tam, tam)
+      resolve(c.toDataURL('image/jpeg', 0.7))
+    }
+    img.src = base64
+  })
+}
+
+function _abrirCropModal(src, onConfirm) {
+  document.getElementById('vCropModal')?.remove()
+  const modal = document.createElement('div')
+  modal.id = 'vCropModal'
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999'
+  const VP = 260
+  modal.innerHTML = `
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px;max-width:min(480px,92vw);width:100%">
+      <p style="color:#f1f5f9;font-size:15px;font-weight:600;margin:0">✂️ Ajustar Retrato</p>
+      <p style="color:#94a3b8;font-size:12px;margin:0">Arraste para posicionar. A área circular será o retrato.</p>
+      <div id="vCropVP" style="position:relative;width:${VP}px;height:${VP}px;border-radius:50%;overflow:hidden;border:3px solid var(--cor-tema,#3b82f6);align-self:center;cursor:grab;background:#000;flex-shrink:0">
+        <img id="vCropImg" src="${src}" draggable="false" style="position:absolute;user-select:none;max-width:none"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:#64748b">🔍</span>
+        <input type="range" id="vCropZoom" min="50" max="300" value="100" style="flex:1;accent-color:var(--cor-tema,#3b82f6)">
+        <span id="vCropZoomLbl" style="font-size:12px;color:#64748b">100%</span>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="vCropCancel" style="padding:8px 18px;border:1px solid #334155;background:#1e293b;color:#94a3b8;border-radius:8px;cursor:pointer;font-size:13px">Cancelar</button>
+        <button id="vCropOk"     style="padding:8px 18px;border:none;background:var(--cor-tema,#1d4ed8);color:white;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Usar Retrato</button>
+      </div>
+    </div>`
+  document.body.appendChild(modal)
+
+  const vp=document.getElementById('vCropVP'), img=document.getElementById('vCropImg')
+  const zr=document.getElementById('vCropZoom'), zl=document.getElementById('vCropZoomLbl')
+  let scale=1, ox=0, oy=0, drag=false, sx=0, sy=0, sox=0, soy=0
+
+  function clamp() {
+    const w=img.naturalWidth*scale, h=img.naturalHeight*scale
+    ox=Math.min(0,Math.max(VP-w,ox)); oy=Math.min(0,Math.max(VP-h,oy))
+  }
+  function apply() {
+    img.style.width=(img.naturalWidth*scale)+'px'; img.style.height=(img.naturalHeight*scale)+'px'
+    img.style.left=ox+'px'; img.style.top=oy+'px'
+  }
+  img.onload = () => {
+    const s = Math.max(VP/img.naturalWidth, VP/img.naturalHeight)
+    scale = s; ox=(VP-img.naturalWidth*s)/2; oy=(VP-img.naturalHeight*s)/2; apply()
+  }
+  zr.oninput = () => {
+    const ns = parseFloat(zr.value)/100 * Math.max(VP/img.naturalWidth, VP/img.naturalHeight)
+    const cx=(VP/2-ox)/scale, cy=(VP/2-oy)/scale
+    scale=ns; ox=VP/2-cx*scale; oy=VP/2-cy*scale; clamp(); apply()
+    zl.textContent = zr.value+'%'
+  }
+  vp.onmousedown = e => { drag=true; sx=e.clientX; sy=e.clientY; sox=ox; soy=oy; vp.style.cursor='grabbing' }
+  document.onmousemove = e => { if(!drag) return; ox=sox+(e.clientX-sx); oy=soy+(e.clientY-sy); clamp(); apply() }
+  document.onmouseup = () => { drag=false; vp.style.cursor='grab' }
+  document.getElementById('vCropCancel').onclick = () => modal.remove()
+  document.getElementById('vCropOk').onclick = () => {
+    const c=document.createElement('canvas'); c.width=VP; c.height=VP
+    c.getContext('2d').drawImage(img, -ox, -oy, img.naturalWidth*scale, img.naturalHeight*scale)
+    modal.remove(); onConfirm(c.toDataURL('image/jpeg',0.85))
+  }
+}
+
+function _bindRetrato() {
+  const grande = document.getElementById('vRetratoGrande')
+  const input  = document.getElementById('vRetratoInput')
+  const btnEd  = document.getElementById('vRetratoBtnEditar')
+  const btnDel = document.getElementById('vRetratoBtnRemover')
+  if (!grande || !input) return
+
+  function _atualizar() {
+    if (veiculo.imagemUrl) {
+      grande.style.backgroundImage = `url('${veiculo.imagemUrl}')`
+      grande.style.fontSize = '0'; grande.textContent = ''
+      if (btnDel) btnDel.style.display = 'flex'
+    } else {
+      grande.style.backgroundImage = ''; grande.style.fontSize = ''
+      grande.textContent = '🚢'
+      if (btnDel) btnDel.style.display = 'none'
+    }
+    if (btnEd) btnEd.style.display = _vDono ? 'flex' : 'none'
+  }
+  _atualizar()
+  if (!_vDono) return
+  grande.addEventListener('click', () => input.click())
+  if (btnEd) btnEd.addEventListener('click', () => input.click())
+  if (btnDel) btnDel.addEventListener('click', e => {
+    e.stopPropagation(); veiculo.imagemUrl = null; _atualizar(); salvar()
+  })
+  input.addEventListener('change', () => {
+    const file = input.files[0]; if (!file) return; input.value = ''
+    const reader = new FileReader()
+    reader.onload = ev => _abrirCropModal(ev.target.result, async url => {
+      veiculo.imagemUrl = url
+      veiculo.imagemThumb = await _gerarThumb(url, 80)
+      _atualizar(); salvar()
+    })
+    reader.readAsDataURL(file)
+  })
+}
+
+// ── VISIBILIDADE ──────────────────────────────────────────
+let _vDono = true   // por enquanto sempre dono (sem Firebase no veículo)
+
+function _renderVisibilidade() {
+  const bloco   = document.getElementById('vVisibBloco')
+  const chkPub  = document.getElementById('vTogglePublico')
+  const chkEdit = document.getElementById('vToggleEditPublic')
+  const hintPub = document.getElementById('vHintPublico')
+  const hintEd  = document.getElementById('vHintEditPublic')
+  const rowEd   = document.getElementById('vRowEditPublic')
+  const banner  = document.getElementById('vBannerLeitura')
+
+  if (!_vDono) {
+    if (bloco)  bloco.style.display = 'none'
+    if (banner) {
+      if (!veiculo.editPublic) { banner.style.display = 'block' }
+      else banner.style.display = 'none'
+    }
+    return
+  }
+  if (bloco)  bloco.style.display = 'block'
+  if (banner) banner.style.display = 'none'
+
+  const isPub  = veiculo.isPublic  ?? false
+  const isEdit = veiculo.editPublic ?? false
+  if (chkPub)  chkPub.checked  = isPub
+  if (chkEdit) chkEdit.checked = isEdit
+  if (hintPub) hintPub.textContent  = isPub  ? 'Visível para todos' : 'Apenas você'
+  if (hintEd)  hintEd.textContent   = isEdit ? 'Todos podem editar' : 'Só visualizar'
+  if (rowEd) { rowEd.style.opacity = isPub ? '1' : '0.4'; rowEd.style.pointerEvents = isPub ? 'auto' : 'none' }
+}
+
+window.toggleVisibV = (campo, valor) => {
+  veiculo[campo] = valor
+  _renderVisibilidade(); salvar()
+  _toast(campo === 'isPublic'
+    ? (valor ? '🌐 Ficha tornada pública.' : '🔒 Ficha tornada privada.')
+    : (valor ? '✏️ Edição pública ativada.' : '👁️ Somente visualização ativada.'), 'info')
+}
+
+// ── INIT ──────────────────────────────────────────────────
 async function init() {
   await _carregarPericias()
   const params = new URLSearchParams(location.search)
@@ -1205,7 +1403,11 @@ async function init() {
     if (id) veiculo.id = id
   }
 
+  _aplicarCorTema(veiculo.corTema ?? '#3b82f6')
   renderTudo()
+  _bindCorTema()
+  _bindRetrato()
+  _renderVisibilidade()
 
   document.getElementById('vNome').addEventListener('input', (e) => {
     veiculo.nome = e.target.value; salvar()
