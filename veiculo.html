@@ -145,14 +145,7 @@
         <div class="v-estado-aviso" id="vEstadoAviso" style="display:none"></div>
 
         <!-- Troca manual de estado (só aparece quando está bloqueado) -->
-        <div class="v-estado-override" id="vEstadoOverride" style="display:none">
-          <span>Alterar estado manualmente:</span>
-          <div class="v-estado-btns">
-            <button class="v-estado-btn" data-estado="normal"   onclick="forcarEstado('normal')">Normal</button>
-            <button class="v-estado-btn" data-estado="avariado" onclick="forcarEstado('avariado')">Avariado</button>
-            <button class="v-estado-btn" data-estado="critico"  onclick="forcarEstado('critico')">Crítico</button>
-          </div>
-        </div>
+
       </div>
 
     </div><!-- /ABA 0 -->
@@ -194,55 +187,177 @@
     <!-- ── ABA 2: INVENTÁRIO ─────────────────────────────── -->
     <div class="v-section">
 
-      <!-- Cabeçalho de carga -->
+      <!-- Cabeçalho de carga (idêntico à ficha) -->
       <div class="v-inv-header">
         <div class="v-inv-peso-bloco">
           <div class="v-inv-peso-label">⚖️ Carga</div>
           <div class="v-inv-peso-valores">
-            <span id="vInvPesoAtual" class="v-inv-peso-atual">0</span>
+            <span id="invPesoAtual" class="v-inv-peso-atual">0</span>
             <span class="v-inv-peso-sep">/</span>
-            <span id="vInvPesoMax" class="v-inv-peso-max">0</span>
+            <span id="invPesoMax" class="v-inv-peso-max" contenteditable="true"
+              title="Clique para editar o máximo"
+              onblur="editarPesoMaxVInv(this.innerText)">0</span>
           </div>
+          <div id="invPesoOffset" class="v-inv-peso-info"></div>
           <div class="v-inv-barra-bg">
-            <div id="vInvBarraFill" class="v-inv-barra-fill"></div>
+            <div id="invBarraFill" class="v-inv-barra-fill"></div>
           </div>
-          <div id="vInvPesoInfo" class="v-inv-peso-info"></div>
         </div>
-        <button class="v-btn-criar-modif" onclick="abrirModalVItem()">＋ Adicionar Item</button>
+        <button class="v-btn-criar-modif" onclick="abrirModalItem()">＋ Adicionar Item</button>
       </div>
 
       <!-- Lista de itens -->
-      <div id="vListaItens" class="v-inv-lista"></div>
+      <div id="listaItens" class="v-inv-lista"></div>
 
     </div><!-- /ABA 2 -->
 
   </div><!-- /v-content -->
 </div>
 
-<!-- ── MODAL ITEM DO VEÍCULO ─────────────────────────────── -->
-<div id="modalVItem" class="v-modal-overlay" style="display:none" onclick="fecharModalVItemOverlay(event)">
-  <div class="v-modal">
+<!-- ── MODAL ITEM (idêntico à ficha de personagem) ────────── -->
+<div id="modalItem" class="v-modal-overlay hidden" onclick="fecharModalItemOverlay(event)">
+  <div class="v-modal v-modal-wide">
     <div class="v-modal-header">
-      <h3 id="modalVItemTitulo">Novo Item</h3>
-      <button class="v-modal-fechar" onclick="fecharModalVItem()">✕</button>
+      <h3 id="modalItemTitulo">🎒 Adicionar Item</h3>
+      <button class="v-modal-fechar" onclick="fecharModalItem()">&#x2715;</button>
     </div>
     <div class="v-modal-body">
-      <label class="v-form-label">Nome</label>
-      <input id="vItemNome" class="v-form-input" placeholder="Ex: Caixas de munição" maxlength="80">
 
-      <label class="v-form-label">Peso <span class="v-form-hint">(unidades de carga)</span></label>
-      <div class="v-stepper v-stepper-modif">
-        <button onclick="mudarPesoVItem(-1)">−</button>
-        <span id="vItemPesoVal">0</span>
-        <button onclick="mudarPesoVItem(1)">+</button>
+      <label class="v-form-label">Nome</label>
+      <input id="itemNome" class="v-form-input" placeholder="Ex: Espada de Aço, Mapa do Tesouro...">
+
+      <label class="v-form-label" style="margin-top:10px;display:block">Perícia Alvo <span style="color:#ef4444">*</span></label>
+      <select id="itemPericia" style="width:100%;padding:8px 10px;background:var(--bg-card,#1e293b);border:1px solid var(--border,#334155);border-radius:8px;color:#e2e8f0;font-size:14px;margin-top:4px">
+        <option value="">&#8212; escolha uma perícia &#8212;</option>
+      </select>
+
+      <label class="v-form-label" style="margin-top:10px;display:block">Peso <span style="opacity:0.45;font-size:11px">(negativo = libera espaço)</span></label>
+      <div class="num-stepper">
+        <button type="button" class="step-btn" onclick="stepperDec('itemPeso',1,-99,999)">&#8249;</button>
+        <input type="number" id="itemPeso" value="0" min="-99" max="999" style="display:none">
+        <span class="step-val" id="step_val_itemPeso">0</span>
+        <button type="button" class="step-btn" onclick="stepperInc('itemPeso',1,-99,999)">&#8250;</button>
       </div>
 
-      <label class="v-form-label">Descrição <span class="v-form-hint">(opcional)</span></label>
-      <textarea id="vItemDesc" class="v-form-textarea" placeholder="Descreva o item..." rows="3"></textarea>
+      <label class="v-form-label">Categoria</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <label class="item-cat-opt" id="catItemLabel">
+          <input type="radio" name="itemCategoria" value="item" checked onchange="toggleCategoriaItem(this.value)">
+          <span>📦 Item</span>
+        </label>
+        <label class="item-cat-opt" id="catEquipLabel">
+          <input type="radio" name="itemCategoria" value="equipamento" onchange="toggleCategoriaItem(this.value)">
+          <span>⚔️ Equipamento</span>
+        </label>
+      </div>
+
+      <label class="v-form-label">Descrição</label>
+      <textarea id="itemDescricao" class="v-form-textarea" placeholder="Detalhes, origem, efeitos especiais..." style="min-height:70px"></textarea>
+
+      <!-- Campos extras só para equipamento -->
+      <div id="camposEquipamento" style="display:none;margin-top:10px;border-top:1px solid #334155;padding-top:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <input type="checkbox" id="itemUsadoAtaque" onchange="toggleBonusAtaque()">
+              <span>⚔️ Bônus de Ataque</span>
+            </label>
+            <div id="campoBonusAtaque" style="display:none">
+              <div class="num-stepper">
+                <button type="button" class="step-btn" onclick="stepperDec('itemBonusAtaque',1,-99,99)">&#8249;</button>
+                <input type="number" id="itemBonusAtaque" value="0" min="-99" max="99" style="display:none">
+                <span class="step-val" id="step_val_itemBonusAtaque">0</span>
+                <button type="button" class="step-btn" onclick="stepperInc('itemBonusAtaque',1,-99,99)">&#8250;</button>
+              </div>
+              <div style="font-size:11px;opacity:0.55;margin:8px 0 4px;text-align:center;letter-spacing:0.03em">ALCANCE IDEAL</div>
+              <select id="itemAlcanceIdeal" style="width:100%;background:var(--bg-card,#1e293b);color:var(--cor-tema,#93c5fd);border:1px solid color-mix(in srgb,var(--cor-tema,#3b82f6) 40%,transparent);border-radius:8px;padding:6px 8px;font-size:13px;text-align:center;cursor:pointer;font-weight:600;">
+                <option value="corpo_a_corpo">🤜 Corpo a corpo / Toque</option>
+                <option value="curto">📏 Curto</option>
+                <option value="longo">📐 Longo</option>
+                <option value="muito_longo">🎯 Muito longo</option>
+                <option value="fora_de_alcance">&#x274c; Fora de alcance</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <input type="checkbox" id="itemUsadoDefesa" onchange="toggleBonusDefesa()">
+              <span>🛡️ Bônus de Defesa</span>
+            </label>
+            <div id="campoBonusDefesa" style="display:none">
+              <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em">BÔNUS BRUTO</div>
+              <div class="num-stepper">
+                <button type="button" class="step-btn" onclick="stepperDec('itemBonusDefesa',1,-99,99);window._atualizarPreviewPrioridade?.()">&#8249;</button>
+                <input type="number" id="itemBonusDefesa" value="0" min="-99" max="99" style="display:none">
+                <span class="step-val" id="step_val_itemBonusDefesa">0</span>
+                <button type="button" class="step-btn" onclick="stepperInc('itemBonusDefesa',1,-99,99);window._atualizarPreviewPrioridade?.()">&#8250;</button>
+              </div>
+              <div style="text-align:center;margin:5px 0;opacity:0.35;font-size:13px;line-height:1">÷</div>
+              <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em">PRIORIDADE</div>
+              <div class="num-stepper">
+                <button type="button" class="step-btn" onclick="stepperDec('itemPrioridadeDefesa',1,1,99);window._atualizarPreviewPrioridade?.()">&#8249;</button>
+                <input type="number" id="itemPrioridadeDefesa" value="1" min="1" max="99" style="display:none">
+                <span class="step-val" id="step_val_itemPrioridadeDefesa">1</span>
+                <button type="button" class="step-btn" onclick="stepperInc('itemPrioridadeDefesa',1,1,99);window._atualizarPreviewPrioridade?.()">&#8250;</button>
+              </div>
+              <div style="border-top:1px solid rgba(255,255,255,0.08);margin:8px 0 5px"></div>
+              <div style="font-size:11px;opacity:0.55;margin-bottom:3px;text-align:center;letter-spacing:0.03em">DEFESA FINAL</div>
+              <div id="defesaFinalDisplay" style="text-align:center;font-size:22px;font-weight:700;color:#4ade80;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:6px 0">0</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CATEGORIA DO EQUIPAMENTO -->
+        <div style="margin-top:14px;border-top:1px solid var(--border-dim,#1e293b);padding-top:12px">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">
+            🏷️ Categoria do Equipamento
+            <span style="font-weight:400;opacity:0.5;font-size:11px;margin-left:6px">define encantamentos máximos</span>
+          </label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="categoriaBtns">
+            <button type="button" class="cat-equip-btn active" data-cat="1" onclick="selecionarCatEquip(1)">1 &#8212; Comum</button>
+            <button type="button" class="cat-equip-btn" data-cat="2" onclick="selecionarCatEquip(2)">2 &#8212; Incomum</button>
+            <button type="button" class="cat-equip-btn" data-cat="3" onclick="selecionarCatEquip(3)">3 &#8212; Raro</button>
+            <button type="button" class="cat-equip-btn" data-cat="4" onclick="selecionarCatEquip(4)">4 &#8212; Épico</button>
+            <button type="button" class="cat-equip-btn" data-cat="5" onclick="selecionarCatEquip(5)">5 &#8212; Lendário</button>
+            <button type="button" class="cat-equip-btn" data-cat="6" onclick="selecionarCatEquip(6)">6 &#8212; Mítico</button>
+          </div>
+          <div id="catEquipInfo"></div>
+        </div>
+
+        <!-- ENCANTAMENTOS -->
+        <div style="margin-top:14px;border-top:1px solid var(--border-dim,#1e293b);padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <label style="font-size:13px;font-weight:600">&#x2728; Encantamentos</label>
+            <span id="encantamentosContador" style="font-size:12px;color:var(--cor-tema,#64748b)">0 / 1</span>
+          </div>
+          <div id="listaEncantamentosItem" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+          <button type="button" id="btnAdicionarEncantamento" onclick="abrirSeletorEncantamento()">+ Adicionar Encantamento</button>
+          <div id="painelSeletorEncantamento" style="display:none;margin-top:8px">
+            <p style="font-size:12px;opacity:0.6;margin-bottom:8px">Escolha um encantamento para adicionar:</p>
+            <div id="listaOpcoesEncantamento" style="display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto"></div>
+            <button type="button" class="enc-cancelar-btn" onclick="fecharSeletorEncantamento()">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- RESTRIÇÕES -->
+        <div style="margin-top:14px;border-top:1px solid var(--border-dim,#1e293b);padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label style="font-size:13px;font-weight:600">🔒 Restrições</label>
+            <button type="button" class="enc-cancelar-btn" onclick="adicionarRestricaoItem()">+ Adicionar</button>
+          </div>
+          <div id="restricaoCategoriaAuto"></div>
+          <div id="listaRestricoesItem" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
+      </div>
+
     </div>
     <div class="v-modal-footer">
-      <button class="v-btn-cancelar" onclick="fecharModalVItem()">Cancelar</button>
-      <button class="v-btn-confirmar" onclick="confirmarVItem()">Salvar</button>
+      <button class="v-btn-cancelar" onclick="fecharModalItem()">Cancelar</button>
+      <button class="v-btn-confirmar" onclick="confirmarSalvarItem()">✅ Salvar</button>
     </div>
   </div>
 </div>
@@ -268,17 +383,10 @@
         <button class="v-tipo-btn v-tipo-btn-inventario" data-tipo="inventario" onclick="selecionarTipo('inventario')">📦 +Inventário</button>
       </div>
 
-      <label class="v-form-label">Nível <span id="mfNivelMaxLabel" class="v-form-hint"></span></label>
-      <div class="v-nivel-btns" id="mfNivelBtns">
-        <button class="v-nivel-btn" data-nivel="1" onclick="selecionarNivel(1)">1</button>
-        <button class="v-nivel-btn" data-nivel="2" onclick="selecionarNivel(2)">2</button>
-        <button class="v-nivel-btn" data-nivel="3" onclick="selecionarNivel(3)">3</button>
-        <button class="v-nivel-btn" data-nivel="4" onclick="selecionarNivel(4)">4</button>
-      </div>
-
       <div id="mfBonusInfo" class="v-bonus-info" style="display:none"></div>
 
-      <label class="v-form-label">Pontos de modificação gastos</label>
+      <label class="v-form-label">Pontos investidos <span id="mfNivelMaxLabel" class="v-form-hint"></span></label>
+      <div class="v-form-hint" style="margin-bottom:6px;color:#94a3b8">1 pt = Nível 1 &nbsp;· 2 pt = Nível 2 &nbsp;· 3 pt = Nível 3 &nbsp;· 4 pt = Nível 4</div>
       <div class="v-stepper v-stepper-modif">
         <button onclick="mudarPtsModif(-1)">−</button>
         <span id="mfPtos">1</span>
@@ -300,6 +408,37 @@
 <!-- ── TOAST ──────────────────────────────────────────────── -->
 <div id="toastContainer" class="toast-container"></div>
 
+<script>
+// ── Stepper helpers (idêntico à ficha) ─────────────────────────────
+function _stepperSet(id, val) {
+  const input = document.getElementById(id)
+  const span  = document.getElementById('step_val_' + id)
+  if (!input) return
+  const mn = +input.min; const mx = +input.max
+  const clamped = Math.max(isNaN(mn)?-Infinity:mn, Math.min(isNaN(mx)?Infinity:mx, val))
+  input.value = clamped
+  if (span) span.textContent = clamped
+}
+function stepperInc(id, step, min, max) {
+  const input = document.getElementById(id)
+  if (!input) return
+  _stepperSet(id, (+input.value || 0) + (step ?? 1))
+}
+function stepperDec(id, step, min, max) {
+  const input = document.getElementById(id)
+  if (!input) return
+  _stepperSet(id, (+input.value || 0) - (step ?? 1))
+}
+window.syncStepper = function(id) {
+  const input = document.getElementById(id)
+  const span  = document.getElementById('step_val_' + id)
+  if (input && span) span.textContent = input.value
+}
+function fecharModal(id) {
+  const el = document.getElementById(id)
+  if (el) { el.style.display = 'none'; el.classList.add('hidden') }
+}
+</script>
 <script type="module" src="js/veiculo.js"></script>
 </body>
 </html>

@@ -1,8 +1,7 @@
 // ============================================================
 //  veiculo.js — Lógica completa da Ficha de Veículo
+//  Sem Firebase — usa apenas localStorage
 // ============================================================
-
-// veiculo.js usa apenas localStorage — sem Firebase
 
 // ── TABELAS DE REGRA ──────────────────────────────────────
 const ESCALA = {
@@ -11,18 +10,15 @@ const ESCALA = {
   grande:  { modPorPod: 2, passosPorHab: 1, hpPorRes: 80, inventarioBase: 100, nivelMax: 4, defensaMult: 8,  label: 'Grande'  },
 }
 
-// Bônus por nível de modificação
+// Bônus por nível de modificação (nível = pontos investidos)
 const BONUS_NIVEL = {
   ofensiva:   { 1: '12–18', 2: '18–24', 3: '24–30', 4: '30–36' },
   defensiva:  { 1: '12–18', 2: '18–24', 3: '24–30', 4: '30–36' },
   mobilidade: { 1: '1 Passo', 2: '2 Passos', 3: '3 Passos', 4: '4 Passos' },
   suporte:    { 1: '+3 em Perícia', 2: '+6 em Perícia', 3: '+9 em Perícia', 4: '+12 em Perícia' },
-  inventario: { 1: '+50% do inventário base', 2: '+50% do inventário base', 3: '+50% do inventário base', 4: '+50% do inventário base' },
+  inventario: { 1: '+50% inventário base', 2: '+50% inventário base', 3: '+50% inventário base', 4: '+50% inventário base' },
 }
-
 const ALCANCE_NIVEL = { 1: 'Perto', 2: 'Longe', 3: 'Muito Longe', 4: 'Fora de Alcance*' }
-
-// Cor por tipo de modificação
 const COR_TIPO = {
   ofensiva:   '#ef4444',
   defensiva:  '#3b82f6',
@@ -30,7 +26,6 @@ const COR_TIPO = {
   suporte:    '#f59e0b',
   inventario: '#8b5cf6',
 }
-
 const LABEL_TIPO = {
   ofensiva:   '⚔️ Ofensiva',
   defensiva:  '🛡️ Defensiva',
@@ -39,30 +34,30 @@ const LABEL_TIPO = {
   inventario: '📦 +Inventário',
 }
 
-// ── ESTADO DO VEÍCULO ─────────────────────────────────────
-// Threshold em % do HP máximo
-const THRESH_AVARIADO = 0.50  // abaixo disso → avariado
-const THRESH_CRITICO  = 0.15  // abaixo disso → crítico
+// ── THRESHOLDS DE ESTADO ───────────────────────────────────
+// critico:  0 – 15%   avariado: 16 – 50%   normal: > 50%
+const THRESH_CRITICO  = 0.15
+const THRESH_AVARIADO = 0.50
 
-// Nível de modificação para com % de HP restante
+// Nível de modificação → threshold de falha por HP%
 const FALHA_NIVEL = { 1: 0.75, 2: 0.50, 3: 0.25, 4: 0 }
 
 // ── DADOS DO VEÍCULO ──────────────────────────────────────
 let veiculo = _novoVeiculo()
-let _editandoModifId = null  // id da modif em edição
-let _estadoForçado = null    // 'normal'|'avariado'|'critico'|null
+let _editandoModifId = null
 let _saving = false
+let _saveTimer = null
 
 function _novoVeiculo() {
   return {
-    id:          crypto.randomUUID(),
-    nome:        '',
-    escala:      'media',
-    atribs:      { pod: 0, hab: 0, res: 0 },
-    hpAtual:     0,
-    modificacoes: [],  // { id, nome, tipo, nivel, pontos, desc, desativadaManual }
-    _estadoForcado: null,
-    inventario:  { itens: [] },  // { itens: [{ id, nome, peso, desc }] }
+    id:           crypto.randomUUID(),
+    nome:         '',
+    escala:       'media',
+    atribs:       { pod: 0, hab: 0, res: 0 },
+    hpAtual:      0,
+    estadoManual: null,   // 'normal' | 'avariado' | 'critico' | null
+    modificacoes: [],
+    inventario:   { itens: [], offsetPeso: 0 },
   }
 }
 
@@ -70,94 +65,94 @@ function _novoVeiculo() {
 function derivados() {
   const e  = ESCALA[veiculo.escala]
   const { pod, hab, res } = veiculo.atribs
-
-  // Atrib 0 fornece metade do bônus de 1 (arredondado para cima)
   const ef = (val, mult) => val === 0 ? Math.ceil(mult / 2) : val * mult
 
   const modifDisp  = ef(pod, e.modPorPod)
   const passos     = ef(hab, e.passosPorHab)
   const hpMax      = ef(res, e.hpPorRes)
   const defesa     = ef(res, e.defensaMult)
-  const inventario = e.inventarioBase
+  const invBase    = e.inventarioBase + (veiculo.inventario?.offsetPeso ?? 0)
 
-  // Pontos de modificação gastos
   const ptosUsados = veiculo.modificacoes.reduce((s, m) => s + (m.pontos || 1), 0)
 
-  // Inventário extra de mods tipo inventario
   const modInv = veiculo.modificacoes
     .filter(m => m.tipo === 'inventario' && !_modDesativada(m))
-    .reduce((s) => s + Math.ceil(inventario * 0.5), 0)
+    .reduce((s) => s + Math.ceil(e.inventarioBase * 0.5), 0)
 
   return {
     modifDisp,
     passos,
     hpMax,
     defesa,
-    inventario: inventario + modInv,
+    inventario: invBase + modInv,
     ptosUsados,
     ptosRestantes: modifDisp - ptosUsados,
     nivelMax: e.nivelMax,
   }
 }
 
-function estadoAtual() {
-  if (veiculo._estadoForcado) return veiculo._estadoForcado
-  const { hpMax } = derivados()
-  if (hpMax === 0) return 'normal'
-  const pct = veiculo.hpAtual / hpMax
-  if (pct < THRESH_CRITICO)  return 'critico'
-  if (pct < THRESH_AVARIADO) return 'avariado'
+// ── ESTADO ──────────────────────────────────────────────
+function _hpParaEstado(hp, hpMax) {
+  if (hpMax <= 0) return 'normal'
+  const pct = hp / hpMax
+  if (pct <= THRESH_CRITICO)  return 'critico'
+  if (pct <= THRESH_AVARIADO) return 'avariado'
   return 'normal'
 }
 
-function limiteHpPorEstado(estado) {
+function estadoAtual() {
+  if (veiculo.estadoManual) return veiculo.estadoManual
   const { hpMax } = derivados()
-  // Com estado forçado, não há limite inferior
-  if (veiculo._estadoForcado) return { min: 0, max: hpMax }
-  if (estado === 'critico')  return { min: 0,                          max: Math.ceil(hpMax * THRESH_CRITICO)  - 1 }
-  if (estado === 'avariado') return { min: Math.ceil(hpMax * THRESH_CRITICO), max: Math.ceil(hpMax * THRESH_AVARIADO) - 1 }
-  return { min: Math.ceil(hpMax * THRESH_AVARIADO), max: hpMax }
+  return _hpParaEstado(veiculo.hpAtual, hpMax)
+}
+
+// Retorna { min, max } em HP absoluto para um estado
+function rangePorEstado(estado, hpMax) {
+  if (estado === 'critico')  return { min: 0,                              max: Math.floor(hpMax * THRESH_CRITICO) }
+  if (estado === 'avariado') return { min: Math.floor(hpMax * THRESH_CRITICO) + 1, max: Math.floor(hpMax * THRESH_AVARIADO) }
+  return { min: Math.floor(hpMax * THRESH_AVARIADO) + 1, max: hpMax }
 }
 
 function _modDesativada(m) {
   if (m.desativadaManual) return true
-  // Regra de integridade: para de funcionar com % de HP
   const { hpMax } = derivados()
   if (hpMax === 0 || m.tipo === 'inventario') return false
   const pct = veiculo.hpAtual / hpMax
-  const threshold = FALHA_NIVEL[m.nivel] ?? 0
+  const threshold = FALHA_NIVEL[m.pontos] ?? 0
   return pct <= threshold
 }
 
 // ── PERSISTÊNCIA ─────────────────────────────────────────
-const _chave = () => `veiculo_${veiculo.id}`
-
 async function salvar() {
-  vSalvoLabel.classList.remove('visivel')
+  document.getElementById('vSalvoLabel')?.classList.remove('visivel')
   clearTimeout(_saveTimer)
-  _saveTimer = setTimeout(async () => {
+  _saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(_chave(), JSON.stringify(veiculo))
-      // Salvar índice de veículos
+      localStorage.setItem(`veiculo_${veiculo.id}`, JSON.stringify(veiculo))
       const indice = JSON.parse(localStorage.getItem('veiculos_indice') || '[]')
       const idx = indice.findIndex(v => v.id === veiculo.id)
       const meta = { id: veiculo.id, nome: veiculo.nome || 'Sem Nome', escala: veiculo.escala }
       if (idx >= 0) indice[idx] = meta; else indice.push(meta)
       localStorage.setItem('veiculos_indice', JSON.stringify(indice))
-      vSalvoLabel.classList.add('visivel')
-      setTimeout(() => vSalvoLabel.classList.remove('visivel'), 2000)
+      const lbl = document.getElementById('vSalvoLabel')
+      if (lbl) { lbl.classList.add('visivel'); setTimeout(() => lbl.classList.remove('visivel'), 2000) }
     } catch(e) { console.error('Erro ao salvar:', e) }
   }, 600)
 }
-let _saveTimer = null
 
 function carregar(id) {
   const raw = localStorage.getItem(`veiculo_${id}`)
   if (!raw) return false
   try {
     veiculo = JSON.parse(raw)
-    // Migração: fichas antigas sem inventário
-    if (!veiculo.inventario) veiculo.inventario = { itens: [] }
+    // Migração: campos antigos
+    if (!veiculo.inventario)        veiculo.inventario   = { itens: [], offsetPeso: 0 }
+    if (!veiculo.inventario.itens)  veiculo.inventario.itens = []
+    if (veiculo.inventario.offsetPeso == null) veiculo.inventario.offsetPeso = 0
+    if (veiculo._estadoForcado !== undefined) {
+      veiculo.estadoManual = veiculo._estadoForcado
+      delete veiculo._estadoForcado
+    }
     return true
   } catch { return false }
 }
@@ -209,82 +204,67 @@ function renderStatus() {
 
 function renderHp() {
   const { hpMax } = derivados()
-  const hpAtual = Math.max(0, Math.min(veiculo.hpAtual, hpMax))
-  veiculo.hpAtual = hpAtual
+  veiculo.hpAtual = Math.max(0, Math.min(hpMax, veiculo.hpAtual))
 
-  const pct = hpMax > 0 ? (hpAtual / hpMax) * 100 : 0
-  const estado = estadoAtual()
+  const hpAtual = veiculo.hpAtual
+  const pct     = hpMax > 0 ? (hpAtual / hpMax) * 100 : 0
+  const estado  = estadoAtual()
 
   // Barra
   const fill = document.getElementById('vHpBarraFill')
-  fill.style.width = pct + '%'
-  fill.style.background = estado === 'critico' ? 'var(--cor-critico)'
+  fill.style.width      = pct + '%'
+  fill.style.background = estado === 'critico'  ? 'var(--cor-critico)'
                         : estado === 'avariado' ? 'var(--cor-avariado)'
                         : 'var(--cor-normal)'
 
-  // Thresholds visuais
-  const ta = document.getElementById('vThreshAvariado')
-  const tc = document.getElementById('vThreshCritico')
-  ta.style.left = (THRESH_AVARIADO * 100) + '%'
-  tc.style.left = (THRESH_CRITICO  * 100) + '%'
+  // Thresholds
+  document.getElementById('vThreshAvariado').style.left = (THRESH_AVARIADO * 100) + '%'
+  document.getElementById('vThreshCritico').style.left  = (THRESH_CRITICO  * 100) + '%'
 
   // Números
   document.getElementById('vHpAtual').textContent = hpAtual
   document.getElementById('vHpMax').textContent   = hpMax
 
-  // Badge de estado
-  const badge = document.getElementById('vEstadoBadge')
-  badge.textContent = estado === 'critico'  ? '🔴 Crítico'
+  // Badge — mostra estado atual + indicador se é manual
+  const badge    = document.getElementById('vEstadoBadge')
+  const ehManual = !!veiculo.estadoManual
+
+  const labelEstado = estado === 'critico'  ? '🔴 Crítico'
                     : estado === 'avariado' ? '🟡 Avariado'
                     : '🟢 Normal'
-  badge.className = 'v-estado-badge ' + (estado !== 'normal' ? estado : '')
+  badge.textContent = labelEstado + (ehManual ? ' ✎' : '')
+  badge.className   = 'v-estado-badge' + (estado !== 'normal' ? ' ' + estado : '')
 
-  // Aviso de limite
+  // Botões do seletor — destacar o estado ativo
+  document.querySelectorAll('.v-estado-btn').forEach(btn => {
+    btn.classList.toggle('active-' + btn.dataset.estado, btn.dataset.estado === estado)
+  })
+
+  // Aviso
   const aviso = document.getElementById('vEstadoAviso')
-  const override = document.getElementById('vEstadoOverride')
-
-  if (veiculo._estadoForcado) {
-    aviso.style.display = 'none'
-    override.style.display = 'flex'
-    document.querySelectorAll('.v-estado-btn').forEach(btn => {
-      btn.className = 'v-estado-btn'
-      if (btn.dataset.estado === veiculo._estadoForcado)
-        btn.classList.add('active-' + veiculo._estadoForcado)
-    })
+  if (estado === 'avariado') {
+    aviso.style.display = 'block'
+    aviso.style.background   = 'rgba(245,158,11,0.1)'
+    aviso.style.borderColor  = 'rgba(245,158,11,0.3)'
+    aviso.style.color        = 'var(--cor-avariado)'
+    aviso.textContent = '⚠️ Avariado — HP abaixo de 50%. Recuperação exige materiais e 1 Descanso Longo.'
+  } else if (estado === 'critico') {
+    aviso.style.display = 'block'
+    aviso.style.background   = 'rgba(239,68,68,0.1)'
+    aviso.style.borderColor  = 'rgba(239,68,68,0.3)'
+    aviso.style.color        = 'var(--cor-critico)'
+    aviso.textContent = '🔴 Crítico — HP abaixo de 15%. Exige materiais + múltiplos Descansos Longos.'
   } else {
-    const lim = limiteHpPorEstado(estado)
-    const noLimite = hpAtual <= lim.max && hpAtual > 0 && estado !== 'normal'
-    if (noLimite || estado !== 'normal') {
-      override.style.display = 'flex'
-      document.querySelectorAll('.v-estado-btn').forEach(btn => {
-        btn.className = 'v-estado-btn'
-      })
-    } else {
-      override.style.display = 'none'
-    }
-
-    if (estado === 'avariado') {
-      aviso.style.display = 'block'
-      aviso.textContent = `⚠️ Avariado — HP abaixo de 50%. Para recuperar, serão necessários materiais e 1 Descanso Longo dedicado.`
-    } else if (estado === 'critico') {
-      aviso.style.display = 'block'
-      aviso.textContent = `🔴 Crítico — HP abaixo de 15%. Exige materiais + múltiplos Descansos Longos e preferencialmente um Carpinteiro.`
-      aviso.style.background = 'rgba(239,68,68,0.1)'
-      aviso.style.borderColor = 'rgba(239,68,68,0.3)'
-      aviso.style.color = 'var(--cor-critico)'
-    } else {
-      aviso.style.display = 'none'
-    }
+    aviso.style.display = 'none'
   }
 }
 
 function renderModifResumo() {
   const d = derivados()
-  document.getElementById('mDisp').textContent     = d.modifDisp
-  document.getElementById('mUsados').textContent   = d.ptosUsados
+  document.getElementById('mDisp').textContent      = d.modifDisp
+  document.getElementById('mUsados').textContent    = d.ptosUsados
   document.getElementById('mRestantes').textContent = Math.max(0, d.ptosRestantes)
   document.getElementById('mNivelMax').textContent  = `Nv.${d.nivelMax}`
-  // Cor de alerta se negativo
   const elR = document.getElementById('mRestantes')
   elR.style.color = d.ptosRestantes < 0 ? 'var(--cor-critico)' : 'var(--cor-tema)'
 }
@@ -292,31 +272,29 @@ function renderModifResumo() {
 function renderModifs() {
   const lista = document.getElementById('vListaModif')
   lista.innerHTML = ''
-  if (veiculo.modificacoes.length === 0) {
+  if (!veiculo.modificacoes.length) {
     lista.innerHTML = '<div style="text-align:center;color:#64748b;padding:32px 0;font-size:14px;">Nenhuma modificação ainda.</div>'
     return
   }
 
   veiculo.modificacoes.forEach(m => {
-    const desativ = _modDesativada(m)
+    const desativ     = _modDesativada(m)
     const autoDesativ = !m.desativadaManual && desativ
-    const cor = COR_TIPO[m.tipo] || 'var(--cor-tema)'
+    const cor         = COR_TIPO[m.tipo] || 'var(--cor-tema)'
+    const nivel       = m.pontos  // nível = pontos investidos
 
     const card = document.createElement('div')
     card.className = 'v-modif-card' + (desativ ? ' desativada' : '')
     card.style.setProperty('--cor-tipo', cor)
 
-    // Bônus
     let bonusHtml = ''
-    if (m.tipo !== 'inventario' && BONUS_NIVEL[m.tipo]?.[m.nivel]) {
-      bonusHtml = `<span class="v-modif-bonus-tag">→ ${BONUS_NIVEL[m.tipo][m.nivel]}</span>`
-      if (m.tipo === 'ofensiva') {
-        bonusHtml += `<span class="v-modif-pts-tag">Alcance: ${ALCANCE_NIVEL[m.nivel]}</span>`
-      }
+    if (m.tipo !== 'inventario' && BONUS_NIVEL[m.tipo]?.[nivel]) {
+      bonusHtml = `<span class="v-modif-bonus-tag">→ ${BONUS_NIVEL[m.tipo][nivel]}</span>`
+      if (m.tipo === 'ofensiva') bonusHtml += `<span class="v-modif-pts-tag">Alcance: ${ALCANCE_NIVEL[nivel]}</span>`
     }
 
     const autoTag = autoDesativ
-      ? `<span class="v-modif-desativ-tag" title="Desativada por integridade (regra automática)">🔴 Inativa (integridade)</span>`
+      ? `<span class="v-modif-desativ-tag" title="Desativada por integridade">🔴 Inativa (integridade)</span>`
       : m.desativadaManual
         ? `<span class="v-modif-desativ-tag" title="Desativada manualmente">🔴 Inativa (manual)</span>`
         : ''
@@ -324,13 +302,10 @@ function renderModifs() {
     card.innerHTML = `
       <div class="v-modif-card-top">
         <div class="v-modif-card-info">
-          <div class="v-modif-card-nome">
-            ${_esc(m.nome || 'Sem nome')}
-            ${autoTag}
-          </div>
+          <div class="v-modif-card-nome">${_esc(m.nome || 'Sem nome')} ${autoTag}</div>
           <div class="v-modif-card-meta">
             <span class="v-modif-tag">${LABEL_TIPO[m.tipo] || m.tipo}</span>
-            <span class="v-modif-nivel-tag">Nível ${m.nivel}</span>
+            <span class="v-modif-nivel-tag">Nível ${nivel}</span>
             <span class="v-modif-pts-tag">${m.pontos} pt${m.pontos > 1 ? 's' : ''}</span>
             ${bonusHtml}
           </div>
@@ -341,24 +316,145 @@ function renderModifs() {
           <button class="v-modif-btn v-modif-btn-del" onclick="deletarModif('${m.id}')">🗑️</button>
         </div>
       </div>
-      <label class="v-modif-toggle" title="Marcar como desativada manualmente">
+      <label class="v-modif-toggle">
         <input type="checkbox" ${m.desativadaManual ? 'checked' : ''} onchange="toggleDesativManual('${m.id}', this.checked)">
         Desativar manualmente
-      </label>
-    `
+      </label>`
     lista.appendChild(card)
+  })
+}
+
+// ── INVENTÁRIO (idêntico à ficha de personagem) ───────────
+
+// Lista de perícias (importada do banco ou definida inline)
+let LISTA_PERICIAS = []
+async function _carregarPericias() {
+  if (LISTA_PERICIAS.length) return
+  try {
+    const mod = await import('./dados/banco.js?v=600000')
+    LISTA_PERICIAS = mod.LISTA_PERICIAS || []
+  } catch(e) {
+    console.warn('banco.js não carregado, perícias vazias')
+  }
+}
+
+function _popularSelectPericias() {
+  const sel = document.getElementById('itemPericia')
+  if (!sel) return
+  if (sel.options.length > 1) return
+  sel.innerHTML = '<option value="">— escolha uma perícia —</option>'
+  LISTA_PERICIAS.forEach(p => {
+    const opt = document.createElement('option')
+    opt.value = p.id
+    opt.textContent = `${p.emoji} ${p.nome}`
+    sel.appendChild(opt)
+  })
+}
+
+function renderInventario() {
+  if (!veiculo.inventario) veiculo.inventario = { itens: [], offsetPeso: 0 }
+  const inv      = veiculo.inventario
+  const itens    = inv.itens ?? []
+  const d        = derivados()
+  const pesoMax  = d.inventario
+  const pesoAtual = itens.reduce((s, i) => s + (i.peso ?? 0), 0)
+
+  const elAtual  = document.getElementById('invPesoAtual')
+  const elMax    = document.getElementById('invPesoMax')
+  const elFill   = document.getElementById('invBarraFill')
+  const elOffset = document.getElementById('invPesoOffset')
+
+  if (elAtual) { elAtual.textContent = pesoAtual; elAtual.style.color = pesoAtual > pesoMax ? '#ef4444' : '#22c55e' }
+  if (elMax && document.activeElement !== elMax) {
+    elMax.innerText   = pesoMax
+  }
+  if (elOffset) elOffset.textContent = `(base ${ESCALA[veiculo.escala].inventarioBase}${inv.offsetPeso ? (inv.offsetPeso > 0 ? ' +' : ' ') + inv.offsetPeso : ''})`
+  if (elFill) {
+    const ratio = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
+    const over  = pesoAtual > pesoMax
+    elFill.style.width      = (ratio * 100).toFixed(1) + '%'
+    elFill.style.background = over
+      ? 'linear-gradient(90deg,#ef4444,#fca5a5)'
+      : ratio > 0.75
+        ? 'linear-gradient(90deg,#f59e0b,#fcd34d)'
+        : 'linear-gradient(90deg,#16a34a,#4ade80)'
+  }
+
+  const container = document.getElementById('listaItens')
+  if (!container) return
+  container.innerHTML = ''
+
+  if (!itens.length) {
+    container.innerHTML = '<div class="v-inv-vazio">Nenhum item no inventário.</div>'
+    return
+  }
+
+  const _alcLabels = {
+    corpo_a_corpo: '🤜 Corpo a corpo', curto: '📏 Curto',
+    longo: '📐 Longo', muito_longo: '🎯 Muito longo', fora_de_alcance: '❌ Fora de alcance'
+  }
+
+  itens.forEach(item => {
+    const card = document.createElement('div')
+    card.className = 'inv-item-card' + (item.categoria === 'equipamento' ? ' inv-item-equip' : '')
+
+    const badgeAtk = (item.categoria === 'equipamento' && item.usadoAtaque && item.equipadoAtaque)
+      ? `<span class="inv-badge inv-badge-atk">⚔️ +${item.bonusAtaque ?? 0}</span>` : ''
+    const badgeDef = (item.categoria === 'equipamento' && item.usadoDefesa && item.equipadoDefesa)
+      ? (() => {
+          const bonus = Number(item.bonusDefesa) || 0
+          const prio  = Math.max(1, Number(item.prioridadeDefesa) || 1)
+          const efet  = Math.trunc(bonus / prio)
+          const prioBadge = prio > 1 ? ` <span style="opacity:0.6;font-size:10px">(÷${prio})</span>` : ''
+          return `<span class="inv-badge inv-badge-def" title="Bônus bruto: ${bonus} ÷ prioridade ${prio} = ${efet}">🛡️ +${efet}${prioBadge}</span>`
+        })() : ''
+    const badgeCat    = item.categoria === 'equipamento' ? '<span class="inv-badge inv-badge-equip">Equip.</span>' : ''
+    const pericia     = LISTA_PERICIAS.find(p => p.id === item.pericia)
+    const badgePericia = pericia ? `<span class="inv-badge inv-badge-pericia" title="Perícia: ${pericia.nome}">${pericia.emoji} ${pericia.nome}</span>` : ''
+    const badgeCatNum = (item.categoria === 'equipamento' && item.catEquip)
+      ? `<span class="inv-badge" style="background:rgba(30,64,175,0.3);color:#93c5fd;border:1px solid rgba(59,130,246,0.3)">Cat. ${item.catEquip}</span>` : ''
+    const encantsHtml = (item.encantamentos ?? []).map(e =>
+      `<span class="inv-badge inv-badge-encant" title="${e.desc}">${e.emoji} ${e.nome}${e.extra ? ' (' + e.extra + ')' : ''}</span>`
+    ).join('')
+    const badgeAlcance = (item.categoria === 'equipamento' && item.usadoAtaque && item.equipadoAtaque && item.alcanceIdeal)
+      ? `<span class="inv-badge inv-badge-alcance">${_alcLabels[item.alcanceIdeal] ?? item.alcanceIdeal}</span>` : ''
+
+    const checkAtk = (item.categoria === 'equipamento' && item.usadoAtaque)
+      ? `<label class="inv-check-uso" title="Ativar bônus de ataque">
+           <input type="checkbox" ${item.equipadoAtaque ? 'checked' : ''} onchange="toggleEquipado('${item.id}','ataque',this.checked)">
+           ⚔️
+         </label>` : ''
+    const checkDef = (item.categoria === 'equipamento' && item.usadoDefesa)
+      ? `<label class="inv-check-uso" title="Ativar bônus de defesa">
+           <input type="checkbox" ${item.equipadoDefesa ? 'checked' : ''} onchange="toggleEquipado('${item.id}','defesa',this.checked)">
+           🛡️
+         </label>` : ''
+
+    card.innerHTML = `
+      <div class="inv-item-info">
+        <div class="inv-item-nome">${_esc(item.nome)} ${badgeCat}${badgeCatNum}${badgePericia}${badgeAtk}${badgeDef}${badgeAlcance}${encantsHtml}</div>
+        ${item.descricao ? `<div class="inv-item-desc">${_esc(item.descricao)}</div>` : ''}
+      </div>
+      <div class="inv-item-direita">
+        <span class="inv-item-peso">⚖️ ${item.peso ?? 0}</span>
+        <div class="inv-item-acoes">
+          ${checkAtk}${checkDef}
+          <button class="btn-editar" onclick="abrirEditarItem('${item.id}')">✏️</button>
+          <button class="btn-remover" onclick="removerItem('${item.id}')">🗑️</button>
+        </div>
+      </div>`
+    container.appendChild(card)
   })
 }
 
 // ── AÇÕES ─────────────────────────────────────────────────
 window.trocarAbaV = (i) => {
-  document.querySelectorAll('.v-tab').forEach((t,idx) => t.classList.toggle('active', idx === i))
-  document.querySelectorAll('.v-section').forEach((s,idx) => s.classList.toggle('active', idx === i))
+  document.querySelectorAll('.v-tab').forEach((t, idx)     => t.classList.toggle('active', idx === i))
+  document.querySelectorAll('.v-section').forEach((s, idx) => s.classList.toggle('active', idx === i))
 }
 
 window.setEscala = (e) => {
   veiculo.escala = e
-  // Recalcular HP ao mudar escala
   const d = derivados()
   if (veiculo.hpAtual === 0 || veiculo.hpAtual > d.hpMax) veiculo.hpAtual = d.hpMax
   renderTudo(); salvar()
@@ -367,73 +463,72 @@ window.setEscala = (e) => {
 window.mudarAtrib = (attr, delta) => {
   const total = veiculo.atribs.pod + veiculo.atribs.hab + veiculo.atribs.res
   const val   = veiculo.atribs[attr]
-  if (delta > 0 && total >= 5) return  // limite de 5 pontos total
-  if (delta < 0 && val <= 0)  return   // não pode ficar negativo
+  if (delta > 0 && total >= 5) return
+  if (delta < 0 && val <= 0)  return
   veiculo.atribs[attr] = val + delta
-  // Ajustar HP se mudou RES
   if (attr === 'res') {
     const d = derivados()
     if (veiculo.hpAtual > d.hpMax) veiculo.hpAtual = d.hpMax
-    if (veiculo.hpAtual === 0) veiculo.hpAtual = d.hpMax
+    if (veiculo.hpAtual === 0)     veiculo.hpAtual = d.hpMax
   }
   renderTudo(); salvar()
 }
 
 window.mudarHp = (delta) => {
-  _aplicarDeltaHp(delta)
+  const { hpMax } = derivados()
+  veiculo.hpAtual = Math.max(0, Math.min(hpMax, veiculo.hpAtual + delta))
+  // Se temos estado manual, verificar se o HP ainda está no range correto
+  // Se não estiver, limpar o estado manual (HP voltou ao estado natural)
+  if (veiculo.estadoManual) {
+    const estadoNatural = _hpParaEstado(veiculo.hpAtual, hpMax)
+    if (estadoNatural === veiculo.estadoManual) veiculo.estadoManual = null
+  }
+  renderHp(); renderModifs(); salvar()
 }
 
-function _aplicarDeltaHp(delta) {
+// ── SISTEMA DE ESTADO ──────────────────────────────────────
+
+let _seletorAberto = false
+
+window.toggleSeletorEstado = () => {
+  const seletor = document.getElementById('vEstadoSeletor')
+  _seletorAberto = !_seletorAberto
+  seletor.style.display = _seletorAberto ? 'flex' : 'none'
+}
+
+// Fechar seletor ao clicar fora
+document.addEventListener('click', (e) => {
+  if (_seletorAberto && !e.target.closest('#vEstadoSeletor') && !e.target.closest('#vEstadoBadge')) {
+    _seletorAberto = false
+    const seletor = document.getElementById('vEstadoSeletor')
+    if (seletor) seletor.style.display = 'none'
+  }
+})
+
+window.setEstado = (novoEstado) => {
   const { hpMax } = derivados()
-  const novoHp = Math.max(0, Math.min(hpMax, veiculo.hpAtual + delta))
 
-  // Se está perdendo HP e não tem estado forçado: verificar limite de estado
-  if (!veiculo._estadoForcado && delta < 0) {
-    const estadoAtuale = estadoAtual()
-    const limites = limiteHpPorEstado(estadoAtuale)
-
-    // Calcular qual seria o novo estado
-    const pctNovo = hpMax > 0 ? novoHp / hpMax : 0
-    const novoEstado = pctNovo < THRESH_CRITICO  ? 'critico'
-                     : pctNovo < THRESH_AVARIADO ? 'avariado'
-                     : 'normal'
-
-    // Se mudaria de estado E não há permissão (estado não forçado),
-    // limitar ao mínimo do estado atual
-    if (novoEstado !== estadoAtuale) {
-      // Bloquear na fronteira do estado atual
-      const hpLimitado = limites.min
-      veiculo.hpAtual = hpLimitado
-      _toast(
-        novoEstado === 'critico'
-          ? '⚠️ HP limitado ao limiar Avariado → Crítico. Para continuar, troque o estado manualmente.'
-          : '⚠️ HP limitado ao início de Avariado. Para continuar, troque o estado manualmente.',
-        'warn'
-      )
-      // Mostrar controles de override
-      document.getElementById('vEstadoOverride').style.display = 'flex'
-      renderHp(); renderModifs(); salvar()
-      return
-    }
+  // Se já está nesse estado natural, limpar o manual
+  const estadoNatural = _hpParaEstado(veiculo.hpAtual, hpMax)
+  if (novoEstado === estadoNatural) {
+    veiculo.estadoManual = null
+  } else {
+    veiculo.estadoManual = novoEstado
+    // Ajustar HP ao range do novo estado
+    const range = rangePorEstado(novoEstado, hpMax)
+    if (veiculo.hpAtual < range.min) veiculo.hpAtual = range.min
+    if (veiculo.hpAtual > range.max) veiculo.hpAtual = range.max
   }
 
-  veiculo.hpAtual = novoHp
+  // Fechar seletor
+  _seletorAberto = false
+  const seletor = document.getElementById('vEstadoSeletor')
+  if (seletor) seletor.style.display = 'none'
+
   renderHp(); renderModifs(); salvar()
 }
 
-window.forcarEstado = (estado) => {
-  veiculo._estadoForcado = estado
-  // Ajustar HP para dentro do novo estado
-  const { hpMax } = derivados()
-  const pct = hpMax > 0 ? veiculo.hpAtual / hpMax : 0
-  const novoEstado = pct < THRESH_CRITICO  ? 'critico'
-                   : pct < THRESH_AVARIADO ? 'avariado'
-                   : 'normal'
-  // Se o HP já está no estado correto, limpar o forçado
-  if (novoEstado === estado) veiculo._estadoForcado = null
-  renderHp(); renderModifs(); salvar()
-}
-
+// ── MODIFICAÇÕES ──────────────────────────────────────────
 window.toggleDesativManual = (id, checked) => {
   const m = veiculo.modificacoes.find(m => m.id === id)
   if (m) { m.desativadaManual = checked; renderModifs(); renderModifResumo(); salvar() }
@@ -454,30 +549,26 @@ window.editarModif = (id) => {
 
 // ── MODAL MODIFICAÇÃO ─────────────────────────────────────
 let _mfTipo   = null
-let _mfNivel  = 1
 let _mfPontos = 1
 
 window.abrirModalModif = () => {
   if (!_editandoModifId) {
-    // Reset
-    _mfTipo = null; _mfNivel = 1; _mfPontos = 1
+    _mfTipo = null; _mfPontos = 1
     document.getElementById('mfNome').value = ''
     document.getElementById('mfDesc').value = ''
     document.getElementById('modalModifTitulo').textContent = 'Nova Modificação'
     document.querySelectorAll('.v-tipo-btn').forEach(b => b.classList.remove('active'))
-    document.querySelectorAll('.v-nivel-btn').forEach(b => b.classList.remove('active'))
     document.getElementById('mfPtos').textContent = '1'
     document.getElementById('mfBonusInfo').style.display = 'none'
     document.getElementById('mfPtosHint').textContent = ''
   }
-  _atualizarNivelBtns()
+  _atualizarNivelMaxLabel()
   document.getElementById('modalModif').style.display = 'flex'
 }
 
 window.fecharModalModif = () => {
   document.getElementById('modalModif').style.display = 'none'
-  _editandoModifId = null
-  _mfTipo = null; _mfNivel = 1; _mfPontos = 1
+  _editandoModifId = null; _mfTipo = null; _mfPontos = 1
 }
 
 window.fecharModalModifOverlay = (e) => {
@@ -486,91 +577,73 @@ window.fecharModalModifOverlay = (e) => {
 
 function _preencherModal(m) {
   _mfTipo   = m.tipo
-  _mfNivel  = m.nivel
   _mfPontos = m.pontos
   document.getElementById('mfNome').value = m.nome || ''
   document.getElementById('mfDesc').value = m.desc || ''
   document.getElementById('modalModifTitulo').textContent = 'Editar Modificação'
   document.getElementById('mfPtos').textContent = m.pontos
-
-  document.querySelectorAll('.v-tipo-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.tipo === m.tipo))
-  _atualizarNivelBtns()
-  document.querySelectorAll('.v-nivel-btn').forEach(b =>
-    b.classList.toggle('active', parseInt(b.dataset.nivel) === m.nivel))
+  document.querySelectorAll('.v-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === m.tipo))
   _atualizarBonusInfo()
   _atualizarPtosHint()
 }
 
 window.selecionarTipo = (tipo) => {
   _mfTipo = tipo
-  document.querySelectorAll('.v-tipo-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.tipo === tipo))
-  _atualizarNivelBtns()
-  _atualizarBonusInfo()
-}
-
-window.selecionarNivel = (n) => {
-  _mfNivel = n
-  document.querySelectorAll('.v-nivel-btn').forEach(b =>
-    b.classList.toggle('active', parseInt(b.dataset.nivel) === n))
+  document.querySelectorAll('.v-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo))
   _atualizarBonusInfo()
 }
 
 window.mudarPtsModif = (delta) => {
-  const d = derivados()
-  const max = d.modifDisp
+  const d   = derivados()
+  const max = _mfTipo === 'inventario' ? 1 : d.nivelMax
   _mfPontos = Math.max(1, Math.min(max, _mfPontos + delta))
   document.getElementById('mfPtos').textContent = _mfPontos
+  _atualizarBonusInfo()
   _atualizarPtosHint()
 }
 
-function _atualizarNivelBtns() {
+function _atualizarNivelMaxLabel() {
   const d = derivados()
-  document.querySelectorAll('.v-nivel-btn').forEach(btn => {
-    const n = parseInt(btn.dataset.nivel)
-    if (_mfTipo === 'inventario') {
-      btn.disabled = n > 1  // inventário só tem nível 1
-    } else {
-      btn.disabled = n > d.nivelMax
-    }
-  })
-  document.getElementById('mfNivelMaxLabel').textContent = `(máx. Nv.${d.nivelMax})`
+  const max = _mfTipo === 'inventario' ? 1 : d.nivelMax
+  document.getElementById('mfNivelMaxLabel').textContent = `(máx. Nv.${max})`
 }
 
 function _atualizarBonusInfo() {
   const el = document.getElementById('mfBonusInfo')
-  if (!_mfTipo || !_mfNivel) { el.style.display = 'none'; return }
-  const bonus = BONUS_NIVEL[_mfTipo]?.[_mfNivel]
+  if (!_mfTipo || !_mfPontos) { el.style.display = 'none'; return }
+  const bonus = BONUS_NIVEL[_mfTipo]?.[_mfPontos]
   if (!bonus) { el.style.display = 'none'; return }
-  let txt = `<b>${LABEL_TIPO[_mfTipo]}</b> Nível ${_mfNivel} → <b>${bonus}</b>`
-  if (_mfTipo === 'ofensiva') txt += `<br>Alcance: <b>${ALCANCE_NIVEL[_mfNivel]}</b>`
+  let txt = `<b>${LABEL_TIPO[_mfTipo]}</b> Nível ${_mfPontos} → <b>${bonus}</b>`
+  if (_mfTipo === 'ofensiva')   txt += `<br>Alcance: <b>${ALCANCE_NIVEL[_mfPontos]}</b>`
   if (_mfTipo === 'inventario') txt += '<br>Soma 50% do inventário base ao total.'
   el.innerHTML = txt
   el.style.display = 'block'
+  _atualizarNivelMaxLabel()
 }
 
 function _atualizarPtosHint() {
   const d = derivados()
   const usadosSemEsta = _editandoModifId
-    ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s,m) => s + (m.pontos||1), 0)
+    ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s, m) => s + (m.pontos || 1), 0)
     : d.ptosUsados
   const disponivel = d.modifDisp - usadosSemEsta
   document.getElementById('mfPtosHint').textContent =
-    `Disponível para esta modif.: ${disponivel} pt${disponivel !== 1 ? 's' : ''}`
+    `Disponível: ${disponivel} pt${disponivel !== 1 ? 's' : ''}`
 }
 
 window.confirmarModif = () => {
-  const nome  = document.getElementById('mfNome').value.trim()
-  const desc  = document.getElementById('mfDesc').value.trim()
+  const nome = document.getElementById('mfNome').value.trim()
+  const desc = document.getElementById('mfDesc').value.trim()
 
-  if (!nome)    { _toast('Digite um nome para a modificação.', 'erro');  return }
-  if (!_mfTipo) { _toast('Selecione o tipo da modificação.',  'erro');  return }
-  if (!_mfNivel){ _toast('Selecione o nível.',                'erro');  return }
+  if (!nome)    { _toast('Digite um nome para a modificação.', 'erro'); return }
+  if (!_mfTipo) { _toast('Selecione o tipo da modificação.',  'erro'); return }
 
-  const d = derivados()
+  const d   = derivados()
+  const max = _mfTipo === 'inventario' ? 1 : d.nivelMax
+  if (_mfPontos > max) { _toast(`Nível máximo para esta escala é ${max}.`, 'warn'); return }
+
   const usadosSemEsta = _editandoModifId
-    ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s,m) => s + (m.pontos||1), 0)
+    ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s, m) => s + (m.pontos || 1), 0)
     : d.ptosUsados
   if (_mfPontos > d.modifDisp - usadosSemEsta) {
     _toast('Pontos insuficientes de modificação.', 'warn'); return
@@ -578,10 +651,10 @@ window.confirmarModif = () => {
 
   if (_editandoModifId) {
     const m = veiculo.modificacoes.find(m => m.id === _editandoModifId)
-    if (m) { m.nome = nome; m.tipo = _mfTipo; m.nivel = _mfNivel; m.pontos = _mfPontos; m.desc = desc }
+    if (m) { m.nome = nome; m.tipo = _mfTipo; m.nivel = _mfPontos; m.pontos = _mfPontos; m.desc = desc }
   } else {
     veiculo.modificacoes.push({
-      id: crypto.randomUUID(), nome, tipo: _mfTipo, nivel: _mfNivel,
+      id: crypto.randomUUID(), nome, tipo: _mfTipo, nivel: _mfPontos,
       pontos: _mfPontos, desc, desativadaManual: false,
     })
   }
@@ -590,129 +663,480 @@ window.confirmarModif = () => {
   renderModifs(); renderModifResumo(); renderStatus(); salvar()
 }
 
-// ── INVENTÁRIO ────────────────────────────────────────────
-function renderInventario() {
-  // Garantir que o campo existe (fichas antigas)
-  if (!veiculo.inventario) veiculo.inventario = { itens: [] }
-  const itens    = veiculo.inventario.itens ?? []
-  const d        = derivados()
-  const pesoMax  = d.inventario
-  const pesoAtual = itens.reduce((s, i) => s + (i.peso ?? 0), 0)
+// ── INVENTÁRIO: AÇÕES ─────────────────────────────────────
 
-  // Barra de carga
-  const elAtual = document.getElementById('vInvPesoAtual')
-  const elMax   = document.getElementById('vInvPesoMax')
-  const elFill  = document.getElementById('vInvBarraFill')
-  const elInfo  = document.getElementById('vInvPesoInfo')
+window.editarPesoMaxVInv = (val) => {
+  const novo = parseInt(val) || 0
+  const base = ESCALA[veiculo.escala].inventarioBase
+  veiculo.inventario.offsetPeso = novo - base
+  renderInventario(); salvar()
+}
 
-  if (elAtual) { elAtual.textContent = pesoAtual; elAtual.style.color = pesoAtual > pesoMax ? '#ef4444' : '#22c55e' }
-  if (elMax)   elMax.textContent = pesoMax
-  if (elFill) {
-    const ratio = pesoMax > 0 ? Math.min(pesoAtual / pesoMax, 1) : 0
-    const over  = pesoAtual > pesoMax
-    elFill.style.width      = (ratio * 100).toFixed(1) + '%'
-    elFill.style.background = over
-      ? 'linear-gradient(90deg,#ef4444,#fca5a5)'
-      : ratio > 0.75
-        ? 'linear-gradient(90deg,#f59e0b,#fcd34d)'
-        : 'linear-gradient(90deg,#16a34a,#4ade80)'
+window.toggleEquipado = (id, tipo, valor) => {
+  const item = veiculo.inventario.itens.find(i => i.id === id)
+  if (!item) return
+  if (tipo === 'ataque') item.equipadoAtaque = valor
+  if (tipo === 'defesa') item.equipadoDefesa = valor
+  renderInventario(); salvar()
+}
+
+window.removerItem = (id) => {
+  veiculo.inventario.itens = veiculo.inventario.itens.filter(i => i.id !== id)
+  renderInventario(); salvar()
+  _toast('Item removido.', 'warn')
+}
+
+// ── MODAL DE ITEM (idêntico à ficha) ──────────────────────
+let _itemEditandoId   = null
+let _itemEncantamentos = []
+let _itemCategoria     = 1
+let _itemRestricoes    = []
+
+window.abrirModalItem = async () => {
+  await _carregarPericias()
+  _itemEditandoId = null
+  document.getElementById('modalItemTitulo').innerText = '🎒 Adicionar Item'
+  document.getElementById('itemNome').value      = ''
+  document.getElementById('itemDescricao').value = ''
+  document.getElementById('itemPeso').value      = '0'; window.syncStepper?.('itemPeso')
+  _popularSelectPericias()
+  document.getElementById('itemPericia').value = ''
+  document.querySelector('input[name="itemCategoria"][value="item"]').checked = true
+  document.getElementById('camposEquipamento').style.display   = 'none'
+  document.getElementById('itemUsadoAtaque').checked           = false
+  document.getElementById('itemUsadoDefesa').checked           = false
+  document.getElementById('campoBonusAtaque').style.display    = 'none'
+  document.getElementById('campoBonusDefesa').style.display    = 'none'
+  document.getElementById('itemBonusAtaque').value             = '0'; window.syncStepper?.('itemBonusAtaque')
+  document.getElementById('itemBonusDefesa').value             = '0'; window.syncStepper?.('itemBonusDefesa')
+  document.getElementById('itemAlcanceIdeal').value            = 'corpo_a_corpo'
+  document.getElementById('itemPrioridadeDefesa').value        = '1'; window.syncStepper?.('itemPrioridadeDefesa')
+  const _prvReset = document.getElementById('defesaFinalDisplay')
+  if (_prvReset) { _prvReset.textContent = '0'; _prvReset.style.color = '#4ade80' }
+  _resetItemEncantamentos()
+  const modal = document.getElementById('modalItem')
+  modal.style.display = 'flex'; modal.classList.remove('hidden')
+}
+
+window.abrirEditarItem = async (id) => {
+  await _carregarPericias()
+  const item = veiculo.inventario.itens.find(i => i.id === id)
+  if (!item) return
+  _itemEditandoId = id
+  document.getElementById('modalItemTitulo').innerText = '✏️ Editar Item'
+  document.getElementById('itemNome').value      = item.nome ?? ''
+  document.getElementById('itemDescricao').value = item.descricao ?? ''
+  document.getElementById('itemPeso').value      = item.peso ?? 0; window.syncStepper?.('itemPeso')
+  _popularSelectPericias()
+  document.getElementById('itemPericia').value   = item.pericia ?? ''
+  const cat = item.categoria ?? 'item'
+  document.querySelector(`input[name="itemCategoria"][value="${cat}"]`).checked = true
+  document.getElementById('camposEquipamento').style.display = cat === 'equipamento' ? 'block' : 'none'
+  const usaAtk = !!item.usadoAtaque
+  document.getElementById('itemUsadoAtaque').checked        = usaAtk
+  document.getElementById('campoBonusAtaque').style.display = usaAtk ? 'block' : 'none'
+  document.getElementById('itemBonusAtaque').value          = item.bonusAtaque ?? 0; window.syncStepper?.('itemBonusAtaque')
+  document.getElementById('itemAlcanceIdeal').value         = item.alcanceIdeal ?? 'corpo_a_corpo'
+  const usaDef = !!item.usadoDefesa
+  document.getElementById('itemUsadoDefesa').checked        = usaDef
+  document.getElementById('campoBonusDefesa').style.display = usaDef ? 'block' : 'none'
+  document.getElementById('itemBonusDefesa').value          = item.bonusDefesa ?? 0; window.syncStepper?.('itemBonusDefesa')
+  document.getElementById('itemPrioridadeDefesa').value     = item.prioridadeDefesa ?? 1; window.syncStepper?.('itemPrioridadeDefesa')
+  _atualizarPreviewPrioridade()
+  if (cat === 'equipamento') _carregarItemEncantamentos(item)
+  else _resetItemEncantamentos()
+  const modal = document.getElementById('modalItem')
+  modal.style.display = 'flex'; modal.classList.remove('hidden')
+}
+
+window.fecharModalItem = () => {
+  const modal = document.getElementById('modalItem')
+  if (modal) { modal.style.display = 'none'; modal.classList.add('hidden') }
+  _itemEditandoId = null
+}
+
+window.fecharModalItemOverlay = (e) => {
+  if (e.target === document.getElementById('modalItem')) fecharModalItem()
+}
+
+window.toggleCategoriaItem = (val) => {
+  document.getElementById('camposEquipamento').style.display = val === 'equipamento' ? 'block' : 'none'
+  if (val === 'equipamento') {
+    _renderCatInfo(); _renderEncantamentosItem(); _renderRestricoesItem(); _renderRestricaoAutoCategoria()
   }
-  if (elInfo) elInfo.textContent = `Capacidade da escala ${ESCALA[veiculo.escala].label}`
+}
 
-  // Lista
-  const lista = document.getElementById('vListaItens')
+window.toggleBonusAtaque = () => {
+  document.getElementById('campoBonusAtaque').style.display =
+    document.getElementById('itemUsadoAtaque').checked ? 'block' : 'none'
+}
+
+window.toggleBonusDefesa = () => {
+  document.getElementById('campoBonusDefesa').style.display =
+    document.getElementById('itemUsadoDefesa').checked ? 'block' : 'none'
+  _atualizarPreviewPrioridade()
+}
+
+function _atualizarPreviewPrioridade() {
+  const el    = document.getElementById('defesaFinalDisplay')
+  if (!el) return
+  const bonus = +document.getElementById('itemBonusDefesa')?.value || 0
+  const prio  = Math.max(1, +document.getElementById('itemPrioridadeDefesa')?.value || 1)
+  const final = Math.trunc(bonus / prio)
+  el.textContent   = (final >= 0 ? '+' : '') + final
+  el.style.color       = final < 0 ? '#f87171' : '#4ade80'
+  el.style.borderColor = final < 0 ? 'rgba(248,113,113,0.2)' : 'rgba(74,222,128,0.2)'
+  el.style.background  = final < 0 ? 'rgba(248,113,113,0.08)' : 'rgba(74,222,128,0.08)'
+}
+window._atualizarPreviewPrioridade = _atualizarPreviewPrioridade
+
+window.confirmarSalvarItem = () => {
+  const nome = document.getElementById('itemNome').value.trim()
+  if (!nome) { _toast('Digite um nome para o item.', 'erro'); return }
+  const pericia = document.getElementById('itemPericia').value
+  if (!pericia) { _toast('Selecione uma perícia alvo para o item.', 'erro'); return }
+  const cat    = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? 'item'
+  const usaAtk = cat === 'equipamento' && document.getElementById('itemUsadoAtaque').checked
+  const usaDef = cat === 'equipamento' && document.getElementById('itemUsadoDefesa').checked
+  const itemAtual = _itemEditandoId ? veiculo.inventario.itens.find(i => i.id === _itemEditandoId) : null
+  const item = {
+    nome,
+    pericia,
+    descricao:       document.getElementById('itemDescricao').value.trim(),
+    peso:            +document.getElementById('itemPeso').value || 0,
+    categoria:       cat,
+    usadoAtaque:     usaAtk,
+    usadoDefesa:     usaDef,
+    bonusAtaque:     usaAtk ? (+document.getElementById('itemBonusAtaque').value || 0) : 0,
+    alcanceIdeal:    usaAtk ? (document.getElementById('itemAlcanceIdeal').value || 'corpo_a_corpo') : null,
+    bonusDefesa:     usaDef ? (+document.getElementById('itemBonusDefesa').value || 0) : 0,
+    prioridadeDefesa: usaDef ? (Math.max(1, +document.getElementById('itemPrioridadeDefesa').value || 1)) : 1,
+    catEquip:        cat === 'equipamento' ? _itemCategoria : null,
+    encantamentos:   cat === 'equipamento' ? JSON.parse(JSON.stringify(_itemEncantamentos)) : [],
+    restricoes:      cat === 'equipamento' ? JSON.parse(JSON.stringify(_itemRestricoes)) : [],
+    equipadoAtaque:  usaAtk ? (itemAtual ? (itemAtual.equipadoAtaque ?? true) : true) : false,
+    equipadoDefesa:  usaDef ? (itemAtual ? (itemAtual.equipadoDefesa ?? true) : true) : false,
+  }
+
+  if (_itemEditandoId) {
+    const idx = veiculo.inventario.itens.findIndex(i => i.id === _itemEditandoId)
+    if (idx >= 0) veiculo.inventario.itens[idx] = { id: _itemEditandoId, ...item }
+    _toast('Item atualizado!', 'info')
+  } else {
+    veiculo.inventario.itens.push({ id: crypto.randomUUID(), ...item })
+    _toast('Item adicionado!', 'info')
+  }
+  fecharModalItem()
+  renderInventario(); salvar()
+}
+
+// ── ENCANTAMENTOS (idêntico ao app.js) ────────────────────
+const ENCANTAMENTOS_LISTA = [
+  { id:'abencado',   emoji:'✨', nome:'Abençoado',      custo:1, repetivel:false, incompativel:[],
+    desc:'Protege contra Paralisia e condições negativas. Ganho em Defesa e Resistência contra eles.', extra:null },
+  { id:'acurado',    emoji:'🎯', nome:'Acurado',         custo:2, repetivel:false, incompativel:['macico'],
+    desc:'Acerto crítico em testes de ataque com 5 ou 6. Incompatível com Maciço.', extra:null },
+  { id:'alcance',    emoji:'📏', nome:'Alcance',         custo:1, repetivel:true,  incompativel:[],
+    desc:'Permite escolher mais 1 categoria de distância como alcance ideal.', extraLabel:'Categoria de distância adicional', extraPlaceholder:'Ex: Longo' },
+  { id:'aprimorado', emoji:'💎', nome:'Aprimorado',      custo:1, repetivel:true,  incompativel:[],
+    desc:'Aumenta um atributo em situações específicas.', extraLabel:'Atributo / situação', extraPlaceholder:'Ex: Força ao escalar montanhas' },
+  { id:'condutor',   emoji:'⚡', nome:'Condutor',        custo:2, repetivel:false, incompativel:[],
+    desc:'Enquanto usa o equipamento, todas as suas vantagens custam metade dos PM.', extra:null },
+  { id:'elemental',  emoji:'🔮', nome:'Elemental',       custo:1, repetivel:true,  incompativel:[],
+    desc:'Ao acertar, teste Poder vs Resistência: +1D do tipo elemental por ponto investido.', extraLabel:'Tipo de dano elemental', extraPlaceholder:'Ex: Fogo' },
+  { id:'encantado',  emoji:'✴️', nome:'Encantado',       custo:1, repetivel:true,  incompativel:[],
+    desc:'+3 em testes de ataque (arma) ou +3 de Resistência na defesa (armadura). Empilhável até 3×.', extra:null },
+  { id:'espiritual', emoji:'👻', nome:'Espiritual',      custo:2, repetivel:false, incompativel:[],
+    desc:'A arma ataca o espírito. Causa dano em PM igual à metade do dano em PV.', extra:null },
+  { id:'fortificada',emoji:'🏰', nome:'Fortificada',     custo:2, repetivel:false, incompativel:['leve'],
+    desc:'Oponentes não conseguem críticos contra você. Incompatível com Leve.', extra:null },
+  { id:'leve',       emoji:'🕊️', nome:'Leve',           custo:2, repetivel:false, incompativel:['fortificada'],
+    desc:'Acerto crítico com 5 ou 6 em testes de defesa. Incompatível com Fortificada.', extra:null },
+  { id:'macico',     emoji:'🔨', nome:'Maciço',          custo:2, repetivel:false, incompativel:['acurado'],
+    desc:'No primeiro acerto crítico, Poder somado três vezes ao dano. Incompatível com Acurado.', extra:null },
+  { id:'obrapima',   emoji:'🎨', nome:'Obra-Prima',      custo:1, repetivel:false, incompativel:[],
+    desc:'Escolha uma perícia. Gaste 3 PM para receber Ganho em testes com ela.', extraLabel:'Perícia potencializada', extraPlaceholder:'Ex: Luta' },
+  { id:'fruta',      emoji:'🍎', nome:'Fruta do Desejo', custo:0, repetivel:false, incompativel:['__todos__'],
+    desc:'O item "come" uma Fruta do Desejo. Ganha as habilidades da fruta, mas não aceita outros encantamentos.', extra:null },
+]
+
+const CAT_INFO = {
+  1: { nome:'Comum',    req:'Sem requisitos de perícia.', penalidade:'Nenhuma penalidade.'                             },
+  2: { nome:'Incomum',  req:'Sem requisitos de perícia.', penalidade:'Nenhuma penalidade.'                             },
+  3: { nome:'Raro',     req:'Treinado na Perícia Alvo.',  penalidade:'Parcial: −50% do bônus sem Treinamento.'         },
+  4: { nome:'Épico',    req:'Treinado na Perícia Alvo.',  penalidade:'Total: −100% do bônus sem Treinamento.'          },
+  5: { nome:'Lendário', req:'Maestria na Perícia Alvo.',  penalidade:'Híbrida: −50% sem Maestria; −100% sem a Perícia.'},
+  6: { nome:'Mítico',   req:'Maestria na Perícia Alvo.',  penalidade:'Total: −100% do bônus sem Maestria.'             },
+}
+
+function _criarMiniModalSeNecessario() {
+  if (document.getElementById('miniModalEnc')) return
+  const el = document.createElement('div')
+  el.id = 'miniModalEnc'
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;'
+  el.innerHTML = `
+    <div style="background:var(--bg-card,#1e293b);border:1px solid var(--border,#334155);border-radius:14px;padding:24px;width:min(380px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 id="miniModalEncTitulo" style="font-size:15px;color:#e2e8f0;margin:0"></h3>
+        <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <p id="miniModalEncDesc" style="font-size:12px;opacity:0.6;margin:0;line-height:1.5"></p>
+      <div>
+        <label id="miniModalEncLabel" style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px"></label>
+        <input id="miniModalEncInput" style="width:100%;padding:9px 12px;background:var(--bg-base,#0f172a);border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="miniModalEncConfirmar" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Confirmar</button>
+        <button onclick="document.getElementById('miniModalEnc').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+      </div>
+    </div>`
+  document.body.appendChild(el)
+}
+
+function _pedirExtraInfo(enc, callback) {
+  _criarMiniModalSeNecessario()
+  const modal = document.getElementById('miniModalEnc')
+  document.getElementById('miniModalEncTitulo').textContent = `${enc.emoji} ${enc.nome}`
+  document.getElementById('miniModalEncDesc').textContent   = enc.desc
+  document.getElementById('miniModalEncLabel').textContent  = enc.extraLabel ?? 'Detalhe'
+  const input = document.getElementById('miniModalEncInput')
+  input.placeholder = enc.extraPlaceholder ?? ''; input.value = ''
+  modal.style.display = 'flex'; setTimeout(() => input.focus(), 50)
+  const confirmar    = document.getElementById('miniModalEncConfirmar')
+  const novoConfirmar = confirmar.cloneNode(true)
+  confirmar.parentNode.replaceChild(novoConfirmar, confirmar)
+  novoConfirmar.onclick = () => {
+    const val = input.value.trim()
+    if (!val) { input.style.borderColor = '#ef4444'; return }
+    input.style.borderColor = '#334155'; modal.style.display = 'none'; callback(val)
+  }
+  input.onkeydown = (e) => { if (e.key === 'Enter') novoConfirmar.click() }
+}
+
+function _criarMiniModalRestricaoSeNecessario() {
+  if (document.getElementById('miniModalRestricao')) return
+  const el = document.createElement('div')
+  el.id = 'miniModalRestricao'
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;'
+  el.innerHTML = `
+    <div style="background:var(--bg-card,#1e293b);border:1px solid #334155;border-radius:14px;padding:24px;width:min(400px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:15px;color:#e2e8f0;margin:0">🔒 Nova Restrição</h3>
+        <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="background:transparent;border:1px solid #475569;color:#94a3b8;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div>
+        <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:6px">Descrição da restrição</label>
+        <input id="restricaoTextoInput" placeholder="Ex: Requer bateria carregada para funcionar" style="width:100%;padding:9px 12px;background:var(--bg-base,#0f172a);border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none" />
+      </div>
+      <div>
+        <label style="font-size:12px;opacity:0.75;display:block;margin-bottom:8px">Tipo de restrição</label>
+        <div style="display:flex;gap:8px">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-base,#0f172a);border:1px solid #334155;border-radius:8px;cursor:pointer;font-size:13px">
+            <input type="radio" name="restricaoTipoModal" value="parcial" checked style="accent-color:#fbbf24;width:14px;height:14px">
+            <span>🟡 Parcial <span style="opacity:0.55;font-size:11px">(−50%)</span></span>
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-base,#0f172a);border:1px solid #334155;border-radius:8px;cursor:pointer;font-size:13px">
+            <input type="radio" name="restricaoTipoModal" value="total" style="accent-color:#f87171;width:14px;height:14px">
+            <span>🔴 Total <span style="opacity:0.55;font-size:11px">(−100%)</span></span>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="restricaoConfirmarBtn" style="flex:1;padding:10px;background:#22c55e;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">✅ Adicionar</button>
+        <button onclick="document.getElementById('miniModalRestricao').style.display='none'" style="flex:1;padding:10px;background:#475569;border:none;border-radius:8px;color:white;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+      </div>
+    </div>`
+  document.body.appendChild(el)
+}
+
+window.selecionarCatEquip = (cat) => {
+  _itemCategoria = cat
+  document.querySelectorAll('.cat-equip-btn').forEach(b => b.classList.toggle('active', +b.dataset.cat === cat))
+  _renderCatInfo(); _renderEncantamentosItem(); _renderRestricaoAutoCategoria()
+}
+
+function _renderCatInfo() {
+  const info = CAT_INFO[_itemCategoria]
+  const el   = document.getElementById('catEquipInfo')
+  if (!el) return
+  el.innerHTML = `<strong>Cat. ${_itemCategoria} — ${info.nome}</strong> &nbsp;·&nbsp; ${info.req} &nbsp;·&nbsp; <span style="opacity:0.75">${info.penalidade}</span>`
+  const contador = document.getElementById('encantamentosContador')
+  if (contador) {
+    contador.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+    contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#64748b'
+  }
+}
+
+function _renderEncantamentosItem() {
+  const lista = document.getElementById('listaEncantamentosItem')
   if (!lista) return
   lista.innerHTML = ''
-
-  if (!itens.length) {
-    lista.innerHTML = '<div style="text-align:center;color:#64748b;padding:32px 0;font-size:14px;">Nenhum item no inventário.</div>'
-    return
-  }
-
-  itens.forEach(item => {
-    const card = document.createElement('div')
-    card.className = 'v-inv-item-card'
-    card.innerHTML = `
-      <div class="v-inv-item-info">
-        <div class="v-inv-item-nome">${_esc(item.nome || 'Sem nome')}</div>
-        ${item.desc ? `<div class="v-inv-item-desc">${_esc(item.desc)}</div>` : ''}
-      </div>
-      <div class="v-inv-item-direita">
-        <span class="v-inv-item-peso">⚖️ ${item.peso ?? 0}</span>
-        <div class="v-inv-item-acoes">
-          <button class="v-modif-btn" onclick="editarVItem('${item.id}')">✏️</button>
-          <button class="v-modif-btn v-modif-btn-del" onclick="deletarVItem('${item.id}')">🗑️</button>
+  const temFruta = _itemEncantamentos.some(e => e.id === 'fruta')
+  _itemEncantamentos.forEach((enc, idx) => {
+    const chip = document.createElement('div')
+    chip.className = 'encantamento-chip'
+    chip.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="encantamento-chip-nome">${enc.emoji} ${enc.nome}</span>
+          ${enc.custo > 0 ? `<span class="encantamento-chip-custo">+${enc.custo} PT</span>` : ''}
+          ${enc.extra ? `<span style="font-size:11px;color:#94a3b8;background:#0f172a;border:1px solid #334155;padding:1px 6px;border-radius:4px">${enc.extra}</span>` : ''}
         </div>
-      </div>`
-    lista.appendChild(card)
+        <div style="font-size:11px;opacity:0.5;margin-top:3px;line-height:1.4">${enc.desc}</div>
+      </div>
+      <button class="encantamento-chip-remover" onclick="_removerEncantamentoItem(${idx})" title="Remover">✕</button>`
+    lista.appendChild(chip)
+  })
+  const btn = document.getElementById('btnAdicionarEncantamento')
+  const podeAdicionar = !temFruta && _itemEncantamentos.length < _itemCategoria
+  if (btn) btn.style.display = podeAdicionar ? 'block' : 'none'
+  const contador = document.getElementById('encantamentosContador')
+  if (contador) {
+    contador.textContent = `${_itemEncantamentos.length} / ${_itemCategoria}`
+    contador.style.color = _itemEncantamentos.length >= _itemCategoria ? '#f87171' : '#64748b'
+  }
+}
+
+window._removerEncantamentoItem = (idx) => {
+  _itemEncantamentos.splice(idx, 1)
+  _renderEncantamentosItem()
+  const painel = document.getElementById('painelSeletorEncantamento')
+  if (painel && painel.style.display !== 'none') _renderOpcoesEncantamento()
+}
+
+window.abrirSeletorEncantamento = () => {
+  const painel = document.getElementById('painelSeletorEncantamento')
+  if (!painel) return
+  painel.style.display = 'block'; _renderOpcoesEncantamento()
+}
+
+window.fecharSeletorEncantamento = () => {
+  const painel = document.getElementById('painelSeletorEncantamento')
+  if (painel) painel.style.display = 'none'
+}
+
+function _renderOpcoesEncantamento() {
+  const lista = document.getElementById('listaOpcoesEncantamento')
+  if (!lista) return
+  lista.innerHTML = ''
+  const temFruta     = _itemEncantamentos.some(e => e.id === 'fruta')
+  const idsPresentes = _itemEncantamentos.map(e => e.id)
+  const cheio        = _itemEncantamentos.length >= _itemCategoria
+
+  ENCANTAMENTOS_LISTA.forEach(enc => {
+    let bloqueado = false, motivo = ''
+    if (enc.id === 'fruta' && _itemEncantamentos.length > 0) {
+      bloqueado = true; motivo = 'Remove todos os outros encantamentos ao adicionar'
+    } else if (temFruta && enc.id !== 'fruta') {
+      bloqueado = true; motivo = 'Item com Fruta não aceita outros encantamentos'
+    } else if (!enc.repetivel && idsPresentes.includes(enc.id)) {
+      bloqueado = true; motivo = 'Já adicionado (não repetível)'
+    } else {
+      const incompat = enc.incompativel.find(i => i !== '__todos__' && idsPresentes.includes(i))
+      if (incompat) {
+        const nomeInc = ENCANTAMENTOS_LISTA.find(e => e.id === incompat)?.nome ?? incompat
+        bloqueado = true; motivo = `Incompatível com ${nomeInc}`
+      }
+    }
+    if (cheio && !bloqueado) { bloqueado = true; motivo = 'Limite de encantamentos atingido (aumente a Categoria)' }
+    const div = document.createElement('div')
+    div.className = 'enc-opcao' + (bloqueado ? ' desabilitado' : '')
+    div.innerHTML = `
+      <div class="enc-opcao-header">
+        <span class="enc-opcao-nome">${enc.emoji} ${enc.nome}</span>
+        ${enc.custo > 0 ? `<span class="enc-opcao-custo">+${enc.custo} PT</span>` : '<span style="font-size:11px;color:#64748b">grátis</span>'}
+      </div>
+      <div class="enc-opcao-desc">${enc.desc}</div>
+      ${bloqueado ? `<div class="enc-opcao-incompat">⛔ ${motivo}</div>` : ''}`
+    if (!bloqueado) div.onclick = () => _selecionarEncantamento(enc)
+    lista.appendChild(div)
   })
 }
 
-let _vItemEditandoId = null
-let _vItemPesoAtual  = 0
-
-window.abrirModalVItem = () => {
-  _vItemEditandoId = null
-  _vItemPesoAtual  = 0
-  document.getElementById('modalVItemTitulo').textContent = 'Novo Item'
-  document.getElementById('vItemNome').value  = ''
-  document.getElementById('vItemDesc').value  = ''
-  document.getElementById('vItemPesoVal').textContent = '0'
-  document.getElementById('modalVItem').style.display = 'flex'
-}
-
-window.fecharModalVItem = () => {
-  document.getElementById('modalVItem').style.display = 'none'
-  _vItemEditandoId = null; _vItemPesoAtual = 0
-}
-
-window.fecharModalVItemOverlay = (e) => {
-  if (e.target === document.getElementById('modalVItem')) fecharModalVItem()
-}
-
-window.mudarPesoVItem = (delta) => {
-  _vItemPesoAtual = Math.max(0, _vItemPesoAtual + delta)
-  document.getElementById('vItemPesoVal').textContent = _vItemPesoAtual
-}
-
-window.editarVItem = (id) => {
-  if (!veiculo.inventario) return
-  const item = veiculo.inventario.itens.find(i => i.id === id)
-  if (!item) return
-  _vItemEditandoId = id
-  _vItemPesoAtual  = item.peso ?? 0
-  document.getElementById('modalVItemTitulo').textContent = 'Editar Item'
-  document.getElementById('vItemNome').value  = item.nome || ''
-  document.getElementById('vItemDesc').value  = item.desc || ''
-  document.getElementById('vItemPesoVal').textContent = _vItemPesoAtual
-  document.getElementById('modalVItem').style.display = 'flex'
-}
-
-window.deletarVItem = (id) => {
-  if (!veiculo.inventario) return
-  veiculo.inventario.itens = veiculo.inventario.itens.filter(i => i.id !== id)
-  renderInventario(); salvar()
-}
-
-window.confirmarVItem = () => {
-  const nome = document.getElementById('vItemNome').value.trim()
-  if (!nome) { _toast('Digite um nome para o item.', 'erro'); return }
-  const desc = document.getElementById('vItemDesc').value.trim()
-  if (!veiculo.inventario) veiculo.inventario = { itens: [] }
-
-  if (_vItemEditandoId) {
-    const item = veiculo.inventario.itens.find(i => i.id === _vItemEditandoId)
-    if (item) { item.nome = nome; item.peso = _vItemPesoAtual; item.desc = desc }
-  } else {
-    veiculo.inventario.itens.push({ id: crypto.randomUUID(), nome, peso: _vItemPesoAtual, desc })
+function _selecionarEncantamento(enc) {
+  const _finalizar = (extra) => {
+    if (enc.id === 'fruta') _itemEncantamentos = [{ ...enc, extra }]
+    else _itemEncantamentos.push({ ...enc, extra })
+    fecharSeletorEncantamento(); _renderEncantamentosItem()
   }
-  fecharModalVItem()
-  renderInventario(); salvar()
+  if (enc.extraLabel) _pedirExtraInfo(enc, (val) => _finalizar(val))
+  else _finalizar(null)
 }
+
+window.adicionarRestricaoItem = () => {
+  _criarMiniModalRestricaoSeNecessario()
+  const modal = document.getElementById('miniModalRestricao')
+  const input = document.getElementById('restricaoTextoInput')
+  input.value = ''; input.style.borderColor = '#334155'
+  const radios = modal.querySelectorAll('input[name="restricaoTipoModal"]')
+  if (radios[0]) radios[0].checked = true
+  modal.style.display = 'flex'; setTimeout(() => input.focus(), 50)
+  const confirmar    = document.getElementById('restricaoConfirmarBtn')
+  const novoConfirmar = confirmar.cloneNode(true)
+  confirmar.parentNode.replaceChild(novoConfirmar, confirmar)
+  novoConfirmar.onclick = () => {
+    const texto = input.value.trim()
+    if (!texto) { input.style.borderColor = '#ef4444'; return }
+    const tipo = modal.querySelector('input[name="restricaoTipoModal"]:checked')?.value ?? 'parcial'
+    _itemRestricoes.push({ tipo, texto })
+    modal.style.display = 'none'; _renderRestricoesItem()
+  }
+  input.onkeydown = (e) => { if (e.key === 'Enter') novoConfirmar.click() }
+}
+
+window._removerRestricaoItem = (idx) => {
+  _itemRestricoes.splice(idx, 1); _renderRestricoesItem()
+}
+
+function _renderRestricoesItem() {
+  const lista = document.getElementById('listaRestricoesItem')
+  if (!lista) return
+  lista.innerHTML = ''
+  _itemRestricoes.forEach((r, idx) => {
+    const chip = document.createElement('div')
+    chip.className = 'restricao-chip'
+    chip.innerHTML = `
+      <div class="restricao-chip-header">
+        <span class="${r.tipo === 'total' ? 'restricao-chip-tipo-total' : 'restricao-chip-tipo-parcial'}">
+          ${r.tipo === 'total' ? '🔴 Restrição Total (−100% bônus)' : '🟡 Restrição Parcial (−50% bônus)'}
+        </span>
+        <button class="restricao-chip-remover" onclick="_removerRestricaoItem(${idx})" title="Remover">✕</button>
+      </div>
+      <div class="restricao-chip-texto">${r.texto}</div>`
+    lista.appendChild(chip)
+  })
+}
+
+function _renderRestricaoAutoCategoria() {
+  const el = document.getElementById('restricaoCategoriaAuto')
+  if (!el) return
+  const info = CAT_INFO[_itemCategoria]
+  el.innerHTML = `📋 <strong>Requisito automático (Cat. ${_itemCategoria}):</strong> ${info.req} → <em>${info.penalidade}</em>`
+}
+
+function _resetItemEncantamentos() {
+  _itemEncantamentos = []; _itemCategoria = 1; _itemRestricoes = []
+  document.querySelectorAll('.cat-equip-btn').forEach(b => b.classList.toggle('active', +b.dataset.cat === 1))
+  _renderCatInfo(); _renderEncantamentosItem(); _renderRestricoesItem(); _renderRestricaoAutoCategoria()
+  fecharSeletorEncantamento()
+}
+
+function _carregarItemEncantamentos(item) {
+  _itemEncantamentos = item.encantamentos ? JSON.parse(JSON.stringify(item.encantamentos)) : []
+  _itemCategoria     = item.catEquip ?? 1
+  _itemRestricoes    = item.restricoes ? JSON.parse(JSON.stringify(item.restricoes)) : []
+  document.querySelectorAll('.cat-equip-btn').forEach(b => b.classList.toggle('active', +b.dataset.cat === _itemCategoria))
+  _renderCatInfo(); _renderEncantamentosItem(); _renderRestricoesItem(); _renderRestricaoAutoCategoria()
+  fecharSeletorEncantamento()
+}
+
+// Botão cancelar em enc/restricoes
+window.enc_cancelar = window.enc_cancelar || (() => {})
 
 // ── TOAST ─────────────────────────────────────────────────
 function _toast(msg, tipo = 'info') {
   const c = document.getElementById('toastContainer')
+  if (!c) return
   const t = document.createElement('div')
   t.className = `toast toast-${tipo}`
   t.textContent = msg
@@ -730,25 +1154,22 @@ const vSalvoLabel = document.getElementById('vSalvoLabel')
 
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
-  // Ler ID da URL
+  await _carregarPericias()
   const params = new URLSearchParams(location.search)
   const id     = params.get('id')
 
   if (id && carregar(id)) {
-    // Ficha existente carregada
+    // ficha existente
   } else {
-    // Novo veículo — definir HP inicial
     const d = derivados()
     veiculo.hpAtual = d.hpMax
-    if (id) veiculo.id = id  // manter id se foi passado mas não encontrado
+    if (id) veiculo.id = id
   }
 
   renderTudo()
 
-  // Listeners
   document.getElementById('vNome').addEventListener('input', (e) => {
-    veiculo.nome = e.target.value
-    salvar()
+    veiculo.nome = e.target.value; salvar()
   })
 }
 
