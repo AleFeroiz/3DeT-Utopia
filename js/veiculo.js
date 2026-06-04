@@ -75,8 +75,9 @@ function derivados() {
 
   const ptosUsados = veiculo.modificacoes.reduce((s, m) => s + (m.pontos || 1), 0)
 
+  // Usa hpMax local para evitar recursão com _modDesativada
   const modInv = veiculo.modificacoes
-    .filter(m => m.tipo === 'inventario' && !_modDesativada(m))
+    .filter(m => m.tipo === 'inventario' && !_modDesativada(m, hpMax))
     .reduce((s) => s + Math.ceil(e.inventarioBase * 0.5), 0)
 
   return {
@@ -113,9 +114,10 @@ function rangePorEstado(estado, hpMax) {
   return { min: Math.floor(hpMax * THRESH_AVARIADO) + 1, max: hpMax }
 }
 
-function _modDesativada(m) {
+// Recebe hpMax opcionalmente para evitar recursão (quando chamada de dentro de derivados())
+function _modDesativada(m, hpMaxOverride) {
   if (m.desativadaManual) return true
-  const { hpMax } = derivados()
+  const hpMax = hpMaxOverride ?? derivados().hpMax
   if (hpMax === 0 || m.tipo === 'inventario') return false
   const pct = veiculo.hpAtual / hpMax
   const threshold = FALHA_NIVEL[m.pontos] ?? 0
@@ -458,6 +460,7 @@ window.setEscala = (e) => {
   const d = derivados()
   if (veiculo.hpAtual === 0 || veiculo.hpAtual > d.hpMax) veiculo.hpAtual = d.hpMax
   renderTudo(); salvar()
+  _toast(`⚙️ Escala alterada para ${ESCALA[e].label}.`, 'info')
 }
 
 window.mudarAtrib = (attr, delta) => {
@@ -526,17 +529,25 @@ window.setEstado = (novoEstado) => {
   if (seletor) seletor.style.display = 'none'
 
   renderHp(); renderModifs(); salvar()
+  const estadoLabel = novoEstado === 'critico' ? '🔴 Crítico' : novoEstado === 'avariado' ? '🟡 Avariado' : '🟢 Normal'
+  _toast(`Estado alterado para ${estadoLabel}.`, novoEstado === 'critico' ? 'erro' : novoEstado === 'avariado' ? 'aviso' : 'sucesso')
 }
 
 // ── MODIFICAÇÕES ──────────────────────────────────────────
 window.toggleDesativManual = (id, checked) => {
   const m = veiculo.modificacoes.find(m => m.id === id)
-  if (m) { m.desativadaManual = checked; renderModifs(); renderModifResumo(); salvar() }
+  if (m) {
+    m.desativadaManual = checked
+    renderModifs(); renderModifResumo(); salvar()
+    _toast(checked ? `🔴 "${m.nome}" desativada manualmente.` : `🟢 "${m.nome}" reativada.`, checked ? 'aviso' : 'sucesso')
+  }
 }
 
 window.deletarModif = (id) => {
+  const m = veiculo.modificacoes.find(m => m.id === id)
   veiculo.modificacoes = veiculo.modificacoes.filter(m => m.id !== id)
   renderModifs(); renderModifResumo(); renderStatus(); salvar()
+  _toast(`🗑️ Modificação "${m?.nome || 'sem nome'}" removida.`, 'aviso')
 }
 
 window.editarModif = (id) => {
@@ -596,7 +607,23 @@ window.selecionarTipo = (tipo) => {
 window.mudarPtsModif = (delta) => {
   const d   = derivados()
   const max = _mfTipo === 'inventario' ? 1 : d.nivelMax
-  _mfPontos = Math.max(1, Math.min(max, _mfPontos + delta))
+  const novo = _mfPontos + delta
+  if (novo > max) {
+    _toast(`⛔ Nível máximo para a escala ${ESCALA[veiculo.escala].label} é ${max}.`, 'erro')
+    return
+  }
+  // Verificar pontos disponíveis ao aumentar
+  if (delta > 0) {
+    const usadosSemEsta = _editandoModifId
+      ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s, m) => s + (m.pontos || 1), 0)
+      : d.ptosUsados
+    const disp = d.modifDisp - usadosSemEsta - _mfPontos
+    if (disp < 1) {
+      _toast(`⛔ Sem pontos disponíveis! (${d.modifDisp - usadosSemEsta} pt no total)`, 'erro')
+      return
+    }
+  }
+  _mfPontos = Math.max(1, Math.min(max, novo))
   document.getElementById('mfPtos').textContent = _mfPontos
   _atualizarBonusInfo()
   _atualizarPtosHint()
@@ -635,18 +662,19 @@ window.confirmarModif = () => {
   const nome = document.getElementById('mfNome').value.trim()
   const desc = document.getElementById('mfDesc').value.trim()
 
-  if (!nome)    { _toast('Digite um nome para a modificação.', 'erro'); return }
-  if (!_mfTipo) { _toast('Selecione o tipo da modificação.',  'erro'); return }
+  if (!nome)    { _toast('❌ Digite um nome para a modificação.', 'erro'); return }
+  if (!_mfTipo) { _toast('❌ Selecione o tipo da modificação.', 'erro'); return }
 
   const d   = derivados()
   const max = _mfTipo === 'inventario' ? 1 : d.nivelMax
-  if (_mfPontos > max) { _toast(`Nível máximo para esta escala é ${max}.`, 'warn'); return }
+  if (_mfPontos > max) { _toast(`⛔ Nível máximo para esta escala (${veiculo.escala}) é ${max}.`, 'erro'); return }
 
   const usadosSemEsta = _editandoModifId
     ? veiculo.modificacoes.filter(m => m.id !== _editandoModifId).reduce((s, m) => s + (m.pontos || 1), 0)
     : d.ptosUsados
   if (_mfPontos > d.modifDisp - usadosSemEsta) {
-    _toast('Pontos insuficientes de modificação.', 'warn'); return
+    const disp2 = d.modifDisp - usadosSemEsta
+    _toast(`⛔ Pontos insuficientes! Disponível: ${disp2} pt${disp2 !== 1 ? 's' : ''}.`, 'erro'); return
   }
 
   if (_editandoModifId) {
@@ -659,8 +687,11 @@ window.confirmarModif = () => {
     })
   }
 
+  const nomeAcao = _editandoModifId ? 'atualizada' : 'adicionada'
+  const nomeModif = nome
   fecharModalModif()
   renderModifs(); renderModifResumo(); renderStatus(); salvar()
+  _toast(`✅ Modificação "${nomeModif}" ${nomeAcao}!`, 'sucesso')
 }
 
 // ── INVENTÁRIO: AÇÕES ─────────────────────────────────────
@@ -681,9 +712,10 @@ window.toggleEquipado = (id, tipo, valor) => {
 }
 
 window.removerItem = (id) => {
+  const item = veiculo.inventario.itens.find(i => i.id === id)
   veiculo.inventario.itens = veiculo.inventario.itens.filter(i => i.id !== id)
   renderInventario(); salvar()
-  _toast('Item removido.', 'warn')
+  _toast(`🗑️ Item "${item?.nome || 'sem nome'}" removido.`, 'aviso')
 }
 
 // ── MODAL DE ITEM (idêntico à ficha) ──────────────────────
@@ -792,9 +824,9 @@ window._atualizarPreviewPrioridade = _atualizarPreviewPrioridade
 
 window.confirmarSalvarItem = () => {
   const nome = document.getElementById('itemNome').value.trim()
-  if (!nome) { _toast('Digite um nome para o item.', 'erro'); return }
+  if (!nome) { _toast('❌ Digite um nome para o item.', 'erro'); return }
   const pericia = document.getElementById('itemPericia').value
-  if (!pericia) { _toast('Selecione uma perícia alvo para o item.', 'erro'); return }
+  if (!pericia) { _toast('❌ Selecione uma perícia alvo para o item.', 'erro'); return }
   const cat    = document.querySelector('input[name="itemCategoria"]:checked')?.value ?? 'item'
   const usaAtk = cat === 'equipamento' && document.getElementById('itemUsadoAtaque').checked
   const usaDef = cat === 'equipamento' && document.getElementById('itemUsadoDefesa').checked
@@ -821,10 +853,10 @@ window.confirmarSalvarItem = () => {
   if (_itemEditandoId) {
     const idx = veiculo.inventario.itens.findIndex(i => i.id === _itemEditandoId)
     if (idx >= 0) veiculo.inventario.itens[idx] = { id: _itemEditandoId, ...item }
-    _toast('Item atualizado!', 'info')
+    _toast(`✅ Item "${nome}" atualizado!`, 'sucesso')
   } else {
     veiculo.inventario.itens.push({ id: crypto.randomUUID(), ...item })
-    _toast('Item adicionado!', 'info')
+    _toast(`✅ Item "${nome}" adicionado!`, 'sucesso')
   }
   fecharModalItem()
   renderInventario(); salvar()
@@ -1137,11 +1169,18 @@ window.enc_cancelar = window.enc_cancelar || (() => {})
 function _toast(msg, tipo = 'info') {
   const c = document.getElementById('toastContainer')
   if (!c) return
+  const ICONES = { info: 'ℹ️', sucesso: '✅', erro: '❌', aviso: '⚠️' }
+  const tipoNorm = tipo === 'warn' ? 'aviso' : tipo
   const t = document.createElement('div')
-  t.className = `toast toast-${tipo}`
-  t.textContent = msg
+  t.className = `toast toast-${tipoNorm}`
+  t.innerHTML = `
+    <span class="toast-icon">${ICONES[tipoNorm] ?? 'ℹ️'}</span>
+    <span class="toast-msg">${msg}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>`
   c.appendChild(t)
-  setTimeout(() => t.remove(), 3500)
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-visible')))
+  const dur = tipoNorm === 'erro' ? 5000 : tipoNorm === 'aviso' ? 4000 : 3000
+  setTimeout(() => { t.classList.remove('toast-visible'); setTimeout(() => t.remove(), 300) }, dur)
 }
 
 // ── HELPERS ───────────────────────────────────────────────
