@@ -713,16 +713,36 @@ function renderVeiculos() {
   grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;'
 
   indice.forEach(v => {
+    const cor  = v.corTema ?? '#3b82f6'
+    const [h, s] = _hexToHsl(cor)
+    const sat   = Math.min(s * 0.35, 25)
+    const satC  = Math.min(s * 0.6, 45)
+    const bgCard   = `hsl(${h},${satC}%,17%)`
+    const bgBorder = `hsl(${h},${satC}%,28%)`
+    const bgHover  = `hsl(${h},${satC}%,32%)`
+
+    const imgSrc = v.imagemThumb || v.imagemUrl || null
+    const retratoHtml = imgSrc
+      ? `<div style="width:42px;height:42px;border-radius:50%;background-image:url('${imgSrc}');background-size:cover;background-position:center;border:2px solid ${cor}55;flex-shrink:0"></div>`
+      : `<div style="width:42px;height:42px;border-radius:50%;background:${cor}22;border:2px solid ${cor}55;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🚢</div>`
+
     const card = document.createElement('div')
-    card.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px;min-width:200px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:border-color .15s;'
-    card.onmouseenter = () => card.style.borderColor = '#3b82f6'
-    card.onmouseleave = () => card.style.borderColor = '#334155'
+    card.style.cssText = `background:${bgCard};border:1px solid ${bgBorder};border-radius:12px;padding:14px;min-width:200px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:border-color .15s;`
+    card.onmouseenter = () => card.style.borderColor = bgHover
+    card.onmouseleave = () => card.style.borderColor = bgBorder
+
+    const nomeEsc = (v.nome||'Sem Nome').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     card.innerHTML = `
-      <div style="font-weight:700;font-size:15px;">🚢 ${v.nome || 'Sem Nome'}</div>
-      <div style="font-size:12px;color:#64748b;">Escala: ${v.escala || '—'}</div>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button style="flex:1;padding:5px;border-radius:6px;border:1px solid #3b82f6;background:transparent;color:#3b82f6;font-size:12px;font-weight:600;cursor:pointer;" onclick="event.stopPropagation();window.location.href='veiculo.html?id=${v.id}'">Abrir</button>
-        <button style="padding:5px 8px;border-radius:6px;border:1px solid #ef4444;background:transparent;color:#ef4444;font-size:12px;cursor:pointer;" onclick="event.stopPropagation();deletarVeiculo('${v.id}')">🗑️</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${retratoHtml}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f1f5f9">${nomeEsc}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">Escala: ${(v.escala||'—').charAt(0).toUpperCase()+(v.escala||'—').slice(1)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button style="flex:1;padding:6px;border-radius:7px;border:1px solid ${cor}88;background:${cor}22;color:${cor};font-size:12px;font-weight:600;cursor:pointer;" onclick="event.stopPropagation();window.location.href='veiculo.html?id=${v.id}'">Abrir</button>
+        <button style="padding:6px 10px;border-radius:7px;border:1px solid #ef444455;background:#ef444411;color:#f87171;font-size:12px;cursor:pointer;" onclick="event.stopPropagation();deletarVeiculo('${v.id}')">🗑️</button>
       </div>`
     card.querySelector('div').onclick = () => window.location.href = `veiculo.html?id=${v.id}`
     grid.appendChild(card)

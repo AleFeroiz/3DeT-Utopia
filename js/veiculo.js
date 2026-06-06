@@ -1,7 +1,13 @@
 // ============================================================
-//  veiculo.js — Lógica completa da Ficha de Veículo
-//  Sem Firebase — usa apenas localStorage
+//  veiculo.js — Ficha de Veículo
+//  localStorage + Firebase (visibilidade pública)
 // ============================================================
+import {
+  inicializarFirebase, aguardarAuth,
+  getUser, getDb, getFirebaseFns, estaConfigurado,
+  registrarIndicePublico, removerIndicePublico,
+  carregarFichaDeOutroUsuario,
+} from './firebase.js'
 
 // ── TABELAS DE REGRA ──────────────────────────────────────
 const ESCALA = {
@@ -46,7 +52,6 @@ const FALHA_NIVEL = { 1: 0.75, 2: 0.50, 3: 0.25, 4: 0 }
 let veiculo = _novoVeiculo()
 let _editandoModifId = null
 let _saving = false
-let _saveTimer = null
 
 function _novoVeiculo() {
   return {
@@ -130,17 +135,49 @@ function _modDesativada(m, hpMaxOverride) {
 }
 
 // ── PERSISTÊNCIA ─────────────────────────────────────────
+let _saveTimer = null
+
 async function salvar() {
+  if (!_vDono) return   // Visitante sem permissão não salva
   document.getElementById('vSalvoLabel')?.classList.remove('visivel')
   clearTimeout(_saveTimer)
-  _saveTimer = setTimeout(() => {
+  _saveTimer = setTimeout(async () => {
     try {
+      // Sempre salva no localStorage
       localStorage.setItem(`veiculo_${veiculo.id}`, JSON.stringify(veiculo))
+      // Atualiza índice local com metadados incluindo retrato e cor
       const indice = JSON.parse(localStorage.getItem('veiculos_indice') || '[]')
       const idx = indice.findIndex(v => v.id === veiculo.id)
-      const meta = { id: veiculo.id, nome: veiculo.nome || 'Sem Nome', escala: veiculo.escala }
+      const meta = {
+        id:          veiculo.id,
+        nome:        veiculo.nome || 'Sem Nome',
+        escala:      veiculo.escala,
+        corTema:     veiculo.corTema     ?? '#3b82f6',
+        imagemThumb: veiculo.imagemThumb ?? null,
+      }
       if (idx >= 0) indice[idx] = meta; else indice.push(meta)
       localStorage.setItem('veiculos_indice', JSON.stringify(indice))
+
+      // Firebase: salva ficha na coleção do usuário
+      if (estaConfigurado() && _vOwnerUid) {
+        const db  = getDb()
+        const fns = getFirebaseFns()
+        if (db && fns) {
+          const ref = fns.doc(db, 'users', _vOwnerUid, 'veiculos', veiculo.id)
+          await fns.setDoc(ref, { ...veiculo, _updatedAt: new Date().toISOString() })
+        }
+        // Gerenciar public_index
+        const eraPublica = _vEraPublica
+        const ePublica   = veiculo.isPublic ?? false
+        if (ePublica && !eraPublica) {
+          await registrarIndicePublico(veiculo.id, _vOwnerUid, 'veiculo')
+          _vEraPublica = true
+        } else if (!ePublica && eraPublica) {
+          await removerIndicePublico(veiculo.id)
+          _vEraPublica = false
+        }
+      }
+
       const lbl = document.getElementById('vSalvoLabel')
       if (lbl) { lbl.classList.add('visivel'); setTimeout(() => lbl.classList.remove('visivel'), 2000) }
     } catch(e) { console.error('Erro ao salvar:', e) }
@@ -1209,21 +1246,51 @@ function _esc(s) {
 const vSalvoLabel = document.getElementById('vSalvoLabel')
 
 // ── INIT ──────────────────────────────────────────────────
-// ── COR TEMA ──────────────────────────────────────────────
-function _aplicarCorTema(cor) {
-  function _darken(hex, f) {
-    let c = hex.replace('#','')
-    if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2]
-    const r = Math.round(parseInt(c.slice(0,2),16)*f)
-    const g = Math.round(parseInt(c.slice(2,4),16)*f)
-    const b = Math.round(parseInt(c.slice(4,6),16)*f)
-    const d = v => v.toString(16).padStart(2,'0')
-    return `#${d(r)}${d(g)}${d(b)}`
+// ── COR TEMA (idêntico à ficha de personagem) ─────────────
+function _hexToHsl(hex) {
+  let r = parseInt(hex.slice(1,3),16)/255
+  let g = parseInt(hex.slice(3,5),16)/255
+  let b = parseInt(hex.slice(5,7),16)/255
+  const max=Math.max(r,g,b), min=Math.min(r,g,b)
+  let h,s, l=(max+min)/2
+  if (max===min) { h=s=0 } else {
+    const d=max-min
+    s = l>0.5 ? d/(2-max-min) : d/(max+min)
+    switch(max){
+      case r: h=((g-b)/d+(g<b?6:0))/6; break
+      case g: h=((b-r)/d+2)/6; break
+      case b: h=((r-g)/d+4)/6; break
+    }
   }
-  document.documentElement.style.setProperty('--cor-tema',      cor)
-  document.documentElement.style.setProperty('--cor-tema-dark', _darken(cor, 0.7))
-  document.documentElement.style.setProperty('--cor-tema-dim',  cor + '22')
-  document.documentElement.style.setProperty('--cor-tema-mid',  cor + '55')
+  return [Math.round(h*360), Math.round(s*100), Math.round(l*100)]
+}
+function _darken(hex, factor) {
+  const r=parseInt(hex.slice(1,3),16)
+  const g=parseInt(hex.slice(3,5),16)
+  const b=parseInt(hex.slice(5,7),16)
+  const d=(v)=>Math.round(v*factor).toString(16).padStart(2,'0')
+  return `#${d(r)}${d(g)}${d(b)}`
+}
+function _aplicarCorTema(cor) {
+  const c = cor || '#3b82f6'
+  const [h, s] = _hexToHsl(c)
+  const sat = Math.min(s * 0.35, 25)
+  document.documentElement.style.setProperty('--cor-tema',      c)
+  document.documentElement.style.setProperty('--cor-tema-dark', _darken(c, 0.7))
+  document.documentElement.style.setProperty('--cor-tema-dim',  c + '22')
+  document.documentElement.style.setProperty('--cor-tema-mid',  c + '55')
+  // Paleta de fundo derivada da matiz — igual à ficha de personagem
+  document.documentElement.style.setProperty('--bg-deepest', `hsl(${h},${sat}%,2%)`)
+  document.documentElement.style.setProperty('--bg-base',    `hsl(${h},${sat}%,7%)`)
+  document.documentElement.style.setProperty('--bg-deep',    `hsl(${h},${sat}%,4%)`)
+  document.documentElement.style.setProperty('--bg-card',    `hsl(${h},${sat}%,13%)`)
+  document.documentElement.style.setProperty('--bg-input',   `hsl(${h},${sat}%,10%)`)
+  document.documentElement.style.setProperty('--bg-darker',  `hsl(${h},${sat}%,5%)`)
+  document.documentElement.style.setProperty('--bg-hover',   `hsl(${h},${sat}%,17%)`)
+  document.documentElement.style.setProperty('--bg-accent',  `hsl(${h},${Math.min(s*0.5,35)}%,18%)`)
+  document.documentElement.style.setProperty('--border',     `hsl(${h},${sat}%,20%)`)
+  document.documentElement.style.setProperty('--border-dim', `hsl(${h},${sat}%,12%)`)
+  document.body.style.background = `linear-gradient(135deg, hsl(${h},${sat}%,7%), hsl(${h},${sat}%,2%))`
 }
 
 function _bindCorTema() {
@@ -1350,7 +1417,9 @@ function _bindRetrato() {
 }
 
 // ── VISIBILIDADE ──────────────────────────────────────────
-let _vDono = true   // por enquanto sempre dono (sem Firebase no veículo)
+let _vDono       = true
+let _vOwnerUid   = null
+let _vEraPublica = false
 
 function _renderVisibilidade() {
   const bloco   = document.getElementById('vVisibBloco')
@@ -1363,10 +1432,8 @@ function _renderVisibilidade() {
 
   if (!_vDono) {
     if (bloco)  bloco.style.display = 'none'
-    if (banner) {
-      if (!veiculo.editPublic) { banner.style.display = 'block' }
-      else banner.style.display = 'none'
-    }
+    if (banner) banner.style.display = veiculo.editPublic ? 'none' : 'block'
+    _bloquearEdicao()
     return
   }
   if (bloco)  bloco.style.display = 'block'
@@ -1376,14 +1443,26 @@ function _renderVisibilidade() {
   const isEdit = veiculo.editPublic ?? false
   if (chkPub)  chkPub.checked  = isPub
   if (chkEdit) chkEdit.checked = isEdit
-  if (hintPub) hintPub.textContent  = isPub  ? 'Visível para todos' : 'Apenas você'
-  if (hintEd)  hintEd.textContent   = isEdit ? 'Todos podem editar' : 'Só visualizar'
+  if (hintPub) hintPub.textContent = isPub  ? 'Visível para todos' : 'Apenas você'
+  if (hintEd)  hintEd.textContent  = isEdit ? 'Todos podem editar' : 'Só visualizar'
   if (rowEd) { rowEd.style.opacity = isPub ? '1' : '0.4'; rowEd.style.pointerEvents = isPub ? 'auto' : 'none' }
 }
 
-window.toggleVisibV = (campo, valor) => {
+function _bloquearEdicao() {
+  if (_vDono || veiculo.editPublic) return
+  // Desabilitar todos os controles interativos
+  document.querySelectorAll('button:not(.btn-voltar), input:not([type="file"]), select, textarea, [contenteditable]')
+    .forEach(el => {
+      if (el.tagName === 'INPUT' && el.type === 'file') return
+      el.disabled = true
+      if (el.hasAttribute('contenteditable')) el.setAttribute('contenteditable', 'false')
+    })
+}
+
+window.toggleVisibV = async (campo, valor) => {
   veiculo[campo] = valor
-  _renderVisibilidade(); salvar()
+  _renderVisibilidade()
+  await salvar()
   _toast(campo === 'isPublic'
     ? (valor ? '🌐 Ficha tornada pública.' : '🔒 Ficha tornada privada.')
     : (valor ? '✏️ Edição pública ativada.' : '👁️ Somente visualização ativada.'), 'info')
@@ -1391,16 +1470,75 @@ window.toggleVisibV = (campo, valor) => {
 
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
+  await inicializarFirebase()
+  await aguardarAuth()
   await _carregarPericias()
+
   const params = new URLSearchParams(location.search)
   const id     = params.get('id')
+  const user   = getUser()
 
-  if (id && carregar(id)) {
-    // ficha existente
+  if (id) {
+    // 1. Tentar carregar do Firebase como dono
+    if (user && estaConfigurado()) {
+      try {
+        const db  = getDb()
+        const fns = getFirebaseFns()
+        if (db && fns) {
+          const snap = await fns.getDoc(fns.doc(db, 'users', user.uid, 'veiculos', id))
+          if (snap.exists()) {
+            veiculo       = { ..._novoVeiculo(), ...snap.data() }
+            _vDono        = true
+            _vOwnerUid    = user.uid
+            _vEraPublica  = veiculo.isPublic ?? false
+            // Sincronizar localStorage
+            localStorage.setItem(`veiculo_${id}`, JSON.stringify(veiculo))
+          }
+        }
+      } catch(e) { console.warn('[Firestore] erro ao carregar veículo:', e) }
+    }
+
+    // 2. Tentar localStorage (cache ou offline)
+    if (!_vOwnerUid && carregar(id)) {
+      _vDono       = true
+      _vOwnerUid   = user?.uid ?? null
+      _vEraPublica = veiculo.isPublic ?? false
+    }
+
+    // 3. Tentar como visitante — public_index
+    if (!_vOwnerUid && estaConfigurado()) {
+      const publica = await _carregarVeiculoPublico(id)
+      if (publica) {
+        veiculo      = { ..._novoVeiculo(), ...publica }
+        _vDono       = !!(user && publica._ownerUid === user.uid)
+        _vOwnerUid   = publica._ownerUid ?? null
+        _vEraPublica = true
+      } else {
+        // Não encontrado e não público
+        document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;color:#94a3b8">
+          <div style="font-size:48px">🔒</div>
+          <div style="font-size:18px;font-weight:700;color:#f1f5f9">Veículo não encontrado</div>
+          <div style="font-size:14px">Esta ficha é privada ou não existe.</div>
+          <a href="index.html" style="padding:10px 20px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#93c5fd;text-decoration:none;font-size:14px">← Voltar</a>
+        </div>`
+        return
+      }
+    }
+
+    // 4. Fallback — id na URL mas não encontrou em lugar nenhum: criar novo com esse id
+    if (!_vOwnerUid) {
+      _vDono     = true
+      _vOwnerUid = user?.uid ?? null
+      veiculo.id = id
+      const d = derivados()
+      veiculo.hpAtual = d.hpMax
+    }
   } else {
+    // Sem id: nova ficha
+    _vDono     = true
+    _vOwnerUid = user?.uid ?? null
     const d = derivados()
     veiculo.hpAtual = d.hpMax
-    if (id) veiculo.id = id
   }
 
   _aplicarCorTema(veiculo.corTema ?? '#3b82f6')
@@ -1412,6 +1550,23 @@ async function init() {
   document.getElementById('vNome').addEventListener('input', (e) => {
     veiculo.nome = e.target.value; salvar()
   })
+}
+
+async function _carregarVeiculoPublico(fichaId) {
+  if (!estaConfigurado()) return null
+  try {
+    const db  = getDb()
+    const fns = getFirebaseFns()
+    if (!db || !fns) return null
+    const idxSnap = await fns.getDoc(fns.doc(db, 'public_index', fichaId))
+    if (!idxSnap.exists()) return null
+    const { ownerUid } = idxSnap.data()
+    if (!ownerUid) return null
+    const snap = await fns.getDoc(fns.doc(db, 'users', ownerUid, 'veiculos', fichaId))
+    if (!snap.exists()) return null
+    const data = snap.data()
+    return data.isPublic ? { ...data, _ownerUid: ownerUid } : null
+  } catch(e) { console.warn('[Firestore] carregar veículo público:', e); return null }
 }
 
 init()
