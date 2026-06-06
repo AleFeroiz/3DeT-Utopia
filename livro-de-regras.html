@@ -225,9 +225,9 @@ function resolveWikiImg(filename) {
 
   const key = normalize(filename);
 
-  if (key.includes('poder'))   return 'img/fil-poder-transparent.png';
-  if (key.includes('evoluca')) return 'img/fil-evolucao-transparent.png';
-  if (key.includes('uniao') || key.includes('unio')) return 'img/fil-uniao-transparent.png';
+  if (key.includes('poder'))   return 'img/simbolos-Filosofia-Utopia-Poder.png';
+  if (key.includes('evoluca')) return 'img/simbolos-Filosofia-Utopia-Evolu%C3%A7%C3%A3o.png';
+  if (key.includes('uniao') || key.includes('unio')) return 'img/simbolos-Filosofia-Utopia-Uni%C3%A3o.png';
 
   return `img/${encodeURIComponent(filename)}`;
 }

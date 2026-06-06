@@ -2079,11 +2079,11 @@ hr {
 }
 
 .rep-icon {
-  width: 44px;
-  height: 44px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,0.3));
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
 }
 
 .rep-card-titulo {
@@ -2193,7 +2193,7 @@ hr {
 
 @media (max-width: 480px) {
   .rep-card { padding: 12px 14px; }
-  .rep-icon { width: 36px; height: 36px; }
+  .rep-icon { width: 52px; height: 52px; }
   .rep-nome { font-size: 14px; }
   .rep-valor { font-size: 18px; }
 }
