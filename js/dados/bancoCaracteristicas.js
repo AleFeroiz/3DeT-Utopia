@@ -59,10 +59,11 @@ export const TABELAS = {
     descricao: "Execuções mais lentas aliviam o custo; mais rápidas exigem mais PM.",
     tipo: "unico",
     dados: [
-      { nome: "Padrão (Base)",  orcamento: 0, pm:  0, gratuita: true },
-      { nome: "Completa",       orcamento: 2, pm:  -3 },
-      { nome: "Movimento",      orcamento: 8, pm:  3 },
-      { nome: "Reação",         orcamento: 6, pm:  2 }
+      { nome: "Padrão (Base)",  orcamento: 0,  pm:  0, gratuita: true },
+      { nome: "Completa",       orcamento: 2,  pm: -3 },
+      { nome: "Movimento",      orcamento: 8,  pm:  3 },
+      { nome: "Ação Livre",     orcamento: 10, pm:  6 },
+      { nome: "Reação",         orcamento: 6,  pm:  2 }
     ]
   },
 

@@ -1547,6 +1547,27 @@ async function init() {
   _bindRetrato()
   _renderVisibilidade()
 
+  // Listener em tempo real (Firestore onSnapshot)
+  if (estaConfigurado() && _vOwnerUid && veiculo.id) {
+    const db  = getDb()
+    const fns = getFirebaseFns()
+    if (db && fns?.onSnapshot) {
+      const ref = fns.doc(db, 'users', _vOwnerUid, 'veiculos', veiculo.id)
+      fns.onSnapshot(ref, (snap) => {
+        if (!snap.exists()) return
+        const remoto = snap.data()
+        // Só atualiza se veio de outro cliente (evitar loop do próprio save)
+        if (!_vDono || !document.hasFocus()) {
+          veiculo = { ..._novoVeiculo(), ...remoto }
+          _aplicarCorTema(veiculo.corTema ?? '#3b82f6')
+          renderTudo()
+          _bindRetrato()
+          _renderVisibilidade()
+        }
+      }, (err) => { console.warn('[onSnapshot]', err) })
+    }
+  }
+
   document.getElementById('vNome').addEventListener('input', (e) => {
     veiculo.nome = e.target.value; salvar()
   })

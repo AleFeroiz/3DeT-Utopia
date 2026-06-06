@@ -1272,13 +1272,14 @@ function _htmlVariantesExpandir(c) {
     const icone = amp ? '⬆️' : '⬇️'
     const label = amp ? 'Amplificada' : 'Reduzida'
     const cor   = amp ? '#f59e0b' : '#60a5fa'
-    const linhas = v.detalhes.map(d => {
-      const dc = d.destaque === 'amp' ? '#fbbf24' : d.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.45)'
-      return '<span style="color:' + dc + ';font-size:11px">' + d.label + ': <strong>' + d.valor + '</strong></span>'
-    }).join(' · ')
+    // v = { custoPM, chave, label, valor, destaque } — formato de computarVarianteAba
+    const dc = v.destaque === 'amp' ? '#fbbf24' : v.destaque === 'red' ? '#93c5fd' : 'rgba(255,255,255,0.45)'
+    const linha = v.label && v.valor
+      ? '<span style="color:' + dc + ';font-size:11px">' + v.label + ': <strong>' + v.valor + '</strong></span>'
+      : ''
     return '<div style="border:1px solid ' + cor + '55;border-radius:6px;padding:5px 8px;margin-top:5px;background:' + (amp ? 'rgba(245,158,11,0.06)' : 'rgba(96,165,250,0.06)') + '">' +
       '<span style="font-size:11px;font-weight:600;color:' + cor + '">' + icone + ' ' + label + ' — ' + v.custoPM + ' PM</span>' +
-      '<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">' + linhas + '</div>' +
+      (linha ? '<div style="margin-top:3px">' + linha + '</div>' : '') +
     '</div>'
   }
   const ha = renderV(c.amplificada, 'amplificada')

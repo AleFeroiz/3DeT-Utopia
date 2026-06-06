@@ -226,7 +226,7 @@ function _renderPassivosConfig() {
     const zoanDiv = document.createElement("div")
     zoanDiv.innerHTML = `
       <div class="passivo-bloco">
-        <p>🐾 <strong>Zoan</strong> — Regras fixas do sistema:</p>
+        <p>🐾 <strong>Fauna</strong> — Regras fixas do sistema:</p>
 
         <div class="zoan-regra-bloco">
           <p class="zoan-regra-titulo">⚙️ Regra de Transformação</p>
@@ -237,7 +237,7 @@ function _renderPassivosConfig() {
           <p class="zoan-forma-titulo">🧍 Forma Humana (Normal)</p>
           <ul class="zoan-lista">
             <li><strong>Custo:</strong> Nenhum.</li>
-            <li><strong>Limitação:</strong> Apenas características de Escala de Poder 1 da fruta.</li>
+            <li><strong>Limitação:</strong> Apenas características de Escala de Poder 1 da Fruta do Desejo.</li>
           </ul>
         </div>
 
@@ -246,7 +246,7 @@ function _renderPassivosConfig() {
           <ul class="zoan-lista">
             <li><strong>Custo:</strong> 3 PM.</li>
             <li><strong>Vontade Mista:</strong> Receba (5 × Resistência) e (5 × Habilidade) em PV e PM temporários.</li>
-            <li><strong>Limitação:</strong> Libera Escalas 1 e 2 da fruta + ficha normal completa.</li>
+            <li><strong>Limitação:</strong> Libera Escalas 1 e 2 da Fruta do Desejo + ficha normal completa.</li>
           </ul>
           <span style="${labelStyle}">Resistência desta forma (1 tipo de dano):</span>
           <input id="zoanResHibrida" placeholder="Ex: Corte"
@@ -255,12 +255,12 @@ function _renderPassivosConfig() {
         </div>
 
         <div class="zoan-forma-bloco zoan-completa">
-          <p class="zoan-forma-titulo">🦖 Forma Zoan (Animal)</p>
+          <p class="zoan-forma-titulo">🦖 Forma Fauna (Animal)</p>
           <ul class="zoan-lista">
             <li><strong>Custo:</strong> 6 PM.</li>
             <li><strong>Ataque Básico:</strong> Crie um ataque conceituado no animal (conta como Escala 2).</li>
             <li><strong>Vontade Animalesca:</strong> Receba (10 × Resistência) e (10 × Habilidade) em PV e PM temporários.</li>
-            <li><strong>Limitação:</strong> Libera todas as escalas da fruta, mas ficha normal fica indisponível.</li>
+            <li><strong>Limitação:</strong> Libera todas as escalas da Fruta do Desejo, mas ficha normal fica indisponível.</li>
           </ul>
           <span style="${labelStyle}">Resistências desta forma (2 tipos de dano):</span>
           <input id="zoanResCompleta" placeholder="Ex: Corte, Pancada"
@@ -276,8 +276,8 @@ function _renderPassivosConfig() {
     const logiaDiv = document.createElement("div")
     logiaDiv.innerHTML = `
       <div class="passivo-bloco">
-        <p>🌊 <strong>Logia</strong> — Elemento da sua fruta:</p>
-        <input id="logiaElemento" placeholder="Ex: Fogo, Gelo, Eletricidade..."
+        <p>🌪️ <strong>Elemental</strong> — Elemento da sua Fruta do Desejo:</p>
+        <input id="logiaElemento" placeholder="Ex: Fogo, Gelo, Eletricidade, Luz..."
           value="${elAtual}" style="${inputStyle}"
           oninput="_salvarElementoLogia(this.value)">
         <p style="font-size:12px;opacity:0.6;margin-top:8px">→ Imune ao elemento escolhido<br>→ Imune a danos mundanos (exceto Anima)</p>
@@ -312,7 +312,7 @@ export function confirmarSalvarFonte() {
   // Zoan: gratuita de escala 3
   if (_fonteTemp.subtipo === "zoan" && !_fonteTemp.passivos.caracGratuitaConcedida) {
     _fonteTemp.caracteristicas.unshift(new Caracteristica({
-      nome: "Forma Zoan (Gratuita)", descricao: "Característica gratuita de Escala 3 concedida pela Zoan.",
+      nome: "Forma Fauna (Gratuita)", descricao: "Característica gratuita de Escala 3 concedida pela Fauna.",
       escala: 3, custo: 0, custoPM: 6, gratuita: true
     }))
     _fonteTemp.passivos.caracGratuitaConcedida = true

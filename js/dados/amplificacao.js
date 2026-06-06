@@ -4,7 +4,7 @@
 
 import { TABELAS } from './bancoCaracteristicas.js?v=600000'
 
-const EXEC_SEQ = ['Completa', 'Padrão (Base)', 'Movimento', 'Reação']
+const EXEC_SEQ = ['Completa', 'Padrão (Base)', 'Movimento', 'Ação Livre', 'Reação']
 const ALC_SEQ  = ['Pessoal (Base)', 'Toque', 'Perto', 'Longe', 'Muito Longe', 'Fora de Alcance']
 
 // Abas que podem ser amplificadas/reduzidas
