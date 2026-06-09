@@ -309,7 +309,9 @@ function _aplicarModoLeitura() {
       banner.id = "bannerLeitura"
       banner.className = "banner-leitura"
       banner.innerHTML = `👁️ Modo visualização — esta ficha está somente para leitura`
-      document.querySelector(".ficha-container").prepend(banner)
+      // Inserir ANTES do ficha-container para não quebrar o flex row
+      const fc = document.querySelector(".ficha-container")
+      fc.parentNode.insertBefore(banner, fc)
     }
   } else {
     // Reabilita inputs/botões
