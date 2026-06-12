@@ -681,10 +681,9 @@ function _iniciarEscutaRealtime() {
     _fichaOwnerModo ?? _fichaModo,
     _fichaOwnerUid,
     (dadosRemotos) => {
-      // Dono: ignora updates remotos se editou localmente nos últimos 3s
-      // (evita sobrescrever o que ele está digitando)
-      // Editor externo: SEMPRE aplica — o snapshot é a confirmação do próprio save
-      if (_fichaOwner && Date.now() - _ultimaEdicaoLocal < 3000) return
+      // Dono E editor externo: ignora updates remotos se editou localmente nos últimos 3s
+      // Evita o loop: editar → save → snapshot → renderTudo() sobrescreve estado local
+      if (Date.now() - _ultimaEdicaoLocal < 3000) return
 
       // Ignora se os dados são idênticos (evita re-render desnecessário)
       try {

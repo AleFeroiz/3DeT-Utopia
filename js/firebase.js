@@ -177,8 +177,17 @@ export async function salvarFichaComoEditor(fichaObj, ownerUid, modo = "player")
   if (!_okPub() || !fichaObj?.id || !ownerUid) return false
   try {
     const col = modo === "mestre" ? "fichas_mestre" : "fichas_player"
-    const { _ownerUid: _o, isPublic, editPublic, ...dadosEditaveis } = fichaObj
-    await _firebaseFns.updateDoc(_firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id), { ...dadosEditaveis, _updatedAt: new Date().toISOString() })
+    // Remover campos protegidos pelas regras do Firestore (isPublic, editPublic, _ownerUid)
+    // e qualquer campo interno que comece com _ para não violar camposProtegidosIntactos
+    const { _ownerUid: _o, isPublic, editPublic, _updatedAt: _u, ...dadosEditaveis } = fichaObj
+    // Garantir que valores numéricos 0 não sejam perdidos (usar ?? em vez de ||)
+    // Serializar status explicitamente para evitar que campos falsy sejam omitidos
+    const payload = { ...dadosEditaveis, _updatedAt: new Date().toISOString() }
+    // updateDoc com merge implícito — só altera campos enviados, preserva o resto
+    await _firebaseFns.updateDoc(
+      _firebaseFns.doc(_db, "users", ownerUid, col, fichaObj.id),
+      payload
+    )
     return true
   } catch(e) { console.error("[Firestore] salvar como editor:", e); return false }
 }

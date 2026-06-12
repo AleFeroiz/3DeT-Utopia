@@ -207,7 +207,7 @@ export class Ficha {
       this.status[chave].auto   = auto[chave]
       this.status[chave].max    = auto[chave] + offset
 
-      if (!this.status[chave].atual) this.status[chave].atual = this.status[chave].max
+      if (this.status[chave].atual == null) this.status[chave].atual = this.status[chave].max
     }
   }
 
