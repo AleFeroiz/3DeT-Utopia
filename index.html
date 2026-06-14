@@ -113,6 +113,16 @@
             <option value="2">⭐ Sucesso Perfeito (2 rotas reais)</option>
           </select>
         </div>
+        <div class="viagem-config-grupo viagem-config-grupo--nr">
+          <label>⚖️ Ajuste de NR base <span style="font-weight:400;opacity:.6;font-size:11px">(comportamento dos jogadores)</span></label>
+          <div class="viagem-nr-stepper">
+            <button type="button" id="btnNrMenos" class="viagem-nr-btn">−</button>
+            <span id="viagemNrBaseLabel">0</span>
+            <input type="hidden" id="viagemNrBase" value="0">
+            <button type="button" id="btnNrMais" class="viagem-nr-btn">+</button>
+          </div>
+          <div id="viagemNrBaseHint" class="viagem-nr-hint">Sem ajuste</div>
+        </div>
         <div class="viagem-config-grupo">
           <label>🚢 Teste do Piloto</label>
           <select id="viagemPiloto">

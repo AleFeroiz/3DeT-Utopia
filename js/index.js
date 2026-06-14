@@ -808,6 +808,29 @@ async function _migrarPontosIndice(fichasSemPontos, m, modo) {
 }
 
 // ── Sistema de Viagem ──────────────────────────────────────
+// ── Stepper de NR base ────────────────────────────────────
+function _atualizarNrBase(val) {
+  const input  = document.getElementById("viagemNrBase")
+  const label  = document.getElementById("viagemNrBaseLabel")
+  const hint   = document.getElementById("viagemNrBaseHint")
+  if (!input) return
+  input.value  = val
+  label.textContent = val > 0 ? `+${val}` : String(val)
+  label.style.color = val > 0 ? "#ef4444" : val < 0 ? "#22c55e" : "#94a3b8"
+  if (val === 0)       hint.textContent = "Sem ajuste"
+  else if (val > 0)    hint.textContent = `Jogadores com ${val > 1 ? val + " penalidades" : "1 penalidade"} — NR +${val}`
+  else                 hint.textContent = `Jogadores com ${Math.abs(val) > 1 ? Math.abs(val) + " bônus" : "1 bônus"} — NR ${val}`
+}
+
+document.getElementById("btnNrMenos")?.addEventListener("click", () => {
+  const v = +(document.getElementById("viagemNrBase")?.value ?? 0)
+  _atualizarNrBase(Math.max(-5, v - 1))
+})
+document.getElementById("btnNrMais")?.addEventListener("click", () => {
+  const v = +(document.getElementById("viagemNrBase")?.value ?? 0)
+  _atualizarNrBase(Math.min(10, v + 1))
+})
+
 document.getElementById("btnGerarViagem").addEventListener("click", () => {
   const ambienteIdx = document.getElementById("viagemAmbiente").value
   const ritmoIdx    = +document.getElementById("viagemRitmo").value
@@ -816,8 +839,9 @@ document.getElementById("btnGerarViagem").addEventListener("click", () => {
 
   const navIdx    = document.getElementById("viagemNavegador")?.value ?? "nenhum"
   const pilotoIdx = document.getElementById("viagemPiloto")?.value   ?? "nenhum"
+  const nrExtra   = +(document.getElementById("viagemNrBase")?.value ?? 0)
 
-  const opts = { ritmo: RITMOS[ritmoIdx], porte: PORTES[porteIdx], estado: ESTADOS_VEICULO[estadoIdx] }
+  const opts = { ritmo: RITMOS[ritmoIdx], porte: PORTES[porteIdx], estado: ESTADOS_VEICULO[estadoIdx], nrExtra }
   if (ambienteIdx !== "aleatorio") opts.ambiente = AMBIENTES[+ambienteIdx]
   if (navIdx    !== "nenhum") opts.testeNavegador = RESULTADOS_NAVEGADOR[+navIdx]
   if (pilotoIdx !== "nenhum") opts.testePiloto    = RESULTADOS_PILOTO[+pilotoIdx]
@@ -835,6 +859,19 @@ function _renderViagem(r) {
 
   // ── Bloco de testes (navegador / piloto) ──
   let blocoTestes = ""
+
+  // Bloco de ajuste NR manual
+  let blocoNrExtra = ""
+  if (r.nrExtra !== 0) {
+    const cor   = r.nrExtra > 0 ? "#ef4444" : "#22c55e"
+    const sinal = r.nrExtra > 0 ? `+${r.nrExtra}` : String(r.nrExtra)
+    const desc  = r.nrExtra > 0 ? "Penalidade do Mestre" : "Bônus do Mestre"
+    blocoNrExtra = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${cor}11;border:1px solid ${cor}44;border-radius:8px;font-size:13px;margin-bottom:6px">
+      <span style="font-size:16px">${r.nrExtra > 0 ? "⚖️" : "🎁"}</span>
+      <span style="color:#94a3b8">${desc}</span>
+      <span style="margin-left:auto;font-weight:700;font-size:15px;color:${cor}">${sinal} NR</span>
+    </div>`
+  }
 
   if (r.testePiloto) {
     const cor = r.testePiloto.deltaNR > 0 ? "#ef4444" : "#22c55e"
@@ -940,7 +977,7 @@ function _renderViagem(r) {
       ${r.deltaPiloto ? `<span>🚢 Piloto (${_nrStr(r.deltaPiloto)})</span>` : ""}
       <span>📊 NR Base: <strong style="color:${_nrCor(r.nrBase)}">${_nrStr(r.nrBase)}</strong></span>
     </div>
-    ${blocoTestes ? `<div class="viagem-testes-area">${blocoTestes}</div>` : ""}
+    ${blocoTestes ? `<div class="viagem-testes-area">${blocoNrExtra}${blocoTestes}</div>` : ""}
     <div class="viagem-rotas-titulo">🗺️ As 3 Rotas Possíveis</div>
     <div class="viagem-rotas">${htmlRotas}</div>
     <p class="viagem-nota">💡 Revele apenas o <em>tipo</em> da rota aos jogadores. O NR e o evento são informações do Mestre.</p>

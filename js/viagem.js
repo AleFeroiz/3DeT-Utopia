@@ -111,14 +111,15 @@ export function gerarViagem(opts = {}) {
   const estado          = opts.estado          ?? ESTADOS_VEICULO[0]
   const testeNavegador  = opts.testeNavegador  ?? null   // null = não aplicar
   const testePiloto     = opts.testePiloto     ?? null   // null = não aplicar
+  const nrExtra         = opts.nrExtra         ?? 0      // ajuste manual do Mestre (+/-N)
 
   // Delta NR do piloto
   const deltaPiloto = testePiloto ? testePiloto.deltaNR : 0
 
   const rotas = _sortear3Rotas()
 
-  // NR base = ambiente + veículo (porte + estado) + ritmo + piloto
-  const nrBase = ambiente.nr + porte.nr + estado.nr + ritmo.nr + deltaPiloto
+  // NR base = ambiente + veículo (porte + estado) + ritmo + piloto + ajuste manual
+  const nrBase = ambiente.nr + porte.nr + estado.nr + ritmo.nr + deltaPiloto + nrExtra
 
   // ── Lógica do Navegador ───────────────────────────────
   // Determina quais índices de rota são "reais" vs "falsas"
@@ -145,6 +146,7 @@ export function gerarViagem(opts = {}) {
     estado,
     nrBase,
     deltaPiloto,
+    nrExtra,
     testeNavegador,
     testePiloto,
     indicesReais,   // índices (0,1,2) que o navegador conhece corretamente
